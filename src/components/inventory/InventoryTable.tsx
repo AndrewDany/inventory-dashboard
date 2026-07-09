@@ -16,10 +16,12 @@ export default function InventoryTable({
   items,
   onEdit,
   onDelete,
+  isAdmin,
 }: {
   items: InventoryItem[]
   onEdit: (item: InventoryItem) => void
   onDelete: (item: InventoryItem) => void
+  isAdmin: boolean
 }) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [search, setSearch] = useState('')
@@ -52,25 +54,28 @@ export default function InventoryTable({
       columnHelper.display({
         id: 'actions',
         header: 'Actions',
-        cell: (info) => (
-          <div className="space-x-3">
-            <button
-              onClick={() => onEdit(info.row.original)}
-              className="text-blue-600 hover:underline text-sm"
-            >
-              Edit
-            </button>
-            <button
-              onClick={() => onDelete(info.row.original)}
-              className="text-red-600 hover:underline text-sm"
-            >
-              Delete
-            </button>
-          </div>
-        ),
+        cell: (info) =>
+          isAdmin ? (
+            <div className="space-x-3">
+              <button
+                onClick={() => onEdit(info.row.original)}
+                className="text-blue-600 hover:underline text-sm"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => onDelete(info.row.original)}
+                className="text-red-600 hover:underline text-sm"
+              >
+                Delete
+              </button>
+            </div>
+          ) : (
+            <span className="text-gray-400 text-sm">—</span>
+          ),
       }),
     ],
-    [onEdit, onDelete]
+    [onEdit, onDelete, isAdmin]
   )
 
   const table = useReactTable({
@@ -106,36 +111,37 @@ export default function InventoryTable({
           ))}
         </select>
       </div>
-<div className="overflow-x-auto">
-      <table className="w-full border-collapse bg-white shadow rounded">
-        <thead>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id} className="border-b text-left text-sm text-gray-500">
-              {headerGroup.headers.map((header) => (
-                <th
-                  key={header.id}
-                  className="p-3 cursor-pointer select-none"
-                  onClick={header.column.getToggleSortingHandler()}
-                >
-                  {flexRender(header.column.columnDef.header, header.getContext())}
-                  {{ asc: ' ▲', desc: ' ▼' }[header.column.getIsSorted() as string] ?? ''}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className="border-b text-sm">
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="p-3">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse bg-white shadow rounded">
+          <thead>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id} className="border-b text-left text-sm text-gray-500">
+                {headerGroup.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    className="p-3 cursor-pointer select-none"
+                    onClick={header.column.getToggleSortingHandler()}
+                  >
+                    {flexRender(header.column.columnDef.header, header.getContext())}
+                    {{ asc: ' ▲', desc: ' ▼' }[header.column.getIsSorted() as string] ?? ''}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.map((row) => (
+              <tr key={row.id} className="border-b text-sm">
+                {row.getVisibleCells().map((cell) => (
+                  <td key={cell.id} className="p-3">
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {filteredItems.length === 0 && (

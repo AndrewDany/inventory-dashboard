@@ -4,6 +4,19 @@ import { supabase } from '../lib/supabaseClient'
 import type { InventoryItem } from '../types/inventory'
 import type { InventoryFormValues } from '../lib/schemas'
 
+async function logActivity(action: 'created' | 'updated' | 'deleted', itemName: string) {
+  const { data: sessionData } = await supabase.auth.getSession()
+  const user = sessionData.session?.user
+  if (!user) return
+
+  await supabase.from('activity_logs').insert({
+    user_id: user.id,
+    user_email: user.email,
+    action,
+    item_name: itemName,
+  })
+}
+
 export function useInventory() {
   return useQuery({
     queryKey: ['inventory_items'],
@@ -26,9 +39,11 @@ export function useAddInventoryItem() {
     mutationFn: async (values: InventoryFormValues) => {
       const { error } = await supabase.from('inventory_items').insert([values])
       if (error) throw new Error(error.message)
+      await logActivity('created', values.name)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory_items'] })
+      queryClient.invalidateQueries({ queryKey: ['activity_logs'] })
       toast.success('Item added successfully')
     },
     onError: (error) => {
@@ -47,9 +62,11 @@ export function useUpdateInventoryItem() {
         .update(values)
         .eq('id', id)
       if (error) throw new Error(error.message)
+      await logActivity('updated', values.name)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory_items'] })
+      queryClient.invalidateQueries({ queryKey: ['activity_logs'] })
       toast.success('Item updated successfully')
     },
     onError: (error) => {
@@ -62,12 +79,14 @@ export function useDeleteInventoryItem() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
       const { error } = await supabase.from('inventory_items').delete().eq('id', id)
       if (error) throw new Error(error.message)
+      await logActivity('deleted', name)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory_items'] })
+      queryClient.invalidateQueries({ queryKey: ['activity_logs'] })
       toast.success('Item deleted successfully')
     },
     onError: (error) => {
