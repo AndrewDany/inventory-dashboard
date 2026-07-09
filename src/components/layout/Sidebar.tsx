@@ -1,5 +1,15 @@
 import { Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, ShieldCheck, X, ChevronLeft, ChevronRight, Plus, KeyRound } from 'lucide-react'
+import {
+  LayoutDashboard,
+  ShieldCheck,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  KeyRound,
+  UserPlus,
+  Settings,
+} from 'lucide-react'
 import { useProfile } from '../../hooks/useProfile'
 
 export default function Sidebar({
@@ -9,6 +19,8 @@ export default function Sidebar({
   onToggleCollapse,
   onAddItem,
   onChangePassword,
+  onInviteUser,
+  onSettings,
 }: {
   isOpen: boolean
   onClose: () => void
@@ -16,6 +28,8 @@ export default function Sidebar({
   onToggleCollapse: () => void
   onAddItem?: () => void
   onChangePassword?: () => void
+  onInviteUser?: () => void
+  onSettings?: () => void
 }) {
   const location = useLocation()
   const { data: profile } = useProfile()
@@ -78,12 +92,24 @@ export default function Sidebar({
         </div>
 
         {/* Bottom action buttons */}
-        {(onAddItem || onChangePassword) && (
+        {(onAddItem || onChangePassword || onInviteUser || onSettings) && (
           <div className="space-y-1 border-t border-gray-200 pt-4">
             {onAddItem && (
               <button onClick={onAddItem} className={actionClass} title="Add Item">
                 <Plus size={18} />
                 {!isCollapsed && 'Add Item'}
+              </button>
+            )}
+            {onInviteUser && (
+              <button onClick={onInviteUser} className={actionClass} title="Invite User">
+                <UserPlus size={18} />
+                {!isCollapsed && 'Invite User'}
+              </button>
+            )}
+            {onSettings && (
+              <button onClick={onSettings} className={actionClass} title="System Settings">
+                <Settings size={18} />
+                {!isCollapsed && 'System Settings'}
               </button>
             )}
             {onChangePassword && (

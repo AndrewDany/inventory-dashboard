@@ -4,10 +4,14 @@ import { useInviteUser } from '../hooks/useInviteUser'
 import PageLayout from '../components/layout/PageLayout'
 import ActivityLogsTable from '../components/admin/ActivityLogsTable'
 import SettingsForm from '../components/admin/SettingsForm'
+import Modal from '../components/ui/Modal'
+
 export default function AdminPanel() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState<'admin' | 'staff'>('staff')
+  const [showInviteModal, setShowInviteModal] = useState(false)
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
 
   const inviteUser = useInviteUser()
 
@@ -20,17 +24,25 @@ export default function AdminPanel() {
       setEmail('')
       setPassword('')
       setRole('staff')
+      setShowInviteModal(false)
     } catch (err) {
       toast.error(`Failed to create user: ${(err as Error).message}`)
     }
   }
 
   return (
-    <PageLayout title="Admin Panel">
-      <div className="flex justify-center mb-8">
-        <div className="bg-white rounded-lg shadow p-6 max-w-md w-full">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Invite New User</h2>
+    <PageLayout
+      title="Admin Panel"
+      onInviteUser={() => setShowInviteModal(true)}
+      onSettings={() => setShowSettingsModal(true)}
+    >
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Recent Activity</h2>
+        <ActivityLogsTable />
+      </div>
 
+      {showInviteModal && (
+        <Modal title="Invite New User" onClose={() => setShowInviteModal(false)}>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
@@ -75,18 +87,14 @@ export default function AdminPanel() {
               {inviteUser.isPending ? 'Creating...' : 'Create User'}
             </button>
           </form>
-        </div>
-      </div>
+        </Modal>
+      )}
 
-      <div className="bg-white rounded-lg shadow p-6 mb-8">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Recent Activity</h2>
-        <ActivityLogsTable />
-      </div>
-
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">System Settings</h2>
-        <SettingsForm />
-      </div>
+      {showSettingsModal && (
+        <Modal title="System Settings" onClose={() => setShowSettingsModal(false)}>
+          <SettingsForm />
+        </Modal>
+      )}
     </PageLayout>
   )
 }
