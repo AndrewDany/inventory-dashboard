@@ -23,9 +23,26 @@ export function useAuth() {
     }
   }, [])
 
-  async function signIn(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    return { error }
+ async function signIn(email: string, password: string) {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+
+    if (error) return { error }
+
+    // Check if the user is suspended
+    if (data.user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('status')
+        .eq('id', data.user.id)
+        .single()
+
+      if (profile?.status === 'suspended') {
+        await supabase.auth.signOut()
+        return { error: { message: 'Your account has been suspended. Contact your administrator.' } as any }
+      }
+    }
+
+    return { error: null }
   }
 
   async function signOut() {

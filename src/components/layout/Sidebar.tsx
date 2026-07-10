@@ -93,27 +93,51 @@ export default function Sidebar({
 
         {/* Bottom action buttons */}
         {(onAddItem || onChangePassword || onInviteUser || onSettings) && (
-          <div className="space-y-1 border-t border-gray-200 pt-4">
+          <div className="space-y-2 border-t border-gray-200 pt-4">
             {onAddItem && (
-              <button onClick={onAddItem} className={actionClass} title="Add Item">
+              <button
+                onClick={onAddItem}
+                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors w-full ${
+                  isCollapsed ? 'md:justify-center md:px-0' : ''
+                }`}
+                title="Add Item"
+              >
                 <Plus size={18} />
                 {!isCollapsed && 'Add Item'}
               </button>
             )}
             {onInviteUser && (
-              <button onClick={onInviteUser} className={actionClass} title="Invite User">
+              <button
+                onClick={onInviteUser}
+                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors w-full ${
+                  isCollapsed ? 'md:justify-center md:px-0' : ''
+                }`}
+                title="Invite User"
+              >
                 <UserPlus size={18} />
                 {!isCollapsed && 'Invite User'}
               </button>
             )}
             {onSettings && (
-              <button onClick={onSettings} className={actionClass} title="System Settings">
+              <button
+                onClick={onSettings}
+                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-gray-700 hover:bg-gray-800 transition-colors w-full ${
+                  isCollapsed ? 'md:justify-center md:px-0' : ''
+                }`}
+                title="System Settings"
+              >
                 <Settings size={18} />
                 {!isCollapsed && 'System Settings'}
               </button>
             )}
             {onChangePassword && (
-              <button onClick={onChangePassword} className={actionClass} title="Change Password">
+              <button
+                onClick={onChangePassword}
+                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 transition-colors w-full ${
+                  isCollapsed ? 'md:justify-center md:px-0' : ''
+                }`}
+                title="Change Password"
+              >
                 <KeyRound size={18} />
                 {!isCollapsed && 'Change Password'}
               </button>

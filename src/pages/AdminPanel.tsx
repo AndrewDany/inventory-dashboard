@@ -5,6 +5,7 @@ import PageLayout from '../components/layout/PageLayout'
 import ActivityLogsTable from '../components/admin/ActivityLogsTable'
 import SettingsForm from '../components/admin/SettingsForm'
 import Modal from '../components/ui/Modal'
+import UsersTable from '../components/admin/UsersTable'
 
 export default function AdminPanel() {
   const [email, setEmail] = useState('')
@@ -36,6 +37,11 @@ export default function AdminPanel() {
       onInviteUser={() => setShowInviteModal(true)}
       onSettings={() => setShowSettingsModal(true)}
     >
+      <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">User Management</h2>
+        <UsersTable />
+      </div>
+
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-bold text-gray-900 mb-4">Recent Activity</h2>
         <ActivityLogsTable />
