@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Package, ShieldCheck, BarChart3, Users, Search, Bell } from 'lucide-react'
+import InventoryShowcase from '../components/landing/InventoryShowcase'
 
 const features = [
   {
@@ -37,41 +38,123 @@ const features = [
 export default function Landing() {
   return (
     <div className="min-h-screen bg-white">
-      <header className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Inventory Dashboard</h1>
-        <Link to="/login" className="text-sm font-medium text-gray-700 hover:text-gray-900">
+      {/* Header */}
+      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+            <Package size={16} className="text-white" />
+          </div>
+          <h1 className="text-lg font-bold text-gray-900">Inventory Dashboard</h1>
+        </div>
+        <Link
+          to="/login"
+          className="text-sm font-medium text-white bg-indigo-600 px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+        >
           Sign In
         </Link>
       </header>
 
-      <section className="max-w-4xl mx-auto text-center px-6 py-20">
-        <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6 leading-tight">
-          Stop guessing what's in stock.
-        </h2>
-        <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
-          A simple, secure inventory management system built for small and mid-sized
-          businesses. Track stock, manage your team, and stay ahead of shortages,
-          all from one dashboard.
-        </p>
-        <a
-          href="mailto:andrewsdanyo93@gmail.com?subject=Inventory Dashboard Inquiry"
-          className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-        >
-          Get Started
-        </a>
+      {/* Hero */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-indigo-50 via-white to-white">
+        <div className="max-w-5xl mx-auto text-center px-6 pt-20 pb-16">
+          <span className="inline-block text-xs font-semibold text-indigo-700 bg-indigo-100 px-3 py-1 rounded-full mb-6">
+            Built for small & mid-sized businesses
+          </span>
+          <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6 leading-tight">
+            Stop guessing what's{' '}
+            <span className="text-indigo-600">in stock.</span>
+          </h2>
+          <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+            A simple, secure inventory management system that tracks stock, manages
+            your team, and keeps you ahead of shortages, all from one dashboard.
+          </p>
+          <a
+            href="mailto:andrewsdanyo93@gmail.com?subject=Inventory Dashboard Inquiry"
+            className="inline-block bg-indigo-600 text-white px-7 py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
+          >
+            Get Started
+          </a>
+
+          {/* Real-photo showcase */}
+          <div className="mt-16 max-w-4xl mx-auto">
+            <InventoryShowcase />
+          </div>
+
+          {/* Demo visual — stylized dashboard mockup */}
+          <div className="mt-8 max-w-4xl mx-auto">
+            <div className="rounded-xl border border-gray-200 shadow-2xl shadow-gray-200/60 overflow-hidden bg-white">
+              {/* fake browser bar */}
+              <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-red-400" />
+                <div className="w-3 h-3 rounded-full bg-yellow-400" />
+                <div className="w-3 h-3 rounded-full bg-green-400" />
+              </div>
+
+              {/* fake dashboard content */}
+              <div className="p-6 text-left bg-gray-50">
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="bg-white rounded-lg shadow-sm p-4">
+                    <p className="text-xs text-gray-400 mb-1">Total Items</p>
+                    <p className="text-xl font-bold text-gray-900">248</p>
+                  </div>
+                  <div className="bg-white rounded-lg shadow-sm p-4">
+                    <p className="text-xs text-gray-400 mb-1">Inventory Value</p>
+                    <p className="text-xl font-bold text-gray-900">GHS 41,200</p>
+                  </div>
+                  <div className="bg-white rounded-lg shadow-sm p-4">
+                    <p className="text-xs text-gray-400 mb-1">Low Stock</p>
+                    <p className="text-xl font-bold text-red-500">6</p>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
+                  <div className="flex items-end gap-2 h-20">
+                    {[40, 65, 30, 80, 55, 70, 45].map((h, i) => (
+                      <div
+                        key={i}
+                        className="flex-1 bg-indigo-500 rounded-t"
+                        style={{ height: `${h}%` }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-sm p-4 space-y-2">
+                  {['Blue Pen (PEN-001)', 'A4 Paper Ream (PPR-014)', 'USB-C Cable (USB-208)'].map(
+                    (item) => (
+                      <div
+                        key={item}
+                        className="flex justify-between items-center text-sm text-gray-600 border-b border-gray-100 last:border-0 pb-2 last:pb-0"
+                      >
+                        <span>{item}</span>
+                        <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                          In Stock
+                        </span>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
-      <section className="max-w-5xl mx-auto px-6 py-16 border-t border-gray-100">
-        <h3 className="text-2xl font-bold text-gray-900 text-center mb-12">
-          Everything you need to run your inventory
-        </h3>
+      {/* Features */}
+      <section className="max-w-5xl mx-auto px-6 py-20">
+        <div className="text-center mb-12">
+          <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
+            Everything you need to run your inventory
+          </h3>
+          <p className="text-gray-500">No clutter. Just the tools that matter.</p>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature) => {
             const Icon = feature.icon
             return (
               <div key={feature.title} className="text-left">
-                <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center mb-4">
-                  <Icon size={20} className="text-blue-600" />
+                <div className="w-11 h-11 rounded-lg bg-indigo-50 flex items-center justify-center mb-4">
+                  <Icon size={20} className="text-indigo-600" />
                 </div>
                 <h4 className="font-semibold text-gray-900 mb-2">{feature.title}</h4>
                 <p className="text-sm text-gray-600">{feature.description}</p>
@@ -81,22 +164,26 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="max-w-3xl mx-auto text-center px-6 py-16 border-t border-gray-100">
-        <h3 className="text-2xl font-bold text-gray-900 mb-4">
-          Ready to get your inventory under control?
-        </h3>
-        <p className="text-gray-600 mb-8">
-          Get in touch and I'll set up a version tailored to your business.
-        </p>
-        <a
-          href="mailto:andrewsdanyo93@gmail.com?subject=Inventory Dashboard Inquiry"
-          className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-        >
-          Contact Me
-        </a>
+      {/* CTA */}
+      <section className="bg-indigo-600">
+        <div className="max-w-3xl mx-auto text-center px-6 py-16">
+          <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4">
+            Ready to get your inventory under control?
+          </h3>
+          <p className="text-indigo-100 mb-8">
+            Get in touch and I'll set up a version tailored to your business.
+          </p>
+          <a
+            href="mailto:andrewsdanyo93@gmail.com?subject=Inventory Dashboard Inquiry"
+            className="inline-block bg-white text-indigo-700 px-7 py-3 rounded-lg font-medium hover:bg-indigo-50 transition-colors"
+          >
+            Contact Me
+          </a>
+        </div>
       </section>
 
-      <footer className="border-t border-gray-200 px-6 py-8 text-center text-sm text-gray-500">
+      {/* Footer */}
+      <footer className="border-t border-gray-100 px-6 py-8 text-center text-sm text-gray-400">
         <p>© {new Date().getFullYear()} Inventory Dashboard. Built by Andrews Danyo.</p>
       </footer>
     </div>
