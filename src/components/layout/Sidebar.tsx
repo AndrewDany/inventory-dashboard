@@ -73,7 +73,7 @@ export default function Sidebar({
           </div>
 
           <nav className="space-y-1">
-            <Link to="/" className={linkClass('/')} onClick={onClose} title="Dashboard">
+            <Link to="/dashboard" className={linkClass('/dashboard')} onClick={onClose} title="Dashboard">
               <LayoutDashboard size={18} />
               {!isCollapsed && 'Dashboard'}
             </Link>
