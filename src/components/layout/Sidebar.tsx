@@ -42,10 +42,6 @@ export default function Sidebar({
         : 'text-gray-600 hover:bg-gray-100'
     } ${isCollapsed ? 'md:justify-center md:px-0' : ''}`
 
-  const actionClass = `flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors w-full ${
-    isCollapsed ? 'md:justify-center md:px-0' : ''
-  }`
-
   return (
     <>
       {isOpen && (
