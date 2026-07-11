@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Package, ShieldCheck, BarChart3, Users, Search, Bell } from 'lucide-react'
 import InventoryShowcase from '../components/landing/InventoryShowcase'
 import { useAuth } from '../hooks/useAuth'
+import profilePhoto from '../assets/landing/profile.jpg'
 
 const features = [
   {
@@ -38,7 +39,7 @@ const features = [
 ]
 
 const DEMO_EMAIL = 'amabaah45@gmail.com'
-const DEMO_PASSWORD = '78945612'
+const DEMO_PASSWORD = 'Demo2026!'
 
 export default function Landing() {
   const { signIn } = useAuth()
@@ -191,6 +192,78 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* How It Works */}
+      <section className="max-w-5xl mx-auto px-6 py-20 border-t border-gray-100">
+        <div className="text-center mb-14">
+          <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
+            How it works
+          </h3>
+          <p className="text-gray-500">From first message to a live system, in three steps.</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+          <div className="text-center">
+            <div className="w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center mx-auto mb-4 font-bold">
+              1
+            </div>
+            <h4 className="font-semibold text-gray-900 mb-2">Tell me what you need</h4>
+            <p className="text-sm text-gray-600">
+              A quick conversation about your business, your team, and how you currently track stock.
+            </p>
+          </div>
+
+          <div className="text-center">
+            <div className="w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center mx-auto mb-4 font-bold">
+              2
+            </div>
+            <h4 className="font-semibold text-gray-900 mb-2">I build & customize it</h4>
+            <p className="text-sm text-gray-600">
+              Your own version, set up with your categories, your branding, and your team's accounts.
+            </p>
+          </div>
+
+          <div className="text-center">
+            <div className="w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center mx-auto mb-4 font-bold">
+              3
+            </div>
+            <h4 className="font-semibold text-gray-900 mb-2">You're live in days</h4>
+            <p className="text-sm text-gray-600">
+              Start tracking stock immediately, with support from me whenever you need it.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* About the Developer */}
+      {/* About the Developer */}
+      <section className="bg-gray-50 border-t border-gray-100">
+        <div className="max-w-4xl mx-auto px-6 py-20">
+          <div className="flex flex-col sm:flex-row items-center gap-8">
+            <img
+              src={profilePhoto}
+              alt="Andrews Danyo"
+              className="w-24 h-24 rounded-full object-cover shrink-0 border-2 border-indigo-100"
+            />
+            <div className="text-center sm:text-left">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Built by Andrews Danyo</h3>
+              <p className="text-gray-600 text-sm mb-4">
+                A software developer based in Ghana, focused on building practical tools for small
+                and mid-sized businesses. I hold a B.Sc. in Information Technology from Ghana
+                Communication Technology University, with hands-on experience in IT support and
+                systems administration. This project reflects how I build: simple, secure, and
+                genuinely useful for the people running the business day to day.
+              </p>
+              <a
+                href="mailto:andrewsdanyo93@gmail.com"
+                className="text-indigo-600 text-sm font-medium hover:underline"
+              >
+                andrewsdanyo93@gmail.com
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="bg-indigo-600">
         <div className="max-w-3xl mx-auto text-center px-6 py-16">
@@ -210,7 +283,21 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-gray-100 px-6 py-8 text-center text-sm text-gray-400">
+      <footer className="border-t border-gray-100 px-6 py-10 text-center text-sm text-gray-400">
+        <p className="mb-2">Based in Accra, Ghana</p>
+        <div className="flex items-center justify-center gap-4 mb-4">
+          <a href="mailto:andrewsdanyo93@gmail.com" className="hover:text-gray-600 transition-colors">
+            Email
+          </a>
+          <a
+            href="https://www.linkedin.com/in/andrews-danyo-2a61181b5/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-gray-600 transition-colors"
+          >
+            LinkedIn
+          </a>
+        </div>
         <p>© {new Date().getFullYear()} Inventory Dashboard. Built by Andrews Danyo.</p>
       </footer>
     </div>
