@@ -23,6 +23,7 @@ export default function Dashboard() {
   const [showPasswordForm, setShowPasswordForm] = useState(false)
 
   const isAdmin = profile?.role === 'admin'
+  const isDemo = profile?.role === 'demo'
 
   async function handleDelete() {
     if (!deletingItem) return
@@ -33,9 +34,15 @@ export default function Dashboard() {
   return (
     <PageLayout
       title="Inventory Dashboard"
-      onAddItem={() => setShowAddModal(true)}
-      onChangePassword={() => setShowPasswordForm(true)}
+      onAddItem={isDemo ? undefined : () => setShowAddModal(true)}
+      onChangePassword={isDemo ? undefined : () => setShowPasswordForm(true)}
     >
+      {isDemo && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-lg p-3 mb-6">
+          You're viewing a read-only demo account. Changes are disabled.
+        </div>
+      )}
+
       {isLoading && <DashboardSkeleton />}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">

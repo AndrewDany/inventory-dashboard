@@ -4,13 +4,13 @@ import { useInviteUser } from '../hooks/useInviteUser'
 import PageLayout from '../components/layout/PageLayout'
 import ActivityLogsTable from '../components/admin/ActivityLogsTable'
 import SettingsForm from '../components/admin/SettingsForm'
-import Modal from '../components/ui/Modal'
 import UsersTable from '../components/admin/UsersTable'
+import Modal from '../components/ui/Modal'
 
 export default function AdminPanel() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState<'admin' | 'staff'>('staff')
+  const [role, setRole] = useState<'admin' | 'staff' | 'demo'>('staff')
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
 
@@ -77,11 +77,12 @@ export default function AdminPanel() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
               <select
                 value={role}
-                onChange={(e) => setRole(e.target.value as 'admin' | 'staff')}
+                onChange={(e) => setRole(e.target.value as 'admin' | 'staff' | 'demo')}
                 className="w-full border border-gray-300 rounded px-3 py-2"
               >
                 <option value="staff">Staff</option>
                 <option value="admin">Admin</option>
+                <option value="demo">Demo (read-only)</option>
               </select>
             </div>
 
