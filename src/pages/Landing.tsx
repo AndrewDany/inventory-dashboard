@@ -1,6 +1,8 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { Package, ShieldCheck, BarChart3, Users, Search, Bell } from 'lucide-react'
 import InventoryShowcase from '../components/landing/InventoryShowcase'
+import { useAuth } from '../hooks/useAuth'
 
 const features = [
   {
@@ -35,7 +37,24 @@ const features = [
   },
 ]
 
+const DEMO_EMAIL = 'amabaah45@gmail.com'
+const DEMO_PASSWORD = '78945612'
+
 export default function Landing() {
+  const { signIn } = useAuth()
+  const navigate = useNavigate()
+  const [demoLoading, setDemoLoading] = useState(false)
+
+  async function handleTryDemo() {
+    setDemoLoading(true)
+    const { error } = await signIn(DEMO_EMAIL, DEMO_PASSWORD)
+    setDemoLoading(false)
+
+    if (!error) {
+      navigate('/dashboard')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -68,12 +87,22 @@ export default function Landing() {
             A simple, secure inventory management system that tracks stock, manages
             your team, and keeps you ahead of shortages, all from one dashboard.
           </p>
-          <a
-            href="mailto:andrewsdanyo93@gmail.com?subject=Inventory Dashboard Inquiry"
-            className="inline-block bg-indigo-600 text-white px-7 py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
-          >
-            Get Started
-          </a>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a
+              href="mailto:andrewsdanyo93@gmail.com?subject=Inventory Dashboard Inquiry"
+              className="inline-block bg-indigo-600 text-white px-7 py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
+            >
+              Get Started
+            </a>
+            <button
+              onClick={handleTryDemo}
+              disabled={demoLoading}
+              className="inline-block bg-white text-indigo-700 border border-indigo-200 px-7 py-3 rounded-lg font-medium hover:bg-indigo-50 transition-colors disabled:opacity-50"
+            >
+              {demoLoading ? 'Loading demo...' : 'Try Live Demo'}
+            </button>
+          </div>
 
           {/* Real-photo showcase */}
           <div className="mt-16 max-w-4xl mx-auto">
@@ -83,14 +112,12 @@ export default function Landing() {
           {/* Demo visual — stylized dashboard mockup */}
           <div className="mt-8 max-w-4xl mx-auto">
             <div className="rounded-xl border border-gray-200 shadow-2xl shadow-gray-200/60 overflow-hidden bg-white">
-              {/* fake browser bar */}
               <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-red-400" />
                 <div className="w-3 h-3 rounded-full bg-yellow-400" />
                 <div className="w-3 h-3 rounded-full bg-green-400" />
               </div>
 
-              {/* fake dashboard content */}
               <div className="p-6 text-left bg-gray-50">
                 <div className="grid grid-cols-3 gap-3 mb-4">
                   <div className="bg-white rounded-lg shadow-sm p-4">
