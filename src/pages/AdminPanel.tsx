@@ -6,6 +6,8 @@ import ActivityLogsTable from '../components/admin/ActivityLogsTable'
 import SettingsForm from '../components/admin/SettingsForm'
 import UsersTable from '../components/admin/UsersTable'
 import Modal from '../components/ui/Modal'
+import LowStockTracker from '../components/admin/LowStockTracker'
+import StockMovementsTable from '../components/admin/StockMovementsTable'
 
 export default function AdminPanel() {
   const [email, setEmail] = useState('')
@@ -40,6 +42,16 @@ export default function AdminPanel() {
       <div className="bg-white rounded-lg shadow p-6 mb-8">
         <h2 className="text-lg font-bold text-gray-900 mb-4">User Management</h2>
         <UsersTable />
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Low Stock Tracker</h2>
+        <LowStockTracker />
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Stock Movements</h2>
+        <StockMovementsTable />
       </div>
 
       <div className="bg-white rounded-lg shadow p-6">

@@ -17,6 +17,29 @@ async function logActivity(action: 'created' | 'updated' | 'deleted', itemName: 
   })
 }
 
+async function logStockMovement(
+  itemId: string,
+  itemName: string,
+  previousQuantity: number,
+  newQuantity: number
+) {
+  if (previousQuantity === newQuantity) return
+
+  const { data: sessionData } = await supabase.auth.getSession()
+  const user = sessionData.session?.user
+  if (!user) return
+
+  await supabase.from('stock_movements').insert({
+    item_id: itemId,
+    item_name: itemName,
+    previous_quantity: previousQuantity,
+    new_quantity: newQuantity,
+    change_amount: newQuantity - previousQuantity,
+    user_id: user.id,
+    user_email: user.email,
+  })
+}
+
 export function useInventory() {
   return useQuery({
     queryKey: ['inventory_items'],
@@ -56,17 +79,28 @@ export function useUpdateInventoryItem() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, values }: { id: string; values: InventoryFormValues }) => {
+    mutationFn: async ({
+      id,
+      values,
+      previousQuantity,
+    }: {
+      id: string
+      values: InventoryFormValues
+      previousQuantity: number
+    }) => {
       const { error } = await supabase
         .from('inventory_items')
         .update(values)
         .eq('id', id)
       if (error) throw new Error(error.message)
+
       await logActivity('updated', values.name)
+      await logStockMovement(id, values.name, previousQuantity, values.quantity)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory_items'] })
       queryClient.invalidateQueries({ queryKey: ['activity_logs'] })
+      queryClient.invalidateQueries({ queryKey: ['stock_movements'] })
       toast.success('Item updated successfully')
     },
     onError: (error) => {

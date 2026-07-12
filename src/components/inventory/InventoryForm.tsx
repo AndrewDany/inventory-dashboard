@@ -36,7 +36,7 @@ export default function InventoryForm({
 
   async function onSubmit(values: InventoryFormValues) {
     if (isEditMode && item) {
-      await updateItem.mutateAsync({ id: item.id, values })
+      await updateItem.mutateAsync({ id: item.id, values, previousQuantity: item.quantity })
     } else {
       await addItem.mutateAsync(values)
     }
