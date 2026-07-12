@@ -192,6 +192,78 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Pricing */}
+      <section className="max-w-5xl mx-auto px-6 py-20 border-t border-gray-100">
+        <div className="text-center mb-14">
+          <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
+            Simple, transparent pricing
+          </h3>
+          <p className="text-gray-500">One-time setup. No hidden fees.</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            {
+              name: 'Starter',
+              price: 'GHS 1,500',
+              desc: 'For a single shop or small business',
+              features: ['Inventory CRUD & search', 'Basic dashboard & stats', '1 admin account', 'Hosted & deployed'],
+              highlight: false,
+            },
+            {
+              name: 'Business',
+              price: 'GHS 3,500',
+              desc: 'For a growing team',
+              features: ['Everything in Starter', 'Role-based access', 'Activity logs & stock tracking', 'Custom branding'],
+              highlight: true,
+            },
+            {
+              name: 'Custom',
+              price: 'Quote on request',
+              desc: 'For specific business needs',
+              features: ['Everything in Business', 'Custom fields & workflows', 'Third-party integrations', 'Priority support'],
+              highlight: false,
+            },
+          ].map((tier) => (
+            <div
+              key={tier.name}
+              className={`rounded-2xl p-6 border ${
+                tier.highlight
+                  ? 'border-indigo-600 shadow-lg shadow-indigo-100 bg-white relative'
+                  : 'border-gray-200 bg-white'
+              }`}
+            >
+              {tier.highlight && (
+                <span className="absolute -top-3 left-6 bg-indigo-600 text-white text-xs font-medium px-3 py-1 rounded-full">
+                  Most Popular
+                </span>
+              )}
+              <h4 className="font-semibold text-gray-900 mb-1">{tier.name}</h4>
+              <p className="text-sm text-gray-500 mb-4">{tier.desc}</p>
+              <p className="text-2xl font-bold text-gray-900 mb-6">{tier.price}</p>
+              <ul className="space-y-2 mb-6">
+                {tier.features.map((f) => (
+                  <li key={f} className="text-sm text-gray-600 flex items-start gap-2">
+                    <span className="text-indigo-600 mt-0.5">✓</span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <a
+                href="mailto:andrewsdanyo93@gmail.com?subject=Inventory Dashboard Inquiry"
+                className={`block text-center text-sm font-medium py-2.5 rounded-lg transition-colors ${
+                  tier.highlight
+                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                    : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                Get Started
+              </a>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* How It Works */}
       <section className="max-w-5xl mx-auto px-6 py-20 border-t border-gray-100">
         <div className="text-center mb-14">
@@ -235,7 +307,6 @@ export default function Landing() {
       </section>
 
       {/* About the Developer */}
-      {/* About the Developer */}
       <section className="bg-gray-50 border-t border-gray-100">
         <div className="max-w-4xl mx-auto px-6 py-20">
           <div className="flex flex-col sm:flex-row items-center gap-8">
@@ -261,6 +332,44 @@ export default function Landing() {
               </a>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="max-w-3xl mx-auto px-6 py-20 border-t border-gray-100">
+        <div className="text-center mb-12">
+          <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
+            Frequently asked questions
+          </h3>
+        </div>
+        <div className="space-y-6">
+          {[
+            {
+              q: 'How long does setup take?',
+              a: 'Most businesses are up and running within a few days, depending on how much customization you need (custom fields, branding, staff accounts).',
+            },
+            {
+              q: 'Do I need technical skills to use it?',
+              a: "No. If you can use email or WhatsApp, you can use this. It's built to be simple for non-technical staff.",
+            },
+            {
+              q: 'Is my data safe?',
+              a: 'Yes. Your data is hosted on secure, enterprise-grade infrastructure with encrypted connections, role-based access, and full activity logging.',
+            },
+            {
+              q: 'Can I request changes after it launches?',
+              a: 'Absolutely. I offer ongoing support and can add features or adjust the system as your business grows.',
+            },
+            {
+              q: 'What if my team is not tech-savvy?',
+              a: "That's exactly who this was built for. Staff accounts are limited to simple actions, add stock, view inventory, so there's little room for mistakes.",
+            },
+          ].map((item) => (
+            <div key={item.q} className="border-b border-gray-100 pb-6">
+              <h4 className="font-semibold text-gray-900 mb-2">{item.q}</h4>
+              <p className="text-sm text-gray-600">{item.a}</p>
+            </div>
+          ))}
         </div>
       </section>
 
