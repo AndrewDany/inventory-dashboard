@@ -9,6 +9,7 @@ export default function PageLayout({
   onChangePassword,
   onInviteUser,
   onSettings,
+  onAddSupplier,
 }: {
   children: ReactNode
   title: string
@@ -16,6 +17,7 @@ export default function PageLayout({
   onChangePassword?: () => void
   onInviteUser?: () => void
   onSettings?: () => void
+  onAddSupplier?: () => void
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -31,6 +33,7 @@ export default function PageLayout({
         onChangePassword={onChangePassword}
         onInviteUser={onInviteUser}
         onSettings={onSettings}
+        onAddSupplier={onAddSupplier}
       />
 
       <div className="flex-1 min-w-0 flex flex-col">

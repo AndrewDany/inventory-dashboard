@@ -8,6 +8,8 @@ import UsersTable from '../components/admin/UsersTable'
 import Modal from '../components/ui/Modal'
 import LowStockTracker from '../components/admin/LowStockTracker'
 import StockMovementsTable from '../components/admin/StockMovementsTable'
+import SuppliersTable from '../components/admin/SuppliersTable'
+import SupplierForm from '../components/admin/SupplierForm'
 
 export default function AdminPanel() {
   const [email, setEmail] = useState('')
@@ -15,6 +17,7 @@ export default function AdminPanel() {
   const [role, setRole] = useState<'admin' | 'staff' | 'demo'>('staff')
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
+  const [showSupplierModal, setShowSupplierModal] = useState(false)
 
   const inviteUser = useInviteUser()
 
@@ -38,6 +41,7 @@ export default function AdminPanel() {
       title="Admin Panel"
       onInviteUser={() => setShowInviteModal(true)}
       onSettings={() => setShowSettingsModal(true)}
+      onAddSupplier={() => setShowSupplierModal(true)}
     >
       <div className="bg-white rounded-lg shadow p-6 mb-8">
         <h2 className="text-lg font-bold text-gray-900 mb-4">User Management</h2>
@@ -47,6 +51,11 @@ export default function AdminPanel() {
       <div className="bg-white rounded-lg shadow p-6 mb-8">
         <h2 className="text-lg font-bold text-gray-900 mb-4">Low Stock Tracker</h2>
         <LowStockTracker />
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Suppliers</h2>
+        <SuppliersTable />
       </div>
 
       <div className="bg-white rounded-lg shadow p-6 mb-8">
@@ -112,6 +121,12 @@ export default function AdminPanel() {
       {showSettingsModal && (
         <Modal title="System Settings" onClose={() => setShowSettingsModal(false)}>
           <SettingsForm />
+        </Modal>
+      )}
+
+      {showSupplierModal && (
+        <Modal title="Add Supplier" onClose={() => setShowSupplierModal(false)}>
+          <SupplierForm onClose={() => setShowSupplierModal(false)} />
         </Modal>
       )}
     </PageLayout>
