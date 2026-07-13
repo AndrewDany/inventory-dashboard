@@ -11,7 +11,7 @@ import DashboardSkeleton from '../components/dashboard/DashboardSkeleton'
 import ChangePasswordForm from '../components/settings/ChangePasswordForm'
 import PageLayout from '../components/layout/PageLayout'
 import type { InventoryItem } from '../types/inventory'
-
+import ExportMenu from '../components/inventory/ExportMenu'
 export default function Dashboard() {
   const { data: profile } = useProfile()
   const { data: items, isLoading, error } = useInventory()
@@ -56,6 +56,9 @@ export default function Dashboard() {
 
       {items && items.length > 0 && (
         <>
+          <div className="flex justify-end mb-4">
+            <ExportMenu items={items} />
+          </div>
           <StatsCards items={items} />
           <CategoryChart items={items} />
           <InventoryTable
