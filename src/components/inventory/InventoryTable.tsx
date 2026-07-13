@@ -8,6 +8,8 @@ import {
   createColumnHelper,
   type SortingState,
 } from '@tanstack/react-table'
+import { ScanLine } from 'lucide-react'
+import BarcodeScanner from './BarcodeScanner'
 import type { InventoryItem } from '../../types/inventory'
 
 const columnHelper = createColumnHelper<InventoryItem>()
@@ -26,6 +28,7 @@ export default function InventoryTable({
   const [sorting, setSorting] = useState<SortingState>([])
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
+  const [showScanner, setShowScanner] = useState(false)
 
   const categories = useMemo(() => {
     const unique = new Set(items.map((i) => i.category).filter(Boolean))
@@ -98,6 +101,14 @@ export default function InventoryTable({
           onChange={(e) => setSearch(e.target.value)}
           className="border border-gray-300 rounded px-3 py-2 text-sm flex-1"
         />
+        <button
+          onClick={() => setShowScanner(true)}
+          className="border border-gray-300 rounded px-3 py-2 text-sm flex items-center gap-1.5 text-gray-700 hover:bg-gray-50"
+          title="Scan barcode"
+        >
+          <ScanLine size={16} />
+          Scan
+        </button>
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
@@ -111,6 +122,16 @@ export default function InventoryTable({
           ))}
         </select>
       </div>
+
+      {showScanner && (
+        <BarcodeScanner
+          onClose={() => setShowScanner(false)}
+          onScan={(code) => {
+            setSearch(code)
+            setShowScanner(false)
+          }}
+        />
+      )}
 
       <div className="overflow-x-auto">
         <table className="w-full border-collapse bg-white shadow rounded">

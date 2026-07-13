@@ -1,7 +1,10 @@
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { ScanLine } from 'lucide-react'
 import { inventoryItemSchema, type InventoryFormValues } from '../../lib/schemas'
 import { useAddInventoryItem, useUpdateInventoryItem } from '../../hooks/useInventory'
+import BarcodeScanner from './BarcodeScanner'
 import type { InventoryItem } from '../../types/inventory'
 
 export default function InventoryForm({
@@ -11,9 +14,12 @@ export default function InventoryForm({
   onClose: () => void
   item?: InventoryItem
 }) {
+  const [showScanner, setShowScanner] = useState(false)
+
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(inventoryItemSchema),
@@ -53,9 +59,29 @@ export default function InventoryForm({
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">SKU</label>
-        <input {...register('sku')} className="w-full border border-gray-300 rounded px-3 py-2" />
+        <div className="flex gap-2">
+          <input {...register('sku')} className="flex-1 border border-gray-300 rounded px-3 py-2" />
+          <button
+            type="button"
+            onClick={() => setShowScanner(true)}
+            className="border border-gray-300 rounded px-3 text-gray-700 hover:bg-gray-50"
+            title="Scan barcode"
+          >
+            <ScanLine size={18} />
+          </button>
+        </div>
         {errors.sku && <p className="text-red-600 text-sm mt-1">{errors.sku.message}</p>}
       </div>
+
+      {showScanner && (
+        <BarcodeScanner
+          onClose={() => setShowScanner(false)}
+          onScan={(code) => {
+            setValue('sku', code)
+            setShowScanner(false)
+          }}
+        />
+      )}
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
