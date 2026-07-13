@@ -2,6 +2,10 @@ import { useEffect, useRef } from 'react'
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode'
 import { X } from 'lucide-react'
 
+type BarcodeScannerConfig = Parameters<Html5Qrcode['start']>[1] & {
+  formatsToSupport?: Html5QrcodeSupportedFormats[]
+}
+
 export default function BarcodeScanner({
   onScan,
   onClose,
@@ -19,22 +23,24 @@ export default function BarcodeScanner({
     const scanner = new Html5Qrcode(containerId)
     scannerRef.current = scanner
 
+    const scannerConfig: BarcodeScannerConfig = {
+      fps: 10,
+      qrbox: { width: 280, height: 180 },
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.QR_CODE,
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+      ],
+    }
+
     scanner
       .start(
         { facingMode: 'environment' },
-        {
-          fps: 10,
-          qrbox: { width: 280, height: 180 },
-          formatsToSupport: [
-            Html5QrcodeSupportedFormats.QR_CODE,
-            Html5QrcodeSupportedFormats.EAN_13,
-            Html5QrcodeSupportedFormats.EAN_8,
-            Html5QrcodeSupportedFormats.UPC_A,
-            Html5QrcodeSupportedFormats.UPC_E,
-            Html5QrcodeSupportedFormats.CODE_128,
-            Html5QrcodeSupportedFormats.CODE_39,
-          ],
-        },
+        scannerConfig,
         (decodedText) => {
           if (hasScannedRef.current || cancelled) return
           hasScannedRef.current = true
