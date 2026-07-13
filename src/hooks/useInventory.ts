@@ -40,6 +40,37 @@ async function logStockMovement(
   })
 }
 
+async function checkAndSendLowStockAlert(
+  itemName: string,
+  newQuantity: number,
+  reorderLevel: number,
+  previousQuantity: number
+) {
+  const wasAboveReorder = previousQuantity > reorderLevel
+  const isNowAtOrBelowReorder = newQuantity <= reorderLevel
+
+  console.log('Low stock check:', {
+    itemName,
+    previousQuantity,
+    newQuantity,
+    reorderLevel,
+    wasAboveReorder,
+    isNowAtOrBelowReorder,
+    willTrigger: wasAboveReorder && isNowAtOrBelowReorder,
+  })
+
+  if (!(wasAboveReorder && isNowAtOrBelowReorder)) return
+
+  try {
+    const result = await supabase.functions.invoke('send-low-stock-alert', {
+      body: { itemName, quantity: newQuantity, reorderLevel },
+    })
+    console.log('Low stock alert function result:', result)
+  } catch (err) {
+    console.error('Failed to send low stock alert:', err)
+  }
+}
+
 export function useInventory() {
   return useQuery({
     queryKey: ['inventory_items'],
@@ -96,6 +127,7 @@ export function useUpdateInventoryItem() {
 
       await logActivity('updated', values.name)
       await logStockMovement(id, values.name, previousQuantity, values.quantity)
+      await checkAndSendLowStockAlert(values.name, values.quantity, values.reorder_level, previousQuantity)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory_items'] })
