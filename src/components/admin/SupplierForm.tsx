@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { supplierSchema, type SupplierFormValues } from '../../lib/supplierSchema'
 import { useAddSupplier, useUpdateSupplier } from '../../hooks/useSuppliers'
+import { Button } from '@/components/ui/button'
 import type { Supplier } from '../../types/supplier'
 
 export default function SupplierForm({
@@ -78,16 +79,12 @@ export default function SupplierForm({
       </div>
 
       <div className="flex justify-end gap-3 pt-2">
-        <button type="button" onClick={onClose} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">
+        <Button type="button" variant="outline" onClick={onClose}>
           Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-        >
+        </Button>
+        <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? 'Saving...' : isEditMode ? 'Save Changes' : 'Add Supplier'}
-        </button>
+        </Button>
       </div>
     </form>
   )

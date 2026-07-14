@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { toast } from 'sonner'
 import { useChangePassword } from '../../hooks/useChangePassword'
+import { Button } from '@/components/ui/button'
 
 export default function ChangePasswordForm() {
   const [newPassword, setNewPassword] = useState('')
@@ -59,13 +60,9 @@ export default function ChangePasswordForm() {
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={changePassword.isPending}
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-        >
+        <Button type="submit" className="w-full" disabled={changePassword.isPending}>
           {changePassword.isPending ? 'Updating...' : 'Update Password'}
-        </button>
+        </Button>
       </form>
     </div>
   )

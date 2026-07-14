@@ -1,4 +1,13 @@
 import { useInventory } from '../../hooks/useInventory'
+import { Badge } from '@/components/ui/badge'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
 export default function LowStockTracker() {
   const { data: items, isLoading, error } = useInventory()
@@ -14,31 +23,29 @@ export default function LowStockTracker() {
     return <p className="text-gray-500 text-sm">All items are above their reorder level.</p>
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b text-left text-gray-500">
-            <th className="p-3">Item</th>
-            <th className="p-3">SKU</th>
-            <th className="p-3">Current Qty</th>
-            <th className="p-3">Reorder Level</th>
-            <th className="p-3">Supplier</th>
-          </tr>
-        </thead>
-        <tbody>
-          {lowStockItems.map((item) => (
-            <tr key={item.id} className="border-b">
-              <td className="p-3">{item.name}</td>
-              <td className="p-3 text-gray-500">{item.sku}</td>
-              <td className="p-3">
-                <span className="text-red-600 font-medium">{item.quantity}</span>
-              </td>
-              <td className="p-3 text-gray-600">{item.reorder_level}</td>
-              <td className="p-3 text-gray-600">{item.supplier || '—'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Item</TableHead>
+          <TableHead>SKU</TableHead>
+          <TableHead>Current Qty</TableHead>
+          <TableHead>Reorder Level</TableHead>
+          <TableHead>Supplier</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {lowStockItems.map((item) => (
+          <TableRow key={item.id}>
+            <TableCell>{item.name}</TableCell>
+            <TableCell className="text-gray-500">{item.sku}</TableCell>
+            <TableCell>
+              <Badge variant="destructive">{item.quantity}</Badge>
+            </TableCell>
+            <TableCell className="text-gray-600">{item.reorder_level}</TableCell>
+            <TableCell className="text-gray-600">{item.supplier || '—'}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   )
 }

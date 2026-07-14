@@ -2,6 +2,15 @@ import { useState } from 'react'
 import { useSuppliers, useDeleteSupplier } from '../../hooks/useSuppliers'
 import Modal from '../ui/Modal'
 import SupplierForm from './SupplierForm'
+import { Button } from '@/components/ui/button'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import type { Supplier } from '../../types/supplier'
 
 export default function SuppliersTable() {
@@ -19,43 +28,40 @@ export default function SuppliersTable() {
       )}
 
       {suppliers && suppliers.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-gray-500">
-                <th className="p-3">Name</th>
-                <th className="p-3">Contact Person</th>
-                <th className="p-3">Phone</th>
-                <th className="p-3">Email</th>
-                <th className="p-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {suppliers.map((s) => (
-                <tr key={s.id} className="border-b">
-                  <td className="p-3">{s.name}</td>
-                  <td className="p-3 text-gray-600">{s.contact_person || '—'}</td>
-                  <td className="p-3 text-gray-600">{s.phone || '—'}</td>
-                  <td className="p-3 text-gray-600">{s.email || '—'}</td>
-                  <td className="p-3 space-x-3">
-                    <button
-                      onClick={() => setEditingSupplier(s)}
-                      className="text-blue-600 hover:underline text-sm"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => deleteSupplier.mutate(s.id)}
-                      className="text-red-600 hover:underline text-sm"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Contact Person</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {suppliers.map((s) => (
+              <TableRow key={s.id}>
+                <TableCell>{s.name}</TableCell>
+                <TableCell className="text-gray-600">{s.contact_person || '—'}</TableCell>
+                <TableCell className="text-gray-600">{s.phone || '—'}</TableCell>
+                <TableCell className="text-gray-600">{s.email || '—'}</TableCell>
+                <TableCell className="space-x-2">
+                  <Button variant="ghost" size="sm" onClick={() => setEditingSupplier(s)}>
+                    Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600 hover:text-red-700"
+                    onClick={() => deleteSupplier.mutate(s.id)}
+                  >
+                    Delete
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
 
       {editingSupplier && (

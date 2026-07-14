@@ -10,6 +10,17 @@ import {
 } from '@tanstack/react-table'
 import { ScanLine } from 'lucide-react'
 import BarcodeScanner from './BarcodeScanner'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import type { InventoryItem } from '../../types/inventory'
 
 const columnHelper = createColumnHelper<InventoryItem>()
@@ -40,7 +51,7 @@ export default function InventoryTable({
       const matchesSearch =
         item.name.toLowerCase().includes(search.toLowerCase()) ||
         item.sku.toLowerCase().includes(search.toLowerCase())
-      const matchesCategory = categoryFilter ? item.category === categoryFilter : true
+      const matchesCategory = categoryFilter && categoryFilter !== 'all' ? item.category === categoryFilter : true
       return matchesSearch && matchesCategory
     })
   }, [items, search, categoryFilter])
@@ -59,19 +70,18 @@ export default function InventoryTable({
         header: 'Actions',
         cell: (info) =>
           isAdmin ? (
-            <div className="space-x-3">
-              <button
-                onClick={() => onEdit(info.row.original)}
-                className="text-blue-600 hover:underline text-sm"
-              >
+            <div className="space-x-2">
+              <Button variant="ghost" size="sm" onClick={() => onEdit(info.row.original)}>
                 Edit
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-red-600 hover:text-red-700"
                 onClick={() => onDelete(info.row.original)}
-                className="text-red-600 hover:underline text-sm"
               >
                 Delete
-              </button>
+              </Button>
             </div>
           ) : (
             <span className="text-gray-400 text-sm">—</span>
@@ -94,33 +104,34 @@ export default function InventoryTable({
   return (
     <div>
       <div className="flex gap-3 mb-4">
-        <input
+        <Input
           type="text"
           placeholder="Search by name or SKU..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border border-gray-300 rounded px-3 py-2 text-sm flex-1"
+          className="flex-1"
         />
-        <button
+        <Button
+          variant="outline"
+          size="icon"
           onClick={() => setShowScanner(true)}
-          className="border border-gray-300 rounded px-3 py-2 text-sm flex items-center gap-1.5 text-gray-700 hover:bg-gray-50"
           title="Scan barcode"
         >
           <ScanLine size={16} />
-          Scan
-        </button>
-        <select
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-          className="border border-gray-300 rounded px-3 py-2 text-sm"
-        >
-          <option value="">All Categories</option>
-          {categories.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
-          ))}
-        </select>
+        </Button>
+        <Select value={categoryFilter || 'all'} onValueChange={(v) => setCategoryFilter(v)}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="All Categories" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {categories.map((cat) => (
+              <SelectItem key={cat} value={cat}>
+                {cat}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {showScanner && (
@@ -133,37 +144,35 @@ export default function InventoryTable({
         />
       )}
 
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse bg-white shadow rounded">
-          <thead>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id} className="border-b text-left text-sm text-gray-500">
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="p-3 cursor-pointer select-none"
-                    onClick={header.column.getToggleSortingHandler()}
-                  >
-                    {flexRender(header.column.columnDef.header, header.getContext())}
-                    {{ asc: ' ▲', desc: ' ▼' }[header.column.getIsSorted() as string] ?? ''}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.map((row) => (
-              <tr key={row.id} className="border-b text-sm">
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="p-3">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <TableHead
+                  key={header.id}
+                  className="cursor-pointer select-none"
+                  onClick={header.column.getToggleSortingHandler()}
+                >
+                  {flexRender(header.column.columnDef.header, header.getContext())}
+                  {{ asc: ' ▲', desc: ' ▼' }[header.column.getIsSorted() as string] ?? ''}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows.map((row) => (
+            <TableRow key={row.id}>
+              {row.getVisibleCells().map((cell) => (
+                <TableCell key={cell.id}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
 
       {filteredItems.length === 0 && (
         <p className="text-gray-500 mt-4">No items match your search/filter.</p>

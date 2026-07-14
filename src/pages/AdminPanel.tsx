@@ -10,6 +10,8 @@ import LowStockTracker from '../components/admin/LowStockTracker'
 import StockMovementsTable from '../components/admin/StockMovementsTable'
 import SuppliersTable from '../components/admin/SuppliersTable'
 import SupplierForm from '../components/admin/SupplierForm'
+import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 export default function AdminPanel() {
   const [email, setEmail] = useState('')
@@ -96,24 +98,21 @@ export default function AdminPanel() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value as 'admin' | 'staff' | 'demo')}
-                className="w-full border border-gray-300 rounded px-3 py-2"
-              >
-                <option value="staff">Staff</option>
-                <option value="admin">Admin</option>
-                <option value="demo">Demo (read-only)</option>
-              </select>
+              <Select value={role} onValueChange={(v) => setRole(v as 'admin' | 'staff' | 'demo')}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="staff">Staff</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="demo">Demo (read-only)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
-            <button
-              type="submit"
-              disabled={inviteUser.isPending}
-              className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-            >
+            <Button type="submit" className="w-full" disabled={inviteUser.isPending}>
               {inviteUser.isPending ? 'Creating...' : 'Create User'}
-            </button>
+            </Button>
           </form>
         </Modal>
       )}

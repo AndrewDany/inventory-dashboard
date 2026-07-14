@@ -1,5 +1,6 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import { useSettings, useUpdateSetting } from '../../hooks/useSettings'
+import { Button } from '@/components/ui/button'
 
 export default function SettingsForm() {
   const { data: settings, isLoading } = useSettings()
@@ -47,13 +48,9 @@ export default function SettingsForm() {
         />
       </div>
 
-      <button
-        type="submit"
-        disabled={updateSetting.isPending}
-        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm disabled:opacity-50"
-      >
+      <Button type="submit" disabled={updateSetting.isPending}>
         {updateSetting.isPending ? 'Saving...' : 'Save Settings'}
-      </button>
+      </Button>
     </form>
   )
 }
