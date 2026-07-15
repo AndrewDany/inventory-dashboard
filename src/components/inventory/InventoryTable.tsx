@@ -38,7 +38,7 @@ export default function InventoryTable({
 }) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [search, setSearch] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null)
   const [showScanner, setShowScanner] = useState(false)
 
   const categories = useMemo(() => {
@@ -119,7 +119,7 @@ export default function InventoryTable({
         >
           <ScanLine size={16} />
         </Button>
-        <Select value={categoryFilter || 'all'} onValueChange={(v) => setCategoryFilter(v)}>
+        <Select value={categoryFilter ?? 'all'} onValueChange={(v) => setCategoryFilter(v === 'all' ? null : v)}>
           <SelectTrigger className="w-48">
             <SelectValue placeholder="All Categories" />
           </SelectTrigger>

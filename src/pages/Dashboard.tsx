@@ -12,7 +12,6 @@ import ChangePasswordForm from '../components/settings/ChangePasswordForm'
 import PageLayout from '../components/layout/PageLayout'
 import type { InventoryItem } from '../types/inventory'
 import ExportMenu from '../components/inventory/ExportMenu'
-import { Button } from '@/components/ui/button'
 export default function Dashboard() {
   const { data: profile } = useProfile()
   const { data: items, isLoading, error } = useInventory()

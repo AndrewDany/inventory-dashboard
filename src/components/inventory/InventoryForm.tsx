@@ -97,7 +97,7 @@ export default function InventoryForm({
         <Label className="mb-1 block">Location</Label>
         <Select
           value={locationValue ?? ''}
-          onValueChange={(v) => setValue('location_id', v)}
+         onValueChange={(v) => setValue('location_id', v ?? undefined)}
         >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Select a location" />

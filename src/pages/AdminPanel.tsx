@@ -22,7 +22,7 @@ export default function AdminPanel() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState<'admin' | 'staff' | 'demo'>('staff')
-  const [locationId, setLocationId] = useState<string>('')
+  const [locationId, setLocationId] = useState<string | null>(null)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [showSupplierModal, setShowSupplierModal] = useState(false)
@@ -40,7 +40,7 @@ export default function AdminPanel() {
       setEmail('')
       setPassword('')
       setRole('staff')
-      setLocationId('')
+      setLocationId(null)
       setShowInviteModal(false)
     } catch (err) {
       toast.error(`Failed to create user: ${(err as Error).message}`)
@@ -127,7 +127,7 @@ export default function AdminPanel() {
 
             <div>
               <Label className="mb-1 block">Location (staff will only see this location)</Label>
-              <Select value={locationId} onValueChange={setLocationId}>
+              <Select value={locationId ?? ''} onValueChange={(v) => setLocationId(v)}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="All locations (admin default)" />
                 </SelectTrigger>
