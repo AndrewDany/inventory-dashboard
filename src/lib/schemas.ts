@@ -8,6 +8,7 @@ export const inventoryItemSchema = z.object({
   reorder_level: z.coerce.number().int().min(0, 'Reorder level cannot be negative'),
   unit_price: z.coerce.number().min(0, 'Price cannot be negative').optional(),
   supplier: z.string().optional(),
+  location_id: z.string().optional(),
 })
 
 export type InventoryFormValues = z.infer<typeof inventoryItemSchema>

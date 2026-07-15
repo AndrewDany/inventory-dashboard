@@ -10,6 +10,7 @@ export default function PageLayout({
   onInviteUser,
   onSettings,
   onAddSupplier,
+  onAddLocation,
 }: {
   children: ReactNode
   title: string
@@ -18,6 +19,7 @@ export default function PageLayout({
   onInviteUser?: () => void
   onSettings?: () => void
   onAddSupplier?: () => void
+  onAddLocation?: () => void
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -34,6 +36,7 @@ export default function PageLayout({
         onInviteUser={onInviteUser}
         onSettings={onSettings}
         onAddSupplier={onAddSupplier}
+        onAddLocation={onAddLocation}
       />
 
       <div className="flex-1 min-w-0 flex flex-col">

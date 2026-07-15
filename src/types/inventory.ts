@@ -7,6 +7,7 @@ export interface InventoryItem {
   reorder_level: number
   unit_price: number | null
   supplier: string | null
+  location_id: string | null
   last_updated: string
   created_at: string
 }

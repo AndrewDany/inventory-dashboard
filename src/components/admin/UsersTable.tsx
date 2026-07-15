@@ -1,9 +1,11 @@
 import { useState } from 'react'
-import { useUsers, useUpdateUserStatus } from '../../hooks/useUsers'
+import { useUsers, useUpdateUserStatus, useUpdateUserLocation } from '../../hooks/useUsers'
+import { useLocations } from '../../hooks/useLocations'
 import Modal from '../ui/Modal'
 import ResetPasswordModal from './ResetPasswordModal'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   Table,
   TableBody,
@@ -16,10 +18,12 @@ import type { Profile } from '../../types/profile'
 
 export default function UsersTable() {
   const { data: users, isLoading, error } = useUsers()
+  const { data: locations, isLoading: locationsLoading } = useLocations()
   const updateStatus = useUpdateUserStatus()
+  const updateLocation = useUpdateUserLocation()
   const [resetTarget, setResetTarget] = useState<Profile | null>(null)
 
-  if (isLoading) return <p className="text-gray-500 text-sm">Loading users...</p>
+  if (isLoading || locationsLoading) return <p className="text-gray-500 text-sm">Loading users...</p>
   if (error) return <p className="text-red-600 text-sm">Error: {error.message}</p>
   if (!users || users.length === 0) return <p className="text-gray-500 text-sm">No users found.</p>
 
@@ -30,6 +34,7 @@ export default function UsersTable() {
           <TableRow>
             <TableHead>Email</TableHead>
             <TableHead>Role</TableHead>
+            <TableHead>Location</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
@@ -39,6 +44,30 @@ export default function UsersTable() {
             <TableRow key={user.id}>
               <TableCell>{user.email}</TableCell>
               <TableCell className="capitalize">{user.role}</TableCell>
+              <TableCell>
+                <Select
+                  value={user.location_id ?? 'all'}
+                  onValueChange={(v) =>
+                    updateLocation.mutate({ id: user.id, locationId: v === 'all' ? null : v })
+                  }
+                >
+                  <SelectTrigger className="w-40 h-8 text-sm">
+                    <SelectValue>
+                      {user.location_id
+                        ? locations?.find((l) => l.id === user.location_id)?.name ?? 'Unknown'
+                        : 'All locations'}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All locations</SelectItem>
+                    {locations?.map((loc) => (
+                      <SelectItem key={loc.id} value={loc.id}>
+                        {loc.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </TableCell>
               <TableCell>
                 <Badge variant={user.status === 'active' ? 'default' : 'destructive'} className="capitalize">
                   {user.status}

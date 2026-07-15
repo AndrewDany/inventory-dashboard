@@ -5,24 +5,17 @@ interface InviteUserParams {
   email: string
   password: string
   role: 'admin' | 'staff' | 'demo'
+  locationId?: string
 }
 
 export function useInviteUser() {
   return useMutation({
-    mutationFn: async ({ email, password, role }: InviteUserParams) => {
+    mutationFn: async ({ email, password, role, locationId }: InviteUserParams) => {
       const { data, error } = await supabase.functions.invoke('invite-user-v2', {
-        body: { email, password, role },
+        body: { email, password, role, locationId },
       })
 
-      if (error) {
-        if ('context' in error && error.context instanceof Response) {
-          const errorBody = await error.context.text()
-          console.error('Edge Function error body:', errorBody)
-          throw new Error(errorBody || error.message)
-        }
-        throw new Error(error.message)
-      }
-
+      if (error) throw new Error(error.message)
       if (data?.error) throw new Error(data.error)
 
       return data

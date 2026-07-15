@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
       })
     }
 
-    const { email, password, role } = await req.json()
+    const { email, password, role, locationId } = await req.json()
 
     if (!email || !password) {
       return new Response(JSON.stringify({ error: 'Email and password are required' }), {
@@ -69,10 +69,10 @@ Deno.serve(async (req) => {
       })
     }
 
-    if ((role === 'admin' || role === 'demo') && newUser.user) {
+    if (newUser.user) {
       await supabaseAdmin
         .from('profiles')
-        .update({ role })
+        .update({ role, location_id: locationId ?? null })
         .eq('id', newUser.user.id)
     }
 

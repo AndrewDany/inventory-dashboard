@@ -39,7 +39,7 @@ const features = [
 ]
 
 const DEMO_EMAIL = 'amabaah45@gmail.com'
-const DEMO_PASSWORD = 'Demo2026!'
+const DEMO_PASSWORD = '78945612'
 
 export default function Landing() {
   const { signIn } = useAuth()
@@ -48,7 +48,9 @@ export default function Landing() {
 
   async function handleTryDemo() {
     setDemoLoading(true)
+    console.log('Attempting demo login with:', JSON.stringify(DEMO_EMAIL), JSON.stringify(DEMO_PASSWORD))
     const { error } = await signIn(DEMO_EMAIL, DEMO_PASSWORD)
+    console.log('Demo login result:', error)
     setDemoLoading(false)
 
     if (!error) {

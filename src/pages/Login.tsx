@@ -1,6 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -38,35 +41,29 @@ export default function Login() {
           <p className="text-red-600 text-sm mb-4">{error}</p>
         )}
 
-        <label className="block mb-2 text-sm font-medium text-gray-700">
-          Email
-        </label>
-        <input
+        <Label htmlFor="email" className="mb-2 block">Email</Label>
+        <Input
+          id="email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="w-full border border-gray-300 rounded px-3 py-2 mb-4"
+          className="mb-4"
         />
 
-        <label className="block mb-2 text-sm font-medium text-gray-700">
-          Password
-        </label>
-        <input
+        <Label htmlFor="password" className="mb-2 block">Password</Label>
+        <Input
+          id="password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          className="w-full border border-gray-300 rounded px-3 py-2 mb-6"
+          className="mb-6"
         />
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-        >
+        <Button type="submit" className="w-full" disabled={loading}>
           {loading ? 'Signing in...' : 'Sign in'}
-        </button>
+        </Button>
       </form>
     </div>
   )

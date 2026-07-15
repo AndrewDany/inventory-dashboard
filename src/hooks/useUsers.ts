@@ -40,3 +40,24 @@ export function useUpdateUserStatus() {
     },
   })
 }
+
+export function useUpdateUserLocation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, locationId }: { id: string; locationId: string | null }) => {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ location_id: locationId })
+        .eq('id', id)
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+      toast.success('User location updated')
+    },
+    onError: (error) => {
+      toast.error(`Failed to update location: ${error.message}`)
+    },
+  })
+}

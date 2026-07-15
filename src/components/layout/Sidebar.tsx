@@ -10,6 +10,7 @@ import {
   UserPlus,
   Settings,
   Truck,
+  MapPin,
 } from 'lucide-react'
 import { useProfile } from '../../hooks/useProfile'
 
@@ -23,6 +24,7 @@ export default function Sidebar({
   onInviteUser,
   onSettings,
   onAddSupplier,
+  onAddLocation,
 }: {
   isOpen: boolean
   onClose: () => void
@@ -33,6 +35,7 @@ export default function Sidebar({
   onInviteUser?: () => void
   onSettings?: () => void
   onAddSupplier?: () => void
+  onAddLocation?: () => void
 }) {
   const location = useLocation()
   const { data: profile } = useProfile()
@@ -91,7 +94,7 @@ export default function Sidebar({
         </div>
 
         {/* Bottom action buttons */}
-        {(onAddItem || onChangePassword || onInviteUser || onSettings || onAddSupplier) && (
+        {(onAddItem || onChangePassword || onInviteUser || onSettings || onAddSupplier || onAddLocation) && (
           <div className="space-y-2 border-t border-gray-200 pt-4">
             {onAddItem && (
               <button
@@ -139,6 +142,19 @@ export default function Sidebar({
               >
                 <Truck size={18} />
                 {!isCollapsed && 'Add Supplier'}
+              </button>
+            )}
+
+            {onAddLocation && (
+              <button
+                onClick={onAddLocation}
+                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 transition-colors w-full ${
+                  isCollapsed ? 'md:justify-center md:px-0' : ''
+                }`}
+                title="Add Location"
+              >
+                <MapPin size={18} />
+                {!isCollapsed && 'Add Location'}
               </button>
             )}
             {onChangePassword && (
