@@ -39,7 +39,7 @@ export default function ReceivePOModal({
     <div className="space-y-4">
       <div>
         <Label className="mb-1 block">Receiving Location</Label>
-        <Select value={locationId} onValueChange={setLocationId}>
+        <Select value={locationId} onValueChange={(v) => setLocationId(v ?? '')}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Select a location" />
           </SelectTrigger>

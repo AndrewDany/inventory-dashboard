@@ -11,6 +11,7 @@ import {
   Settings,
   Truck,
   MapPin,
+  ClipboardList,
 } from 'lucide-react'
 import { useProfile } from '../../hooks/useProfile'
 
@@ -25,6 +26,7 @@ export default function Sidebar({
   onSettings,
   onAddSupplier,
   onAddLocation,
+  onAddPurchaseOrder,
 }: {
   isOpen: boolean
   onClose: () => void
@@ -36,6 +38,7 @@ export default function Sidebar({
   onSettings?: () => void
   onAddSupplier?: () => void
   onAddLocation?: () => void
+  onAddPurchaseOrder?: () => void
 }) {
   const location = useLocation()
   const { data: profile } = useProfile()
@@ -126,7 +129,7 @@ export default function Sidebar({
             )}
           </nav>
 
-          {(onAddItem || onChangePassword || onInviteUser || onSettings || onAddSupplier || onAddLocation) && (
+          {(onAddItem || onChangePassword || onInviteUser || onSettings || onAddSupplier || onAddLocation || onAddPurchaseOrder) && (
             <div className="mt-6 space-y-2 border-t border-white/10 pt-4">
               {onAddItem && (
                 <button onClick={onAddItem} className={actionClass} title="Add Item">
@@ -160,6 +163,13 @@ export default function Sidebar({
                 <button onClick={onAddLocation} className={actionClass} title="Add Location">
                   <MapPin size={18} />
                   {!isCollapsed && 'Add Location'}
+                </button>
+              )}
+
+              {onAddPurchaseOrder && (
+                <button onClick={onAddPurchaseOrder} className={actionClass} title="New Purchase Order">
+                  <ClipboardList size={18} />
+                  {!isCollapsed && 'New Purchase Order'}
                 </button>
               )}
 

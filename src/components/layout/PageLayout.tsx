@@ -11,6 +11,7 @@ export default function PageLayout({
   onSettings,
   onAddSupplier,
   onAddLocation,
+  onAddPurchaseOrder,
 }: {
   children: ReactNode
   title: string
@@ -20,6 +21,7 @@ export default function PageLayout({
   onSettings?: () => void
   onAddSupplier?: () => void
   onAddLocation?: () => void
+  onAddPurchaseOrder?: () => void
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -37,6 +39,7 @@ export default function PageLayout({
         onSettings={onSettings}
         onAddSupplier={onAddSupplier}
         onAddLocation={onAddLocation}
+        onAddPurchaseOrder={onAddPurchaseOrder}
       />
 
       <div className="flex-1 min-w-0 flex flex-col">
