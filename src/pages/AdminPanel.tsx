@@ -13,6 +13,8 @@ import SuppliersTable from '../components/admin/SuppliersTable'
 import SupplierForm from '../components/admin/SupplierForm'
 import LocationsTable from '../components/admin/LocationsTable'
 import LocationForm from '../components/admin/LocationForm'
+import PurchaseOrdersTable from '../components/admin/PurchaseOrdersTable'
+import PurchaseOrderForm from '../components/admin/PurchaseOrderForm'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -27,6 +29,7 @@ export default function AdminPanel() {
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [showSupplierModal, setShowSupplierModal] = useState(false)
   const [showLocationModal, setShowLocationModal] = useState(false)
+  const [showPOModal, setShowPOModal] = useState(false)
 
   const inviteUser = useInviteUser()
   const { data: locations } = useLocations()
@@ -54,6 +57,7 @@ export default function AdminPanel() {
       onSettings={() => setShowSettingsModal(true)}
       onAddSupplier={() => setShowSupplierModal(true)}
       onAddLocation={() => setShowLocationModal(true)}
+      onAddPurchaseOrder={() => setShowPOModal(true)}
     >
       <div className="bg-white rounded-lg shadow p-6 mb-8">
         <h2 className="text-lg font-bold text-gray-900 mb-4">Locations</h2>
@@ -63,6 +67,11 @@ export default function AdminPanel() {
       <div className="bg-white rounded-lg shadow p-6 mb-8">
         <h2 className="text-lg font-bold text-gray-900 mb-4">User Management</h2>
         <UsersTable />
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Purchase Orders</h2>
+        <PurchaseOrdersTable />
       </div>
 
       <div className="bg-white rounded-lg shadow p-6 mb-8">
@@ -163,6 +172,12 @@ export default function AdminPanel() {
       {showLocationModal && (
         <Modal title="Add Location" onClose={() => setShowLocationModal(false)}>
           <LocationForm onClose={() => setShowLocationModal(false)} />
+        </Modal>
+      )}
+
+      {showPOModal && (
+        <Modal title="New Purchase Order" onClose={() => setShowPOModal(false)}>
+          <PurchaseOrderForm onClose={() => setShowPOModal(false)} />
         </Modal>
       )}
     </PageLayout>

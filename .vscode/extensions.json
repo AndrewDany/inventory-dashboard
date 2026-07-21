@@ -1,6 +1,7 @@
 {
   "recommendations": [
     "denoland.vscode-deno",
-    "openai.chatgpt"
+    "openai.chatgpt",
+    "fuzionix.devtool-plus"
   ]
 }
