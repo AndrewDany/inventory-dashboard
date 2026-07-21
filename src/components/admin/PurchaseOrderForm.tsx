@@ -1,135 +1,108 @@
-import { useForm, useFieldArray } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Trash2, Plus } from 'lucide-react'
-import { purchaseOrderSchema, type PurchaseOrderFormValues } from '../../lib/procurementSchemas'
-import { useCreatePurchaseOrder } from '../../hooks/usePurchaseOrders'
-import { useSuppliers } from '../../hooks/useSuppliers'
+import { useState } from 'react'
+import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
-export default function PurchaseOrderForm({ onClose }: { onClose: () => void }) {
-  const { data: suppliers } = useSuppliers()
-  const createPO = useCreatePurchaseOrder()
+type PurchaseOrderFormProps = {
+  onClose: () => void
+  onPurchaseRecorded?: (itemName: string, quantity: number, unitPrice: number, total: number) => void
+}
 
-  const {
-    register,
-    control,
-    handleSubmit,
-    setValue,
-    watch,
-    formState: { errors, isSubmitting },
-  } = useForm<PurchaseOrderFormValues>({
-    resolver: zodResolver(purchaseOrderSchema),
-    defaultValues: {
-      po_number: `PO-${Date.now().toString().slice(-6)}`,
-      items: [{ sku: '', quantity_ordered: 1 }],
-    },
-  })
+export default function PurchaseOrderForm({
+  onClose,
+  onPurchaseRecorded,
+}: PurchaseOrderFormProps) {
+  const [itemName, setItemName] = useState('')
+  const [quantity, setQuantity] = useState('1')
+  const [unitPrice, setUnitPrice] = useState('0')
 
-  const { fields, append, remove } = useFieldArray({ control, name: 'items' })
-  const supplierValue = watch('supplier_id')
+  const parsedQuantity = Number(quantity)
+  const parsedUnitPrice = Number(unitPrice)
+  const total = Number.isFinite(parsedQuantity) && Number.isFinite(parsedUnitPrice)
+    ? parsedQuantity * parsedUnitPrice
+    : 0
 
-  async function onSubmit(values: PurchaseOrderFormValues) {
-    await createPO.mutateAsync(values)
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+
+    if (!itemName.trim()) {
+      toast.error('Please enter the item name')
+      return
+    }
+
+    if (!Number.isFinite(parsedQuantity) || parsedQuantity <= 0) {
+      toast.error('Quantity must be greater than zero')
+      return
+    }
+
+    if (!Number.isFinite(parsedUnitPrice) || parsedUnitPrice < 0) {
+      toast.error('Unit price must be zero or greater')
+      return
+    }
+
+    onPurchaseRecorded?.(itemName.trim(), parsedQuantity, parsedUnitPrice, total)
+    toast.success(`${itemName.trim()} recorded successfully`)
     onClose()
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <Label htmlFor="po_number" className="mb-1 block">PO Number</Label>
-        <Input id="po_number" {...register('po_number')} />
-        {errors.po_number && <p className="text-red-600 text-sm mt-1">{errors.po_number.message}</p>}
+        <Label htmlFor="item-name" className="mb-1 block">
+          Item name
+        </Label>
+        <Input
+          id="item-name"
+          value={itemName}
+          onChange={(e) => setItemName(e.target.value)}
+          placeholder="e.g. Laptop Charger"
+          required
+        />
       </div>
 
-      <div>
-        <Label className="mb-1 block">Supplier</Label>
-        <Select value={supplierValue ?? ''} onValueChange={(v) => setValue('supplier_id', v)}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select a supplier" />
-          </SelectTrigger>
-          <SelectContent>
-            {suppliers?.map((s) => (
-              <SelectItem key={s.id} value={s.id}>
-                {s.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div>
-        <Label htmlFor="notes" className="mb-1 block">Notes</Label>
-        <Input id="notes" {...register('notes')} />
-      </div>
-
-      <div>
-        <div className="flex justify-between items-center mb-2">
-          <Label>Line Items</Label>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => append({ sku: '', quantity_ordered: 1 })}
-          >
-            <Plus size={14} className="mr-1" /> Add Line
-          </Button>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div>
+          <Label htmlFor="quantity" className="mb-1 block">
+            Quantity
+          </Label>
+          <Input
+            id="quantity"
+            type="number"
+            min="1"
+            step="1"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+            required
+          />
         </div>
 
-        <div className="space-y-3">
-          {fields.map((field, index) => (
-            <div key={field.id} className="grid grid-cols-12 gap-2 items-start border border-gray-100 rounded-lg p-3">
-              <div className="col-span-5">
-                <Input placeholder="SKU" {...register(`items.${index}.sku`)} />
-                {errors.items?.[index]?.sku && (
-                  <p className="text-red-600 text-xs mt-1">{errors.items[index]?.sku?.message}</p>
-                )}
-              </div>
-              <div className="col-span-3">
-                <Input
-                  type="number"
-                  placeholder="Qty"
-                  {...register(`items.${index}.quantity_ordered`)}
-                />
-                {errors.items?.[index]?.quantity_ordered && (
-                  <p className="text-red-600 text-xs mt-1">{errors.items[index]?.quantity_ordered?.message}</p>
-                )}
-              </div>
-              <div className="col-span-3">
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="Unit cost"
-                  {...register(`items.${index}.unit_cost`)}
-                />
-              </div>
-              <div className="col-span-1 flex justify-center pt-2">
-                {fields.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => remove(index)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
+        <div>
+          <Label htmlFor="unit-price" className="mb-1 block">
+            Unit price
+          </Label>
+          <Input
+            id="unit-price"
+            type="number"
+            min="0"
+            step="0.01"
+            value={unitPrice}
+            onChange={(e) => setUnitPrice(e.target.value)}
+            required
+          />
         </div>
-        {errors.items?.root && <p className="text-red-600 text-sm mt-2">{errors.items.root.message}</p>}
       </div>
 
-      <div className="flex justify-end gap-3 pt-2">
-        <Button type="button" variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Creating...' : 'Create Purchase Order'}
-        </Button>
+      <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-3">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-indigo-600">Estimated total</p>
+        <p className="mt-1 text-lg font-semibold text-slate-900">
+          ${total.toFixed(2)}
+        </p>
       </div>
+
+      <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700">
+        Record Purchase
+      </Button>
     </form>
   )
 }
