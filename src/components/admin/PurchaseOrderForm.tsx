@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useCreatePurchaseOrder } from '../../hooks/usePurchaseOrders'
 
 type PurchaseOrderFormProps = {
   onClose: () => void
@@ -16,6 +17,7 @@ export default function PurchaseOrderForm({
   const [itemName, setItemName] = useState('')
   const [quantity, setQuantity] = useState('1')
   const [unitPrice, setUnitPrice] = useState('0')
+  const createPO = useCreatePurchaseOrder()
 
   const parsedQuantity = Number(quantity)
   const parsedUnitPrice = Number(unitPrice)
@@ -23,7 +25,7 @@ export default function PurchaseOrderForm({
     ? parsedQuantity * parsedUnitPrice
     : 0
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
     if (!itemName.trim()) {
@@ -41,9 +43,31 @@ export default function PurchaseOrderForm({
       return
     }
 
-    onPurchaseRecorded?.(itemName.trim(), parsedQuantity, parsedUnitPrice, total)
-    toast.success(`${itemName.trim()} recorded successfully`)
-    onClose()
+    // Create a real purchase order in the database
+    const poNumber = `PO-${Date.now().toString().slice(-8)}`
+    const sku = itemName.trim().toUpperCase().replace(/\s+/g, '-').slice(0, 20)
+
+    try {
+      await createPO.mutateAsync({
+        po_number: poNumber,
+        items: [
+          {
+            sku,
+            quantity_ordered: parsedQuantity,
+            unit_cost: parsedUnitPrice,
+            currency: 'GHS',
+          },
+        ],
+      })
+
+      onPurchaseRecorded?.(itemName.trim(), parsedQuantity, parsedUnitPrice, total)
+      toast.success(`${itemName.trim()} — PO #${poNumber} created`)
+      onClose()
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      toast.error(`Failed to create purchase order: ${message}`)
+      console.error('PO creation error:', err)
+    }
   }
 
   return (
@@ -96,7 +120,7 @@ export default function PurchaseOrderForm({
       <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-3">
         <p className="text-[10px] uppercase tracking-[0.2em] text-indigo-600">Estimated total</p>
         <p className="mt-1 text-lg font-semibold text-slate-900">
-          ${total.toFixed(2)}
+          GHS {total.toFixed(2)}
         </p>
       </div>
 

@@ -12,6 +12,7 @@ import {
   Truck,
   MapPin,
   ClipboardList,
+  Receipt,
 } from 'lucide-react'
 import { useProfile } from '../../hooks/useProfile'
 
@@ -127,6 +128,10 @@ export default function Sidebar({
                 {!isCollapsed && 'Admin Panel'}
               </Link>
             )}
+            <Link to="/pos" className={linkClass('/pos')} onClick={onClose} title="Point of Sale">
+  <Receipt size={18} />
+  {!isCollapsed && 'Point of Sale'}
+</Link>
           </nav>
 
           {(onAddItem || onChangePassword || onInviteUser || onSettings || onAddSupplier || onAddLocation || onAddPurchaseOrder) && (

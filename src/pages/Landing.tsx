@@ -68,6 +68,13 @@ export default function Landing() {
           </div>
           <h1 className="text-lg font-bold text-gray-900">Inventory Dashboard</h1>
         </div>
+        <nav className="hidden md:flex items-center gap-6">
+          <a href="#home" className="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors">Home</a>
+          <a href="#features" className="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors">Features</a>
+          <a href="#pricing" className="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors">Pricing</a>
+          <a href="#about" className="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors">About</a>
+          <a href="#contact" className="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors">Contact</a>
+        </nav>
         <Link
           to="/login"
           className="text-sm font-medium text-white bg-indigo-600 px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
@@ -77,7 +84,7 @@ export default function Landing() {
       </header>
 
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-indigo-50 via-white to-white">
+      <section id="home" className="relative overflow-hidden bg-gradient-to-b from-indigo-50 via-white to-white">
         <div className="max-w-5xl mx-auto text-center px-6 pt-20 pb-16">
           <span className="inline-block text-xs font-semibold text-indigo-700 bg-indigo-100 px-3 py-1 rounded-full mb-6">
             Built for small & mid-sized businesses
@@ -171,7 +178,7 @@ export default function Landing() {
       </section>
 
       {/* Features */}
-      <section className="max-w-5xl mx-auto px-6 py-20">
+      <section id="features" className="max-w-5xl mx-auto px-6 py-20">
         <div className="text-center mb-12">
           <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
             Everything you need to run your inventory
@@ -195,7 +202,7 @@ export default function Landing() {
       </section>
 
       {/* Pricing */}
-      <section className="max-w-5xl mx-auto px-6 py-20 border-t border-gray-100">
+      <section id="pricing" className="max-w-5xl mx-auto px-6 py-20 border-t border-gray-100">
         <div className="text-center mb-14">
           <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
             Simple, transparent pricing
@@ -309,14 +316,16 @@ export default function Landing() {
       </section>
 
       {/* About the Developer */}
-      <section className="bg-gray-50 border-t border-gray-100">
+      <section id="about" className="bg-gray-50 border-t border-gray-100">
         <div className="max-w-4xl mx-auto px-6 py-20">
           <div className="flex flex-col sm:flex-row items-center gap-8">
-            <img
-              src={profilePhoto}
-              alt="Andrews Danyo"
-              className="w-24 h-24 rounded-full object-cover shrink-0 border-2 border-indigo-100"
-            />
+            <div className="w-24 h-24 rounded-full shrink-0 border-2 border-indigo-100 overflow-hidden">
+              <img
+                src={profilePhoto}
+                alt="Andrews Danyo"
+                className="w-full h-full object-cover object-center"
+              />
+            </div>
             <div className="text-center sm:text-left">
               <h3 className="text-xl font-bold text-gray-900 mb-2">Built by Andrews Danyo</h3>
               <p className="text-gray-600 text-sm mb-4">
@@ -376,7 +385,7 @@ export default function Landing() {
       </section>
 
       {/* CTA */}
-      <section className="bg-indigo-600">
+      <section id="contact" className="bg-indigo-600">
         <div className="max-w-3xl mx-auto text-center px-6 py-16">
           <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4">
             Ready to get your inventory under control?

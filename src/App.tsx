@@ -3,6 +3,7 @@ import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import AdminPanel from './pages/AdminPanel'
+import PointOfSale from './pages/PointOfSale'
 import ProtectedRoute from './components/layout/ProtectedRoute'
 import AdminRoute from './components/layout/AdminRoute'
 import { isSupabaseConfigured } from './lib/supabaseClient'
@@ -45,6 +46,14 @@ function App() {
               <AdminRoute>
                 <AdminPanel />
               </AdminRoute>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/pos"
+          element={
+            <ProtectedRoute>
+              <PointOfSale />
             </ProtectedRoute>
           }
         />
