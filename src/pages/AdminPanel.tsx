@@ -21,8 +21,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import ProfitLossPanel from '../components/admin/ProfitLossPanel'
+import ExpensesTable from '../components/admin/ExpensesTable'
 
-type TabKey = 'overview' | 'locations' | 'users' | 'orders' | 'lowStock' | 'suppliers' | 'movements' | 'activity'
+type TabKey = 'overview' | 'locations' | 'users' | 'orders' | 'lowStock' | 'suppliers' | 'movements' | 'activity' | 'financials'
 
 function PanelCard({
   title,
@@ -92,6 +94,7 @@ export default function AdminPanel() {
     { key: 'suppliers', label: 'Suppliers', description: 'Vendor network' },
     { key: 'movements', label: 'Movements', description: 'Stock flow' },
     { key: 'activity', label: 'Activity', description: 'Audit trail' },
+    { key: 'financials', label: 'Profit & Loss', description: 'Expenses & margins' },
   ]
 
   const remaining = Math.max(budget - spent, 0)
@@ -427,6 +430,16 @@ export default function AdminPanel() {
           </PanelCard>
         )}
       </div>
+
+      {activeTab === 'financials' && (
+  <PanelCard title="Profit & Loss" description="Real margins from actual sales, cost of goods sold, and operating expenses." accent="bg-blue-600">
+    <ProfitLossPanel />
+    <div className="mt-6 border-t border-slate-100 pt-6">
+      <p className="text-sm font-semibold text-slate-900 mb-3">Expenses</p>
+      <ExpensesTable />
+    </div>
+  </PanelCard>
+)}
 
       {showInviteModal && (
         <Modal title="Invite New User" onClose={() => setShowInviteModal(false)}>

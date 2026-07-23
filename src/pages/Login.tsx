@@ -23,7 +23,7 @@ export default function Login() {
     setLoading(false)
 
     if (error) {
-      setError(error.message)
+      setError(error.message) 
     } else {
       navigate('/dashboard')
     }
