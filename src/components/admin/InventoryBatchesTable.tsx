@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Search } from 'lucide-react'
 import { useInventoryBatches } from '../../hooks/useInventoryBatches'
+import { useLocations } from '../../hooks/useLocations'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -15,6 +16,13 @@ import {
 export default function InventoryBatchesTable() {
   const [skuFilter, setSkuFilter] = useState('')
   const { data: batches, isLoading, error } = useInventoryBatches(skuFilter || undefined)
+  const { data: locations } = useLocations()
+
+  const locationName = (id: string | null) => {
+    if (!id) return '—'
+    const match = locations?.find((loc) => loc.id === id)
+    return match ? match.name : '—'
+  }
 
   if (isLoading) return <p className="text-gray-500 text-sm">Loading batch data...</p>
   if (error) return <p className="text-red-600 text-sm">Error: {error.message}</p>
@@ -62,7 +70,7 @@ export default function InventoryBatchesTable() {
                 <TableRow key={row.id}>
                   <TableCell className="font-medium">{batch.sku}</TableCell>
                   <TableCell className="font-mono text-xs">{batch.batch_code}</TableCell>
-                  <TableCell className="text-gray-600">{row.location_id ?? '—'}</TableCell>
+                  <TableCell className="text-gray-600">{locationName(row.location_id)}</TableCell>
                   <TableCell>
                     <Badge variant="default">{row.on_hand_quantity}</Badge>
                   </TableCell>
@@ -87,4 +95,3 @@ export default function InventoryBatchesTable() {
     </div>
   )
 }
-

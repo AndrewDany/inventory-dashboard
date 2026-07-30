@@ -10,6 +10,7 @@ import {
 } from '@tanstack/react-table'
 import { ScanLine } from 'lucide-react'
 import BarcodeScanner from './BarcodeScanner'
+import { useLocations } from '../../hooks/useLocations'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -40,6 +41,12 @@ export default function InventoryTable({
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null)
   const [showScanner, setShowScanner] = useState(false)
+  const { data: locations } = useLocations()
+
+  const locationsMap = useMemo(() => {
+    if (!locations) return {}
+    return Object.fromEntries(locations.map((loc) => [loc.id, loc.name]))
+  }, [locations])
 
   const categories = useMemo(() => {
     const unique = new Set(items.map((i) => i.category).filter(Boolean))
@@ -66,6 +73,14 @@ export default function InventoryTable({
       columnHelper.accessor('unit_price', { header: 'Unit Price' }),
       columnHelper.accessor('supplier', { header: 'Supplier' }),
       columnHelper.display({
+        id: 'location',
+        header: 'Location',
+        cell: (info) => {
+          const locationId = info.row.original.location_id
+          return locationId ? (locationsMap[locationId] ?? '—') : '—'
+        },
+      }),
+      columnHelper.display({
         id: 'actions',
         header: 'Actions',
         cell: (info) =>
@@ -88,7 +103,7 @@ export default function InventoryTable({
           ),
       }),
     ],
-    [onEdit, onDelete, isAdmin]
+    [onEdit, onDelete, isAdmin, locationsMap]
   )
 
   const table = useReactTable({

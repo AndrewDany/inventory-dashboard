@@ -17,7 +17,7 @@ const HEADER_MAP_OPTIONS = [
   { value: 'unit_price', label: 'Unit Price' },
   { value: 'reorder_level', label: 'Reorder Level' },
   { value: 'supplier', label: 'Supplier' },
-  { value: 'location_id', label: 'Location ID' },
+{ value: 'location_id', label: 'Location' },
   { value: '__skip__', label: '— Skip Column —' },
 ]
 
