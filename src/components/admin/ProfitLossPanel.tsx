@@ -4,7 +4,7 @@ import { EXPENSE_CATEGORIES } from '../../types/expense'
 export default function ProfitLossPanel() {
   const { data, isLoading, error } = useProfitLoss()
 
-  if (isLoading) return <p className="text-gray-500 text-sm">Loading profit & loss...</p>
+  if (isLoading) return <p className="text-gray-500 text-sm">Loading profit &amp; loss...</p>
   if (error) return <p className="text-red-600 text-sm">Error: {error.message}</p>
   if (!data) return null
 
@@ -26,23 +26,15 @@ export default function ProfitLossPanel() {
           <p className="mt-1 text-xs text-indigo-600">Margin: {data.grossMargin.toFixed(1)}%</p>
         </div>
 
-        <div
-          className={`rounded-2xl border p-4 ${
-            data.netProfit >= 0 ? 'border-blue-200 bg-blue-50' : 'border-red-200 bg-red-50'
-          }`}
-        >
-          <p
-            className={`text-[10px] uppercase tracking-[0.2em] ${
-              data.netProfit >= 0 ? 'text-blue-600' : 'text-red-600'
-            }`}
-          >
+        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+          <p className={'text-[10px] uppercase tracking-[0.2em] ' + (data.netProfit >= 0 ? 'text-blue-600' : 'text-red-600')}>
             Net Profit
           </p>
-          <p className={`mt-2 text-2xl font-bold ${data.netProfit >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
+          <p className={'mt-2 text-2xl font-bold ' + (data.netProfit >= 0 ? 'text-blue-700' : 'text-red-700')}>
             GHS {data.netProfit.toFixed(2)}
           </p>
-          <p className={`mt-1 text-xs ${data.netProfit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-            Margin: {data.netMargin.toFixed(1)}% · Expenses: GHS {data.totalExpenses.toFixed(2)}
+          <p className={'mt-1 text-xs ' + (data.netProfit >= 0 ? 'text-blue-600' : 'text-red-600')}>
+            Margin: {data.netMargin.toFixed(1)}% &middot; Expenses: GHS {data.totalExpenses.toFixed(2)}
           </p>
         </div>
       </div>

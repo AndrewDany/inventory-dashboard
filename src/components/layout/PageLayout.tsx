@@ -6,6 +6,7 @@ export default function PageLayout({
   children,
   title,
   onAddItem,
+  onBulkAddProducts,
   onChangePassword,
   onInviteUser,
   onSettings,
@@ -16,6 +17,7 @@ export default function PageLayout({
   children: ReactNode
   title: string
   onAddItem?: () => void
+  onBulkAddProducts?: () => void
   onChangePassword?: () => void
   onInviteUser?: () => void
   onSettings?: () => void
@@ -34,6 +36,7 @@ export default function PageLayout({
         isCollapsed={isCollapsed}
         onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
         onAddItem={onAddItem}
+        onBulkAddProducts={onBulkAddProducts}
         onChangePassword={onChangePassword}
         onInviteUser={onInviteUser}
         onSettings={onSettings}

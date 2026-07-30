@@ -1,8 +1,23 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import AdminPanel from './pages/AdminPanel'
+import AdminOverview from './pages/admin/AdminOverview'
+import AdminLocations from './pages/admin/AdminLocations'
+import AdminUsers from './pages/admin/AdminUsers'
+import AdminOrders from './pages/admin/AdminOrders'
+import AdminSalesOrders from './pages/admin/AdminSalesOrders'
+import AdminLowStock from './pages/admin/AdminLowStock'
+import AdminSuppliers from './pages/admin/AdminSuppliers'
+import AdminMovements from './pages/admin/AdminMovements'
+import AdminBatches from './pages/admin/AdminBatches'
+import AdminAdjustments from './pages/admin/AdminAdjustments'
+import AdminValuation from './pages/admin/AdminValuation'
+import AdminActivity from './pages/admin/AdminActivity'
+import AdminAuditEvents from './pages/admin/AdminAuditEvents'
+import AdminReports from './pages/admin/AdminReports'
+import AdminFinancials from './pages/admin/AdminFinancials'
 import PointOfSale from './pages/PointOfSale'
 import ProtectedRoute from './components/layout/ProtectedRoute'
 import AdminRoute from './components/layout/AdminRoute'
@@ -48,7 +63,24 @@ function App() {
               </AdminRoute>
             </ProtectedRoute>
           }
-        />
+        >
+          <Route index element={<Navigate to="overview" replace />} />
+          <Route path="overview" element={<AdminOverview />} />
+          <Route path="locations" element={<AdminLocations />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="orders" element={<AdminOrders />} />
+          <Route path="sales-orders" element={<AdminSalesOrders />} />
+          <Route path="low-stock" element={<AdminLowStock />} />
+          <Route path="suppliers" element={<AdminSuppliers />} />
+          <Route path="movements" element={<AdminMovements />} />
+          <Route path="batches" element={<AdminBatches />} />
+          <Route path="adjustments" element={<AdminAdjustments />} />
+          <Route path="valuation" element={<AdminValuation />} />
+          <Route path="activity" element={<AdminActivity />} />
+          <Route path="audit-events" element={<AdminAuditEvents />} />
+          <Route path="reports" element={<AdminReports />} />
+          <Route path="financials" element={<AdminFinancials />} />
+        </Route>
         <Route
           path="/pos"
           element={

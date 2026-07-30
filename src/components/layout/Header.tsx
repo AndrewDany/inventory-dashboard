@@ -1,5 +1,6 @@
 import { Menu } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
+import NotificationCenter from '../notifications/NotificationCenter'
 
 export default function Header({
   onMenuClick,
@@ -24,6 +25,7 @@ export default function Header({
       </div>
 
       <div className="flex items-center gap-4">
+        <NotificationCenter />
         <p className="text-sm text-gray-600 hidden sm:block">{session?.user.email}</p>
         <button
           onClick={signOut}

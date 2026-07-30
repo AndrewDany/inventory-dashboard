@@ -1,21 +1,27 @@
-# Task Progress
+# Task: Unify "this month" revenue/COGS calculation
 
-## ✅ Invoice Preview, Customer Bill, Payment Status & Print
-(Previous completed work)
+## Goal
+Eliminate duplicate independent queries for "this month's" revenue and COGS.  
+Derive these numbers from `useMonthlyFinancials`'s current-month row in `useProfitLoss.ts`.
 
-## ✅ Monthly Gross Sales & Acquisition Costs
+## Steps
+- [x] 1. Read and understand all relevant files
+- [x] 2. Get plan approval
+- [x] 3. Rewrite `src/hooks/useProfitLoss.ts` to derive revenue/COGS from `useMonthlyFinancials`
+- [x] 4. Verify no consumer changes needed (AdminOverview, FinancialOverviewPanel, ProfitLossPanel)
+- [x] 5. Test TypeScript compilation — ✅ no errors
 
-### New File Created:
-1. **`src/hooks/useMonthlyFinancials.ts`** ✅
-   - New `MonthlyFinancial` interface (month, grossSales, acquisitionCost)
-   - `useMonthlyFinancials()` hook queries `sales_orders` (with `sales_order_items`) and `purchase_orders` (with `purchase_order_items`) for the last 12 months
-   - Computes monthly aggregates: gross sales revenue (quantity × unit_price) and acquisition costs (quantity × unit_cost)
-   - Returns sorted array by month (YYYY-MM)
+---
 
-### Files Modified:
-2. **`src/pages/AdminPanel.tsx`** ✅
-   - Imported `useMonthlyFinancials` hook
-   - Added "Monthly financials" section in the Overview tab showing:
-     - **Monthly Gross Sales** card (current month's sales revenue)
-     - **Monthly Acquisition Costs** card (current month's stock purchase costs)
-     - **Last 12 months trend table** with month-by-month breakdown
+# Task: Add "Add Expense" button back to ProfitLossPanel
+
+## Goal
+Restore the ability to add expenses directly from the Profit & Loss panel.
+
+## Steps
+- [x] 1. Read and understand all relevant files
+- [x] 2. Get plan approval
+- [x] 3. Added `useState` for modal toggle, "Add Expense" button with `Plus` icon in the header
+- [x] 4. Added `Modal` with `ExpenseForm` at the bottom of the component
+- [x] 5. Test TypeScript compilation
+

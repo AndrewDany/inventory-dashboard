@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabaseClient'
+import { useMonthlyFinancials } from './useMonthlyFinancials'
 
 export interface ProfitLossReport {
   revenue: number
@@ -20,44 +21,24 @@ function getMonthRange() {
 }
 
 export function useProfitLoss() {
+  const { data: monthlyFinancials, isLoading: monthlyLoading, error: monthlyError } = useMonthlyFinancials()
   const { start, end } = getMonthRange()
+
+  const currentMonthKey = new Date().toISOString().slice(0, 7)
 
   return useQuery({
     queryKey: ['profit_loss', start, end],
     queryFn: async (): Promise<ProfitLossReport> => {
-      // Revenue: what was actually shipped this month, at sale price
-      const { data: soItems, error: soError } = await supabase
-        .from('sales_order_items')
-        .select('quantity_shipped, unit_price, sales_orders!inner(created_at)')
-        .gte('sales_orders.created_at', start)
-        .lte('sales_orders.created_at', end + 'T23:59:59')
-
-      if (soError) throw new Error(soError.message)
-
-      const revenue = (soItems ?? []).reduce(
-        (sum, item: any) => sum + item.quantity_shipped * (item.unit_price ?? 0),
-        0
-      )
-
-      // COGS: actual cost of everything shipped out this month (negative stock_movements)
-      const { data: movements, error: movError } = await supabase
-        .from('stock_movements')
-        .select('change_amount, unit_cost, created_at')
-        .lt('change_amount', 0)
-        .gte('created_at', start)
-        .lte('created_at', end + 'T23:59:59')
-
-      if (movError) throw new Error(movError.message)
-
-      const cogs = (movements ?? []).reduce(
-        (sum, m) => sum + Math.abs(m.change_amount) * (m.unit_cost ?? 0),
-        0
-      )
+      // Derive "this month" revenue and COGS from the shared useMonthlyFinancials source,
+      // guaranteeing the same numbers appear in the 12-month table and every card.
+      const currentMonthRow = monthlyFinancials?.find(m => m.month === currentMonthKey)
+      const revenue = currentMonthRow?.grossSales ?? 0
+      const cogs = currentMonthRow?.cogs ?? 0
 
       const grossProfit = revenue - cogs
       const grossMargin = revenue > 0 ? (grossProfit / revenue) * 100 : 0
 
-      // Operating expenses this month
+      // Operating expenses this month (still fetched independently to get category breakdown)
       const { data: expenses, error: expError } = await supabase
         .from('expenses')
         .select('amount, category')
@@ -90,5 +71,7 @@ export function useProfitLoss() {
         expensesByCategory,
       }
     },
+    enabled: !monthlyLoading && !monthlyError && !!monthlyFinancials,
   })
 }
+

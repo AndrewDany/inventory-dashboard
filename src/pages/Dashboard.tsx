@@ -4,6 +4,9 @@ import { useInventory, useDeleteInventoryItem } from '../hooks/useInventory'
 import InventoryForm from '../components/inventory/InventoryForm'
 import InventoryTable from '../components/inventory/InventoryTable'
 import DeleteConfirmModal from '../components/inventory/DeleteConfirmModal'
+import CSVImportModal from '../components/inventory/CSVImportModal'
+import BarcodeLabelPrinter from '../components/inventory/BarcodeLabelPrinter'
+import BulkProductModal from '../components/inventory/BulkProductModal'
 import Modal from '../components/ui/Modal'
 import StatsCards from '../components/dashboard/StatsCards'
 import CategoryChart from '../components/dashboard/CategoryChart'
@@ -12,6 +15,7 @@ import ChangePasswordForm from '../components/settings/ChangePasswordForm'
 import PageLayout from '../components/layout/PageLayout'
 import type { InventoryItem } from '../types/inventory'
 import ExportMenu from '../components/inventory/ExportMenu'
+import UsagePanel from '../components/dashboard/UsagePanel'
 export default function Dashboard() {
   const { data: profile } = useProfile()
   const { data: items, isLoading, error } = useInventory()
@@ -21,6 +25,9 @@ export default function Dashboard() {
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null)
   const [deletingItem, setDeletingItem] = useState<InventoryItem | null>(null)
   const [showPasswordForm, setShowPasswordForm] = useState(false)
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [showLabelPrinter, setShowLabelPrinter] = useState(false)
+  const [showBulkAddModal, setShowBulkAddModal] = useState(false)
 
   const isAdmin = profile?.role === 'admin'
   const isDemo = profile?.role === 'demo'
@@ -35,6 +42,7 @@ export default function Dashboard() {
     <PageLayout
       title="Inventory Dashboard"
       onAddItem={isDemo ? undefined : () => setShowAddModal(true)}
+      onBulkAddProducts={isDemo ? undefined : () => setShowBulkAddModal(true)}
       onChangePassword={isDemo ? undefined : () => setShowPasswordForm(true)}
     >
       {isDemo && (
@@ -59,6 +67,7 @@ export default function Dashboard() {
           <div className="flex justify-end mb-4">
             <ExportMenu items={items} />
           </div>
+          <UsagePanel />
           <StatsCards items={items} />
           <CategoryChart items={items} />
           <InventoryTable
@@ -96,6 +105,24 @@ export default function Dashboard() {
       {showPasswordForm && (
         <Modal title="Change Password" onClose={() => setShowPasswordForm(false)}>
           <ChangePasswordForm />
+        </Modal>
+      )}
+
+      {showImportModal && (
+        <Modal title="Import Items from CSV" onClose={() => setShowImportModal(false)}>
+          <CSVImportModal onClose={() => setShowImportModal(false)} />
+        </Modal>
+      )}
+
+      {showBulkAddModal && (
+        <Modal title="Bulk Add Products" onClose={() => setShowBulkAddModal(false)}>
+          <BulkProductModal onClose={() => setShowBulkAddModal(false)} />
+        </Modal>
+      )}
+
+      {showLabelPrinter && (
+        <Modal title="Print Barcode Labels" onClose={() => setShowLabelPrinter(false)}>
+          <BarcodeLabelPrinter onClose={() => setShowLabelPrinter(false)} />
         </Modal>
       )}
     </PageLayout>

@@ -4,93 +4,83 @@ import { supabase } from '../lib/supabaseClient'
 export interface MonthlyFinancial {
   month: string // YYYY-MM
   grossSales: number
-  acquisitionCost: number
+  cogs: number
+  grossProfit: number
+  expenses: number
+  netProfit: number
+}
+
+function monthKey(dateStr: string) {
+  return dateStr.slice(0, 7)
 }
 
 export function useMonthlyFinancials() {
   return useQuery({
     queryKey: ['monthly_financials'],
     queryFn: async (): Promise<MonthlyFinancial[]> => {
-      // 1. Fetch all sales orders with their items for this year
-      const yearStart = new Date()
-      yearStart.setMonth(yearStart.getMonth() - 11) // last 12 months
-      yearStart.setDate(1)
-      yearStart.setHours(0, 0, 0, 0)
-      const startISO = yearStart.toISOString()
+      const twelveMonthsAgo = new Date()
+      twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 11)
+      twelveMonthsAgo.setDate(1)
+      const since = twelveMonthsAgo.toISOString().slice(0, 10)
 
-      const [salesRes, purchaseRes] = await Promise.all([
-        supabase
-          .from('sales_orders')
-          .select('created_at, sales_order_items(quantity_ordered, unit_price)')
-          .gte('created_at', startISO)
-          .order('created_at', { ascending: true }),
-        supabase
-          .from('purchase_orders')
-          .select('created_at, purchase_order_items(quantity_ordered, unit_cost)')
-          .gte('created_at', startISO)
-          .order('created_at', { ascending: true }),
-      ])
+      // Revenue: shipped sales order items
+      const { data: soItems, error: soError } = await supabase
+        .from('sales_order_items')
+        .select('quantity_shipped, unit_price, sales_orders!inner(created_at)')
+        .gte('sales_orders.created_at', since)
 
-      if (salesRes.error) throw new Error(salesRes.error.message)
-      if (purchaseRes.error) throw new Error(purchaseRes.error.message)
+      if (soError) throw new Error(soError.message)
 
-      // 2. Compute monthly aggregates
-      const monthlyMap = new Map<string, { grossSales: number; acquisitionCost: number }>()
+      // COGS: negative stock movements (goods going out), with their cost at time of movement
+      const { data: movements, error: movError } = await supabase
+        .from('stock_movements')
+        .select('change_amount, unit_cost, created_at')
+        .lt('change_amount', 0)
+        .gte('created_at', since)
 
-      // Helper to get YYYY-MM from ISO date
-      const monthKey = (iso: string) => iso.slice(0, 7)
+      if (movError) throw new Error(movError.message)
 
-      // Seed all 12 months
-      for (let i = 0; i < 12; i++) {
-        const d = new Date()
-        d.setMonth(d.getMonth() - i)
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-        monthlyMap.set(key, { grossSales: 0, acquisitionCost: 0 })
-      }
+      // Operating expenses
+      const { data: expenses, error: expError } = await supabase
+        .from('expenses')
+        .select('amount, expense_date')
+        .gte('expense_date', since)
 
-      // Aggregate sales (gross revenue)
-      for (const so of salesRes.data ?? []) {
-        const key = monthKey(so.created_at)
-        const items = (so as any).sales_order_items ?? []
-        const total = items.reduce(
-          (sum: number, item: any) => sum + (item.quantity_ordered ?? 0) * (item.unit_price ?? 0),
-          0
-        )
-        const entry = monthlyMap.get(key)
-        if (entry) {
-          entry.grossSales += total
-        } else {
-          monthlyMap.set(key, { grossSales: total, acquisitionCost: 0 })
+      if (expError) throw new Error(expError.message)
+
+      const months = new Map<string, MonthlyFinancial>()
+
+      const ensure = (key: string) => {
+        if (!months.has(key)) {
+          months.set(key, { month: key, grossSales: 0, cogs: 0, grossProfit: 0, expenses: 0, netProfit: 0 })
         }
+        return months.get(key)!
       }
 
-      // Aggregate purchase costs (acquisition)
-      for (const po of purchaseRes.data ?? []) {
-        const key = monthKey(po.created_at)
-        const items = (po as any).purchase_order_items ?? []
-        const total = items.reduce(
-          (sum: number, item: any) => sum + (item.quantity_ordered ?? 0) * (item.unit_cost ?? 0),
-          0
-        )
-        const entry = monthlyMap.get(key)
-        if (entry) {
-          entry.acquisitionCost += total
-        } else {
-          monthlyMap.set(key, { grossSales: 0, acquisitionCost: total })
-        }
+      for (const item of (soItems ?? []) as any[]) {
+        const key = monthKey(item.sales_orders.created_at)
+        ensure(key).grossSales += item.quantity_shipped * (item.unit_price ?? 0)
       }
 
-      // 3. Convert to sorted array
-      const result: MonthlyFinancial[] = Array.from(monthlyMap.entries())
-        .map(([month, data]) => ({
-          month,
-          grossSales: data.grossSales,
-          acquisitionCost: data.acquisitionCost,
+      for (const m of movements ?? []) {
+        const key = monthKey(m.created_at)
+        ensure(key).cogs += Math.abs(m.change_amount) * (m.unit_cost ?? 0)
+      }
+
+      for (const e of expenses ?? []) {
+        const key = monthKey(e.expense_date)
+        ensure(key).expenses += e.amount
+      }
+
+      const result = Array.from(months.values())
+        .map((m) => ({
+          ...m,
+          grossProfit: m.grossSales - m.cogs,
+          netProfit: m.grossSales - m.cogs - m.expenses,
         }))
         .sort((a, b) => a.month.localeCompare(b.month))
 
       return result
     },
-    staleTime: 60_000, // 1 minute
   })
 }

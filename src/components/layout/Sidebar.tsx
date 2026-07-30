@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
   ShieldCheck,
@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
+  PackagePlus,
   KeyRound,
   UserPlus,
   Settings,
@@ -13,8 +14,59 @@ import {
   MapPin,
   ClipboardList,
   Receipt,
+  FileText,
+  Users,
+  Package,
+  ShoppingCart,
+  AlertTriangle,
+  ArrowLeftRight,
+  Layers,
+  Scale,
+  Activity,
+  SearchCheck,
+  BarChart3,
+  DollarSign,
 } from 'lucide-react'
 import { useProfile } from '../../hooks/useProfile'
+
+interface SidebarProps {
+  isOpen: boolean
+  onClose: () => void
+  isCollapsed: boolean
+  onToggleCollapse: () => void
+  onAddItem?: () => void
+  onBulkAddProducts?: () => void
+  onChangePassword?: () => void
+  onInviteUser?: () => void
+  onSettings?: () => void
+  onAddSupplier?: () => void
+  onAddLocation?: () => void
+  onAddPurchaseOrder?: () => void
+}
+
+type AdminSubLink = {
+  path: string
+  label: string
+  icon: React.ReactNode
+}
+
+const adminSubLinks: AdminSubLink[] = [
+  { path: '/admin/overview', label: 'Overview', icon: <FileText size={16} /> },
+  { path: '/admin/locations', label: 'Locations', icon: <MapPin size={16} /> },
+  { path: '/admin/users', label: 'Users', icon: <Users size={16} /> },
+  { path: '/admin/orders', label: 'Orders', icon: <Package size={16} /> },
+  { path: '/admin/sales-orders', label: 'Sales Orders', icon: <ShoppingCart size={16} /> },
+  { path: '/admin/low-stock', label: 'Low Stock', icon: <AlertTriangle size={16} /> },
+  { path: '/admin/suppliers', label: 'Suppliers', icon: <Truck size={16} /> },
+  { path: '/admin/movements', label: 'Movements', icon: <ArrowLeftRight size={16} /> },
+  { path: '/admin/batches', label: 'Batches', icon: <Layers size={16} /> },
+  { path: '/admin/adjustments', label: 'Adjustments', icon: <Scale size={16} /> },
+  { path: '/admin/valuation', label: 'Valuation', icon: <DollarSign size={16} /> },
+  { path: '/admin/activity', label: 'Activity', icon: <Activity size={16} /> },
+  { path: '/admin/audit-events', label: 'Audit Events', icon: <SearchCheck size={16} /> },
+  { path: '/admin/reports', label: 'Reports', icon: <BarChart3 size={16} /> },
+  { path: '/admin/financials', label: 'P&L', icon: <DollarSign size={16} /> },
+]
 
 export default function Sidebar({
   isOpen,
@@ -22,28 +74,18 @@ export default function Sidebar({
   isCollapsed,
   onToggleCollapse,
   onAddItem,
+  onBulkAddProducts,
   onChangePassword,
   onInviteUser,
   onSettings,
   onAddSupplier,
   onAddLocation,
   onAddPurchaseOrder,
-}: {
-  isOpen: boolean
-  onClose: () => void
-  isCollapsed: boolean
-  onToggleCollapse: () => void
-  onAddItem?: () => void
-  onChangePassword?: () => void
-  onInviteUser?: () => void
-  onSettings?: () => void
-  onAddSupplier?: () => void
-  onAddLocation?: () => void
-  onAddPurchaseOrder?: () => void
-}) {
+}: SidebarProps) {
   const location = useLocation()
   const { data: profile } = useProfile()
   const isAdmin = profile?.role === 'admin'
+  const isAdminPage = location.pathname.startsWith('/admin')
 
   const linkClass = (path: string) => {
     const active = location.pathname === path
@@ -55,6 +97,15 @@ export default function Sidebar({
   }
 
   const actionClass = `flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-medium text-white transition-all hover:bg-white/15 ${isCollapsed ? 'justify-center px-3' : ''}`
+
+  const adminSubLinkClass = (path: string) => {
+    const active = location.pathname === path
+    return `flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all ${
+      active
+        ? 'bg-indigo-600/20 text-indigo-200'
+        : 'text-slate-300 hover:bg-white/5 hover:text-white'
+    } ${isCollapsed ? 'justify-center px-2' : ''}`
+  }
 
   return (
     <>
@@ -129,17 +180,45 @@ export default function Sidebar({
               </Link>
             )}
             <Link to="/pos" className={linkClass('/pos')} onClick={onClose} title="Point of Sale">
-  <Receipt size={18} />
-  {!isCollapsed && 'Point of Sale'}
-</Link>
+              <Receipt size={18} />
+              {!isCollapsed && 'Point of Sale'}
+            </Link>
           </nav>
 
-          {(onAddItem || onChangePassword || onInviteUser || onSettings || onAddSupplier || onAddLocation || onAddPurchaseOrder) && (
+          {/* Admin sub-navigation */}
+          {isAdmin && isAdminPage && !isCollapsed && (
+            <div className="mt-4 space-y-1 border-t border-white/10 pt-4">
+              <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-indigo-300">
+                Admin Sections
+              </p>
+              {adminSubLinks.map((sub) => (
+                <NavLink
+                  key={sub.path}
+                  to={sub.path}
+                  className={adminSubLinkClass(sub.path)}
+                  onClick={onClose}
+                  title={sub.label}
+                >
+                  {sub.icon}
+                  {!isCollapsed && sub.label}
+                </NavLink>
+              ))}
+            </div>
+          )}
+
+          {!isAdminPage && (onAddItem || onBulkAddProducts || onChangePassword || onInviteUser || onSettings || onAddSupplier || onAddLocation || onAddPurchaseOrder) && (
             <div className="mt-6 space-y-2 border-t border-white/10 pt-4">
               {onAddItem && (
-                <button onClick={onAddItem} className={actionClass} title="Add Item">
+                <button onClick={onAddItem} className={actionClass} title="Add Product">
                   <Plus size={18} />
-                  {!isCollapsed && 'Add Item'}
+                  {!isCollapsed && 'Add Product'}
+                </button>
+              )}
+
+              {onBulkAddProducts && (
+                <button onClick={onBulkAddProducts} className={actionClass} title="Bulk Add Products">
+                  <PackagePlus size={18} />
+                  {!isCollapsed && 'Bulk Add Products'}
                 </button>
               )}
 
@@ -216,3 +295,4 @@ export default function Sidebar({
     </>
   )
 }
+

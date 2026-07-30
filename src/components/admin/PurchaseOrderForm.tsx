@@ -7,12 +7,10 @@ import { useCreatePurchaseOrder } from '../../hooks/usePurchaseOrders'
 
 type PurchaseOrderFormProps = {
   onClose: () => void
-  onPurchaseRecorded?: (itemName: string, quantity: number, unitPrice: number, total: number) => void
 }
 
 export default function PurchaseOrderForm({
   onClose,
-  onPurchaseRecorded,
 }: PurchaseOrderFormProps) {
   const [itemName, setItemName] = useState('')
   const [quantity, setQuantity] = useState('1')
@@ -60,7 +58,6 @@ export default function PurchaseOrderForm({
         ],
       })
 
-      onPurchaseRecorded?.(itemName.trim(), parsedQuantity, parsedUnitPrice, total)
       toast.success(`${itemName.trim()} — PO #${poNumber} created`)
       onClose()
     } catch (err) {
