@@ -12,6 +12,16 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { InventoryItem } from '../../types/inventory'
 
+const UNIT_TYPE_LABELS: Record<string, string> = {
+  unit: 'Whole Unit (box, piece, bag)',
+  measured: 'Measured (weight or length)',
+}
+
+const UNIT_OF_MEASURE_LABELS: Record<string, string> = {
+  kg: 'Kilograms (kg)',
+  m: 'Meters (m)',
+}
+
 export default function InventoryForm({
   onClose,
   item,
@@ -35,19 +45,27 @@ export default function InventoryForm({
           name: item.name,
           sku: item.sku,
           category: item.category ?? '',
+          unit_type: item.unit_type,
+          unit_of_measure: item.unit_of_measure ?? null,
           quantity: item.quantity,
           reorder_level: item.reorder_level,
           unit_price: item.unit_price ?? undefined,
           supplier: item.supplier ?? '',
           location_id: item.location_id ?? undefined,
         }
-      : undefined,
+      : {
+          unit_type: 'unit',
+          unit_of_measure: null,
+        },
   })
 
   const addItem = useAddInventoryItem()
   const updateItem = useUpdateInventoryItem()
   const isEditMode = Boolean(item)
   const locationValue = watch('location_id')
+  const unitTypeValue = watch('unit_type')
+  const unitOfMeasureValue = watch('unit_of_measure')
+  const isMeasured = unitTypeValue === 'measured'
 
   async function onSubmit(values: InventoryFormValues) {
     if (isEditMode && item) {
@@ -97,10 +115,12 @@ export default function InventoryForm({
         <Label className="mb-1 block">Location</Label>
         <Select
           value={locationValue ?? ''}
-         onValueChange={(v) => setValue('location_id', v ?? undefined)}
+          onValueChange={(v) => setValue('location_id', v ?? undefined)}
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select a location" />
+            <SelectValue placeholder="Select a location">
+              {(value: string) => locations?.find((loc) => loc.id === value)?.name ?? value}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {locations?.map((loc) => (
@@ -119,20 +139,84 @@ export default function InventoryForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="quantity" className="mb-1 block">Quantity</Label>
-          <Input id="quantity" type="number" {...register('quantity')} />
+          <Label className="mb-1 block">Sold By</Label>
+          <Select
+            value={unitTypeValue ?? 'unit'}
+            onValueChange={(v) => {
+              setValue('unit_type', (v as 'unit' | 'measured') ?? 'unit')
+              if (v !== 'measured') {
+                setValue('unit_of_measure', null)
+              }
+            }}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select how this is sold">
+                {(value: string) => UNIT_TYPE_LABELS[value] ?? value}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="unit">Whole Unit (box, piece, bag)</SelectItem>
+              <SelectItem value="measured">Measured (weight or length)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {isMeasured && (
+          <div>
+            <Label className="mb-1 block">Unit of Measure</Label>
+            <Select
+              value={unitOfMeasureValue ?? ''}
+              onValueChange={(v) => setValue('unit_of_measure', (v as 'kg' | 'm') ?? null)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a unit">
+                  {(value: string) => UNIT_OF_MEASURE_LABELS[value] ?? value}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="kg">Kilograms (kg)</SelectItem>
+                <SelectItem value="m">Meters (m)</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.unit_of_measure && (
+              <p className="text-red-600 text-sm mt-1">{errors.unit_of_measure.message}</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="quantity" className="mb-1 block">
+            Quantity {isMeasured && unitOfMeasureValue ? `(${unitOfMeasureValue})` : ''}
+          </Label>
+          <Input
+            id="quantity"
+            type="number"
+            step={isMeasured ? '0.01' : '1'}
+            {...register('quantity')}
+          />
           {errors.quantity && <p className="text-red-600 text-sm mt-1">{errors.quantity.message}</p>}
         </div>
 
         <div>
-          <Label htmlFor="reorder_level" className="mb-1 block">Reorder Level</Label>
-          <Input id="reorder_level" type="number" {...register('reorder_level')} />
+          <Label htmlFor="reorder_level" className="mb-1 block">
+            Reorder Level {isMeasured && unitOfMeasureValue ? `(${unitOfMeasureValue})` : ''}
+          </Label>
+          <Input
+            id="reorder_level"
+            type="number"
+            step={isMeasured ? '0.01' : '1'}
+            {...register('reorder_level')}
+          />
           {errors.reorder_level && <p className="text-red-600 text-sm mt-1">{errors.reorder_level.message}</p>}
         </div>
       </div>
 
       <div>
-        <Label htmlFor="unit_price" className="mb-1 block">Unit Price</Label>
+        <Label htmlFor="unit_price" className="mb-1 block">
+          Unit Price {isMeasured && unitOfMeasureValue ? `(per ${unitOfMeasureValue})` : ''}
+        </Label>
         <Input id="unit_price" type="number" step="0.01" {...register('unit_price')} />
         {errors.unit_price && <p className="text-red-600 text-sm mt-1">{errors.unit_price.message}</p>}
       </div>

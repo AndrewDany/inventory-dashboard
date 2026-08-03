@@ -16,6 +16,7 @@ import AdminAdjustments from './pages/admin/AdminAdjustments'
 import AdminValuation from './pages/admin/AdminValuation'
 import AdminActivity from './pages/admin/AdminActivity'
 import AdminAuditEvents from './pages/admin/AdminAuditEvents'
+import AdminReturns from './pages/admin/AdminReturns'
 import AdminReports from './pages/admin/AdminReports'
 import AdminFinancials from './pages/admin/AdminFinancials'
 import PointOfSale from './pages/PointOfSale'
@@ -74,6 +75,7 @@ function App() {
           <Route path="suppliers" element={<AdminSuppliers />} />
           <Route path="movements" element={<AdminMovements />} />
           <Route path="batches" element={<AdminBatches />} />
+          <Route path="returns" element={<AdminReturns />} />
           <Route path="adjustments" element={<AdminAdjustments />} />
           <Route path="valuation" element={<AdminValuation />} />
           <Route path="activity" element={<AdminActivity />} />

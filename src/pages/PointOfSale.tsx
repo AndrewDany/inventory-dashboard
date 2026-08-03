@@ -106,6 +106,13 @@ export default function PointOfSale() {
     }
   }
 
+  function getUnitLabel(item: (typeof items)[number]): string {
+    if (item.unit_of_measure) {
+      return item.unit_of_measure
+    }
+    return item.unit_type === 'measured' ? 'unit' : 'piece'
+  }
+
   return (
     <PageLayout title="Point of Sale">
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -147,7 +154,9 @@ export default function PointOfSale() {
                   >
                     <div>
                       <p className="text-sm font-medium">{item.name}</p>
-                      <p className="text-xs text-gray-500">{item.sku} · {item.quantity} in stock</p>
+                      <p className="text-xs text-gray-500">
+                        {item.sku} · {item.quantity} {getUnitLabel(item)} in stock
+                      </p>
                     </div>
                     <span className="text-sm font-medium">GHS {(item.unit_price ?? 0).toFixed(2)}</span>
                   </button>
@@ -179,26 +188,52 @@ export default function PointOfSale() {
                 ) : (
                   cart.map((line) => (
                     <TableRow key={line.item.id}>
-                      <TableCell className="font-medium">{line.item.name}</TableCell>
-                      <TableCell className="text-right">
-                        GHS {(line.item.unit_price ?? 0).toFixed(2)}
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{line.item.name}</span>
+                          <span className="text-xs text-gray-500">{line.item.sku}</span>
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => updateQty(line.item.id, -1)}
-                            className="p-1 text-gray-500 hover:text-gray-700"
-                          >
-                            <Minus size={14} />
-                          </button>
-                          <span className="w-6 text-center text-sm">{line.quantity}</span>
-                          <button
-                            onClick={() => updateQty(line.item.id, 1)}
-                            className="p-1 text-gray-500 hover:text-gray-700"
-                          >
-                            <Plus size={14} />
-                          </button>
-                        </div>
+                        GHS {(line.item.unit_price ?? 0).toFixed(2)}
+                        {line.item.unit_of_measure && (
+                          <span className="text-xs text-gray-400 ml-1">/{line.item.unit_of_measure}</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {line.item.unit_type === 'measured' ? (
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={line.quantity}
+                            onChange={(e) => {
+                              const val = Math.max(0, Number(e.target.value))
+                              setCart((prev) =>
+                                prev
+                                  .map((l) => (l.item.id === line.item.id ? { ...l, quantity: val } : l))
+                                  .filter((l) => l.quantity > 0)
+                              )
+                            }}
+                            className="w-20 text-right inline-block"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => updateQty(line.item.id, -1)}
+                              className="p-1 text-gray-500 hover:text-gray-700"
+                            >
+                              <Minus size={14} />
+                            </button>
+                            <span className="w-6 text-center text-sm">{line.quantity}</span>
+                            <button
+                              onClick={() => updateQty(line.item.id, 1)}
+                              className="p-1 text-gray-500 hover:text-gray-700"
+                            >
+                              <Plus size={14} />
+                            </button>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="text-right font-medium">
                         GHS {(line.quantity * (line.item.unit_price ?? 0)).toFixed(2)}
@@ -217,9 +252,8 @@ export default function PointOfSale() {
               </TableBody>
             </Table>
 
-            {/* Basket Summary */}
             {cart.length > 0 && (
-              <div className="mt-4 border-t border-gray-100 pt-4 space-y-2">
+              <div className="mt-4 space-y-1 border-t border-gray-100 pt-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Basket Subtotal:</span>
                   <span className="font-medium">GHS {subtotal.toFixed(2)}</span>
@@ -289,7 +323,7 @@ export default function PointOfSale() {
             <Select value={locationId} onValueChange={(v) => setLocationId(v ?? '')}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a location">
-                  {locationId && locations?.find((l) => l.id === locationId)?.name}
+                  {(value: string) => locations?.find((l) => l.id === value)?.name ?? value}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -360,4 +394,3 @@ export default function PointOfSale() {
     </PageLayout>
   )
 }
-
