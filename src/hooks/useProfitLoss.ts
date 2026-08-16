@@ -29,29 +29,29 @@ export function useProfitLoss() {
   return useQuery({
     queryKey: ['profit_loss', start, end],
     queryFn: async (): Promise<ProfitLossReport> => {
-      // Derive "this month" revenue and COGS from the shared useMonthlyFinancials source,
-      // guaranteeing the same numbers appear in the 12-month table and every card.
-      const currentMonthRow = monthlyFinancials?.find(m => m.month === currentMonthKey)
+      if (!monthlyFinancials) throw new Error('Monthly financials unavailable')
+
+      const currentMonthRow = monthlyFinancials.find((m) => m.month === currentMonthKey)
       const revenue = currentMonthRow?.grossSales ?? 0
       const cogs = currentMonthRow?.cogs ?? 0
 
       const grossProfit = revenue - cogs
       const grossMargin = revenue > 0 ? (grossProfit / revenue) * 100 : 0
 
-      // Operating expenses this month (still fetched independently to get category breakdown)
-      const { data: expenses, error: expError } = await supabase
+      const { data: expenses, error: expensesError } = await supabase
         .from('expenses')
         .select('amount, category')
         .gte('expense_date', start)
         .lte('expense_date', end)
 
-      if (expError) throw new Error(expError.message)
+      if (expensesError) throw new Error(expensesError.message)
 
-      const totalExpenses = (expenses ?? []).reduce((sum, e) => sum + e.amount, 0)
+      const rows = (expenses ?? []) as Array<{ amount: number; category: string }>
+      const totalExpenses = rows.reduce((sum, e) => sum + Number(e.amount ?? 0), 0)
 
       const byCategory = new Map<string, number>()
-      for (const e of expenses ?? []) {
-        byCategory.set(e.category, (byCategory.get(e.category) ?? 0) + e.amount)
+      for (const e of rows) {
+        byCategory.set(e.category, (byCategory.get(e.category) ?? 0) + Number(e.amount ?? 0))
       }
       const expensesByCategory = Array.from(byCategory.entries())
         .map(([category, total]) => ({ category, total }))

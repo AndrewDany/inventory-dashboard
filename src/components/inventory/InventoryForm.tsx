@@ -17,11 +17,6 @@ const UNIT_TYPE_LABELS: Record<string, string> = {
   measured: 'Measured (weight or length)',
 }
 
-const UNIT_OF_MEASURE_LABELS: Record<string, string> = {
-  kg: 'Kilograms (kg)',
-  m: 'Meters (m)',
-}
-
 export default function InventoryForm({
   onClose,
   item,
@@ -38,8 +33,8 @@ export default function InventoryForm({
     setValue,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm({
-    resolver: zodResolver(inventoryItemSchema),
+  } = useForm<InventoryFormValues>({
+    resolver: zodResolver(inventoryItemSchema) as any,
     defaultValues: item
       ? {
           name: item.name,
@@ -54,6 +49,14 @@ export default function InventoryForm({
           location_id: item.location_id ?? undefined,
         }
       : {
+          name: '',
+          sku: '',
+          category: '',
+          quantity: 0,
+          reorder_level: 0,
+          unit_price: undefined,
+          supplier: '',
+          location_id: undefined,
           unit_type: 'unit',
           unit_of_measure: null,
         },
@@ -115,12 +118,10 @@ export default function InventoryForm({
         <Label className="mb-1 block">Location</Label>
         <Select
           value={locationValue ?? ''}
-          onValueChange={(v) => setValue('location_id', v ?? undefined)}
+          onValueChange={(v) => setValue('location_id', v || undefined)}
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select a location">
-              {(value: string) => locations?.find((loc) => loc.id === value)?.name ?? value}
-            </SelectValue>
+            <SelectValue placeholder="Select a location" />
           </SelectTrigger>
           <SelectContent>
             {locations?.map((loc) => (
@@ -169,9 +170,7 @@ export default function InventoryForm({
               onValueChange={(v) => setValue('unit_of_measure', (v as 'kg' | 'm') ?? null)}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a unit">
-                  {(value: string) => UNIT_OF_MEASURE_LABELS[value] ?? value}
-                </SelectValue>
+                <SelectValue placeholder="Select a unit" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="kg">Kilograms (kg)</SelectItem>

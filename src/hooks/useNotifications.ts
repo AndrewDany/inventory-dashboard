@@ -76,7 +76,7 @@ export function useMarkAllNotificationsRead() {
 
       if (!data) return
 
-      const ids = new Set(data.map((d: any) => d.id))
+      const ids = new Set<string>(data?.map((d: { id: string }) => d.id) ?? [])
       saveReadIds(ids)
     },
     onSuccess: () => {

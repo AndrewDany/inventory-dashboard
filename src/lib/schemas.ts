@@ -9,8 +9,8 @@ export const inventoryItemSchema = z.object({
   unit_price: z.coerce.number().min(0, 'Price cannot be negative').optional(),
   supplier: z.string().optional(),
   location_id: z.string().optional(),
-  unit_of_measure: z.string().min(1, 'Unit is required'),
-  sale_mode: z.enum(['unit', 'weight']),
+  unit_type: z.enum(['unit', 'measured']).default('unit'),
+  unit_of_measure: z.enum(['kg', 'm']).nullable().optional(),
 })
 
 export type InventoryFormValues = z.infer<typeof inventoryItemSchema>

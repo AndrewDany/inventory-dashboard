@@ -281,8 +281,8 @@ export default function BulkProductModal({ onClose }: { onClose: () => void }) {
           <span className="text-xs font-medium">Preview & Map</span>
         </div>
         <div className="flex-1 h-px bg-slate-200" />
-        <div className={`flex items-center gap-1.5 ${step === 'importing' ? 'text-indigo-600' : 'text-slate-400'}`}>
-          <div className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold text-white ${step === 'importing' ? 'bg-indigo-600' : 'bg-slate-300'}`}>
+        <div className="flex items-center gap-1.5 text-slate-400">
+          <div className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold text-white bg-slate-300">
             3
           </div>
           <span className="text-xs font-medium">Import</span>
@@ -434,7 +434,7 @@ export default function BulkProductModal({ onClose }: { onClose: () => void }) {
                     <span className="text-slate-300">→</span>
                     <Select
                       value={headerMap[idx] || '__skip__'}
-                      onValueChange={(v) => updateHeaderMap(idx, v)}
+                      onValueChange={(v) => updateHeaderMap(idx, v ?? '__skip__')}
                     >
                       <SelectTrigger className="flex-1 h-7 text-xs">
                         <SelectValue placeholder="Select field..." />

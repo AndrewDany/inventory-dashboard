@@ -9,14 +9,16 @@ import { Button } from '@/components/ui/button'
 import ExpensesTable from './ExpensesTable'
 
 export default function FinancialOverviewPanel() {
-  const { data: pl, isLoading: plLoading } = useProfitLoss()
+  const { data: pl, isLoading: plLoading, error: plError } = useProfitLoss()
   const { data: monthly } = useMonthlyFinancials()
-  const { data: budget, isLoading: budgetLoading } = useBudget()
+  const { data: budget, isLoading: budgetLoading, error: budgetError } = useBudget()
   const updateBudget = useUpdateBudget()
 
   const [budgetDraft, setBudgetDraft] = useState<string>('')
 
   if (plLoading || budgetLoading) return <p className="text-gray-500 text-sm">Loading financial overview...</p>
+  if (plError) return <p className="text-red-600 text-sm">Error: {plError.message}</p>
+  if (budgetError) return <p className="text-red-600 text-sm">Error: {budgetError.message}</p>
   if (!pl || !budget) return null
 
   return (

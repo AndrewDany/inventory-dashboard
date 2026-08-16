@@ -36,8 +36,9 @@ export function useBudget() {
 
       if (error) throw new Error(error.message)
 
-      const spentThisMonth = (movements ?? []).reduce(
-        (sum, m) => sum + m.change_amount * (m.unit_cost ?? 0),
+      const movementRows = (movements ?? []) as Array<{ change_amount: number; unit_cost: number }>
+      const spentThisMonth = movementRows.reduce<number>(
+        (sum, m) => sum + Number(m.change_amount ?? 0) * Number(m.unit_cost ?? 0),
         0
       )
 

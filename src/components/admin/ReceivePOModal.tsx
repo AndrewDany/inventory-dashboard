@@ -41,9 +41,7 @@ export default function ReceivePOModal({
         <Label className="mb-1 block">Receiving Location</Label>
         <Select value={locationId} onValueChange={(v) => setLocationId(v ?? '')}>
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select a location">
-              {(value: string) => locations?.find((loc) => loc.id === value)?.name ?? value}
-            </SelectValue>
+            <SelectValue placeholder="Select a location" />
           </SelectTrigger>
           <SelectContent>
             {locations?.map((loc) => (
@@ -74,7 +72,11 @@ export default function ReceivePOModal({
                 onChange={(e) =>
                   setQuantities((prev) => ({
                     ...prev,
-                    [item.id]: Math.min(Number(e.target.value), remaining),
+                    [item.id]: (() => {
+                      const value = Number(e.target.value)
+                      if (!Number.isFinite(value)) return 0
+                      return Math.max(0, Math.min(value, remaining))
+                    })(),
                   }))
                 }
               />

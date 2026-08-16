@@ -37,6 +37,7 @@ interface SidebarProps {
   onToggleCollapse: () => void
   onAddItem?: () => void
   onBulkAddProducts?: () => void
+  onSellItem?: () => void
   onChangePassword?: () => void
   onInviteUser?: () => void
   onSettings?: () => void
@@ -77,6 +78,7 @@ export default function Sidebar({
   onToggleCollapse,
   onAddItem,
   onBulkAddProducts,
+  onSellItem,
   onChangePassword,
   onInviteUser,
   onSettings,
@@ -214,6 +216,13 @@ export default function Sidebar({
                 <button onClick={onAddItem} className={actionClass} title="Add Product">
                   <Plus size={18} />
                   {!isCollapsed && 'Add Product'}
+                </button>
+              )}
+
+              {onSellItem && (
+                <button onClick={onSellItem} className={actionClass} title="Sell Item">
+                  <ShoppingCart size={18} />
+                  {!isCollapsed && 'Sell Item'}
                 </button>
               )}
 

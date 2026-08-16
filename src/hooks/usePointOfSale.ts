@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { supabase } from '../lib/supabaseClient'
 import { generateInvoiceBlob } from '../lib/generateInvoice'
+import { useAuth } from './useAuth'
 import type { InventoryItem } from '../types/inventory'
 
 export interface CartLine {
@@ -23,6 +24,8 @@ interface CheckoutInput {
 export function usePointOfSaleCheckout() {
   const queryClient = useQueryClient()
 
+  useAuth()
+
   return useMutation({
     mutationFn: async ({
       cart,
@@ -34,8 +37,8 @@ export function usePointOfSaleCheckout() {
       paymentStatus,
       companyName,
     }: CheckoutInput): Promise<string> => {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const userId = sessionData.session?.user.id
+      const { data: authSession } = await supabase.auth.getSession()
+      const userId = authSession.session?.user?.id
       if (!userId) throw new Error('Not authenticated')
 
       const soNumber = `SO-${Date.now().toString().slice(-8)}`
@@ -60,7 +63,7 @@ export function usePointOfSaleCheckout() {
       if (itemsError) throw new Error(itemsError.message)
 
       // 3. Ship immediately (FIFO deduction via the RPC)
-      const { data: shipResult, error: shipError } = await supabase.rpc('ship_sales_order', {
+      const { error: shipError } = await supabase.rpc('ship_sales_order', {
         p_so_id: so.id,
         p_location_id: locationId,
         p_items: null,
@@ -68,8 +71,8 @@ export function usePointOfSaleCheckout() {
       if (shipError) throw new Error(shipError.message)
 
       // 4. Generate invoice blob URL for preview
-      const { data: session } = await supabase.auth.getSession()
-      const processedBy = session?.session?.user?.email ?? undefined
+      const { data: invoiceSession } = await supabase.auth.getSession()
+      const processedBy = invoiceSession.session?.user?.email ?? undefined
 
       const blobUrl = generateInvoiceBlob({
         invoiceNumber: soNumber,
@@ -91,7 +94,7 @@ export function usePointOfSaleCheckout() {
 
       return blobUrl
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory_items'] })
       queryClient.invalidateQueries({ queryKey: ['sales_orders'] })
       queryClient.invalidateQueries({ queryKey: ['stock_movements'] })

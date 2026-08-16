@@ -1,19 +1,9 @@
-import { useState } from 'react'
-import { Plus } from 'lucide-react'
 import { useMonthlyFinancials } from '../../hooks/useMonthlyFinancials'
 import { useProfitLoss } from '../../hooks/useProfitLoss'
-import { EXPENSE_CATEGORIES } from '../../types/expense'
-import { Button } from '@/components/ui/button'
-import Modal from '../../components/ui/Modal'
-import ExpenseForm from '../../components/admin/ExpenseForm'
 
 export default function AdminOverview() {
   const { data: monthlyFinancials } = useMonthlyFinancials()
   const { data: pl, isLoading: plLoading } = useProfitLoss()
-  const [showExpenseForm, setShowExpenseForm] = useState(false)
-
-  const categoryLabel = (value: string) =>
-    EXPENSE_CATEGORIES.find((c) => c.value === value)?.label ?? value
 
   const lastMonthData = monthlyFinancials && monthlyFinancials.length > 0
     ? monthlyFinancials[monthlyFinancials.length - 1]

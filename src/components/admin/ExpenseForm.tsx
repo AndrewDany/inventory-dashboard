@@ -18,10 +18,14 @@ export default function ExpenseForm({ onClose }: { onClose: () => void }) {
     watch,
     formState: { errors, isSubmitting },
   } = useForm<ExpenseFormValues>({
-    resolver: zodResolver(expenseSchema),
+    resolver: zodResolver(expenseSchema) as any,
     defaultValues: {
+      label: '',
       category: 'other',
+      amount: 0,
       expense_date: new Date().toISOString().slice(0, 10),
+      notes: '',
+      location_id: undefined,
     },
   })
 

@@ -7,6 +7,7 @@ export default function PageLayout({
   title,
   onAddItem,
   onBulkAddProducts,
+  onSellItem,
   onChangePassword,
   onInviteUser,
   onSettings,
@@ -18,6 +19,7 @@ export default function PageLayout({
   title: string
   onAddItem?: () => void
   onBulkAddProducts?: () => void
+  onSellItem?: () => void
   onChangePassword?: () => void
   onInviteUser?: () => void
   onSettings?: () => void
@@ -37,6 +39,7 @@ export default function PageLayout({
         onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
         onAddItem={onAddItem}
         onBulkAddProducts={onBulkAddProducts}
+        onSellItem={onSellItem}
         onChangePassword={onChangePassword}
         onInviteUser={onInviteUser}
         onSettings={onSettings}

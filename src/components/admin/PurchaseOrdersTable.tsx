@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Printer } from 'lucide-react'
 import { usePurchaseOrders } from '../../hooks/usePurchaseOrders'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'

@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useSalesOrders, useShipSalesOrder } from '../../hooks/useSalesOrders'
+import { useInventory } from '../../hooks/useInventory'
+import { useInventoryBatches } from '../../hooks/useInventoryBatches'
 import { useLocations } from '../../hooks/useLocations'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -32,9 +34,49 @@ export default function SalesOrdersTable() {
   const { data: orders, isLoading, error } = useSalesOrders()
   const shipOrder = useShipSalesOrder()
   const { data: locations } = useLocations()
+  const { data: inventoryItems = [] } = useInventory()
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [shippingSO, setShippingSO] = useState<{ id: string; locationId: string } | null>(null)
   const [shipLocationId, setShipLocationId] = useState('')
+
+  const { data: locationBatches } = useInventoryBatches(undefined, shipLocationId || undefined)
+  const selectedOrder = shippingSO ? orders?.find((so) => so.id === shippingSO.id) : null
+
+  const availableBySku = useMemo(() => {
+    const qtyBySku: Record<string, number> = {}
+
+    for (const row of locationBatches ?? []) {
+      const sku = row.inventory_batches.sku
+      qtyBySku[sku] = (qtyBySku[sku] ?? 0) + Number(row.on_hand_quantity ?? 0)
+    }
+
+    for (const item of inventoryItems) {
+      const sku = item.sku
+      qtyBySku[sku] = (qtyBySku[sku] ?? 0) + Number(item.quantity ?? 0)
+    }
+
+    return qtyBySku
+  }, [locationBatches, inventoryItems])
+
+  const shortages = useMemo(() => {
+    if (!selectedOrder) return []
+
+    return selectedOrder.sales_order_items
+      .map((item) => {
+        const remaining = item.quantity_ordered - item.quantity_shipped
+        const available = availableBySku[item.sku] ?? 0
+        return {
+          sku: item.sku,
+          required: remaining,
+          available,
+          shortage: Math.max(0, remaining - available),
+        }
+      })
+      .filter((item) => item.shortage > 0)
+  }, [selectedOrder, availableBySku])
+
+  const hasShortage = shortages.length > 0
+  const selectedLocationName = locations?.find((loc) => loc.id === shipLocationId)?.name
 
   if (isLoading) return <p className="text-gray-500 text-sm">Loading sales orders...</p>
   if (error) return <p className="text-red-600 text-sm">Error: {error.message}</p>
@@ -143,13 +185,35 @@ export default function SalesOrdersTable() {
             <p className="text-sm text-gray-500">
               This will ship <strong>all remaining items</strong> on this order. Use POS for partial shipments.
             </p>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+              <p className="font-semibold">Available stock at {selectedLocationName ?? 'selected location'}:</p>
+              <ul className="mt-2 list-disc pl-5 space-y-1">
+                {selectedOrder?.sales_order_items.map((item) => (
+                  <li key={item.id}>
+                    {item.sku}: {availableBySku[item.sku] ?? 0} available · {item.quantity_ordered - item.quantity_shipped} needed
+                  </li>
+                ))}
+              </ul>
+            </div>
+            {hasShortage && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                <p className="font-semibold">Insufficient stock at the selected location:</p>
+                <ul className="mt-2 list-disc pl-5 space-y-1">
+                  {shortages.map((item) => (
+                    <li key={item.sku}>
+                      {item.sku}: required {item.required}, available {item.available}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <div className="flex justify-end gap-3 pt-2">
               <Button type="button" variant="outline" onClick={() => { setShippingSO(null); setShipLocationId('') }}>
                 Cancel
               </Button>
               <Button
                 onClick={handleShip}
-                disabled={!shipLocationId || shipOrder.isPending}
+                disabled={!shipLocationId || shipOrder.isPending || hasShortage}
               >
                 {shipOrder.isPending ? 'Shipping...' : 'Confirm Shipment'}
               </Button>

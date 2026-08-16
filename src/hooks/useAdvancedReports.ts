@@ -39,8 +39,8 @@ export function useValuationTrends() {
         const items = run.valuation_run_items as Array<Record<string, unknown>>
         return {
           month: new Date(run.started_at as string).toISOString().slice(0, 7),
-          totalValue: items.reduce((sum, i) => sum + Number(i.total_value ?? 0), 0),
-          totalUnits: items.reduce((sum, i) => sum + Number(i.on_hand_quantity ?? 0), 0),
+          totalValue: items.reduce((sum: number, i: Record<string, unknown>) => sum + Number(i.total_value ?? 0), 0),
+          totalUnits: items.reduce((sum: number, i: Record<string, unknown>) => sum + Number(i.on_hand_quantity ?? 0), 0),
         }
       })
 
@@ -98,7 +98,7 @@ export function useTopMovers() {
             totalRevenue: stats.totalRevenue,
           }
         })
-        .sort((a, b) => b.totalSold - a.totalSold)
+        .sort((a: TopMover, b: TopMover) => b.totalSold - a.totalSold)
         .slice(0, 20)
     },
     staleTime: 60_000,
@@ -132,19 +132,18 @@ export function useSupplierPerformance() {
       }
 
       return suppliers
-        .map((s) => {
-          const s2 = s as Record<string, unknown>
-          const stats = bySupplier.get(s2.id as string)
+        .map((s: Record<string, unknown>) => {
+          const stats = bySupplier.get(s.id as string)
           return {
-            supplierName: s2.name as string,
+            supplierName: s.name as string,
             totalPOs: stats?.total ?? 0,
             completedPOs: stats?.completed ?? 0,
             onTimeRate: stats && stats.total > 0 ? (stats.completed / stats.total) * 100 : 0,
             totalSpent: 0,
           }
         })
-        .filter((s) => s.totalPOs > 0)
-        .sort((a, b) => b.totalPOs - a.totalPOs)
+        .filter((s: SupplierPerformance) => s.totalPOs > 0)
+        .sort((a: SupplierPerformance, b: SupplierPerformance) => b.totalPOs - a.totalPOs)
     },
     staleTime: 60_000,
   })

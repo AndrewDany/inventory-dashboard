@@ -57,19 +57,24 @@ export function useMonthlyFinancials() {
         return months.get(key)!
       }
 
-      for (const item of (soItems ?? []) as any[]) {
+      for (const item of soItems ?? []) {
         const key = monthKey(item.sales_orders.created_at)
-        ensure(key).grossSales += item.quantity_shipped * (item.unit_price ?? 0)
+        const quantity = Number(item.quantity_shipped ?? 0)
+        const unitPrice = Number(item.unit_price ?? 0)
+        ensure(key).grossSales += quantity * unitPrice
       }
 
       for (const m of movements ?? []) {
         const key = monthKey(m.created_at)
-        ensure(key).cogs += Math.abs(m.change_amount) * (m.unit_cost ?? 0)
+        const changeAmount = Number(m.change_amount ?? 0)
+        const unitCost = Number(m.unit_cost ?? 0)
+        ensure(key).cogs += Math.abs(changeAmount) * unitCost
       }
 
       for (const e of expenses ?? []) {
         const key = monthKey(e.expense_date)
-        ensure(key).expenses += e.amount
+        const amount = Number(e.amount ?? 0)
+        ensure(key).expenses += amount
       }
 
       const result = Array.from(months.values())

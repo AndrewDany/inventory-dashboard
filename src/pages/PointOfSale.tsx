@@ -1,6 +1,8 @@
 import { useState, useMemo, useRef } from 'react'
 import { Plus, Minus, Trash2, ScanLine, Receipt, Printer } from 'lucide-react'
+import { toast } from 'sonner'
 import { useInventory } from '../hooks/useInventory'
+import type { InventoryItem } from '../types/inventory'
 import { useLocations } from '../hooks/useLocations'
 import { usePointOfSaleCheckout, type CartLine } from '../hooks/usePointOfSale'
 import BarcodeScanner from '../components/inventory/BarcodeScanner'
@@ -46,7 +48,22 @@ export default function PointOfSale() {
     ).slice(0, 6)
   }, [items, search])
 
+  const stockBySku = useMemo(() => {
+    return (items ?? []).reduce<Record<string, number>>((acc, item) => {
+      acc[item.sku] = (acc[item.sku] ?? 0) + Number(item.quantity ?? 0)
+      return acc
+    }, {})
+  }, [items])
+
   function addToCart(item: (typeof filteredItems)[number]) {
+    const available = stockBySku[item.sku] ?? 0
+    const existingQty = cart.find((line) => line.item.id === item.id)?.quantity ?? 0
+
+    if (existingQty + 1 > available) {
+      toast.warning(`Only ${available} ${item.sku} available in stock.`)
+      return
+    }
+
     setCart((prev) => {
       const existing = prev.find((line) => line.item.id === item.id)
       if (existing) {
@@ -76,6 +93,13 @@ export default function PointOfSale() {
 
   async function handleCheckout() {
     if (cart.length === 0 || !locationId) return
+
+    const hasOversell = cart.some((line) => (stockBySku[line.item.sku] ?? 0) < line.quantity)
+    if (hasOversell) {
+      toast.error('One or more items exceed available stock at this location.')
+      return
+    }
+
     try {
       const blobUrl = await checkout.mutateAsync({
         cart,
@@ -106,7 +130,7 @@ export default function PointOfSale() {
     }
   }
 
-  function getUnitLabel(item: (typeof items)[number]): string {
+  function getUnitLabel(item: InventoryItem): string {
     if (item.unit_of_measure) {
       return item.unit_of_measure
     }
@@ -322,9 +346,7 @@ export default function PointOfSale() {
             <Label className="mb-1 block">Location</Label>
             <Select value={locationId} onValueChange={(v) => setLocationId(v ?? '')}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a location">
-                  {(value: string) => locations?.find((l) => l.id === value)?.name ?? value}
-                </SelectValue>
+                <SelectValue placeholder="Select a location" />
               </SelectTrigger>
               <SelectContent>
                 {locations?.map((loc) => (
@@ -339,7 +361,7 @@ export default function PointOfSale() {
           {/* Payment Status */}
           <div>
             <Label className="mb-1 block">Payment Status</Label>
-            <Select value={paymentStatus} onValueChange={(v) => setPaymentStatus(v)}>
+            <Select value={paymentStatus} onValueChange={(v) => setPaymentStatus(v ?? 'Paid')}>
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>

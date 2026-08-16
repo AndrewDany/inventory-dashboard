@@ -14,9 +14,9 @@ export interface BatchStockRow {
   inventory_batches: InventoryBatch
 }
 
-export function useInventoryBatches(sku?: string) {
+export function useInventoryBatches(sku?: string, locationId?: string) {
   return useQuery({
-    queryKey: ['inventory_batches', sku ?? 'all'],
+    queryKey: ['inventory_batches', sku ?? 'all', locationId ?? 'all'],
     queryFn: async (): Promise<BatchStockRow[]> => {
       let query = supabase
         .from('inventory_batch_stock')
@@ -24,7 +24,12 @@ export function useInventoryBatches(sku?: string) {
         .order('updated_at', { ascending: false })
 
       if (sku) {
-        query = query.eq('inventory_batches.sku', sku)
+        const skuFilter = sku.trim().split(/\s+/)[0]
+        // Use case-insensitive substring matching for the first token of the SKU input.
+        query = query.ilike('inventory_batches.sku', `%${skuFilter}%`)
+      }
+      if (locationId) {
+        query = query.eq('location_id', locationId)
       }
 
       const { data, error } = await query

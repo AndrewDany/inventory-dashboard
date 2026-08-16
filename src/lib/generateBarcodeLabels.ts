@@ -64,8 +64,8 @@ export function generateBarcodeLabelsPDF(
     const barcodeW = labelWidth - 6
     const barcodeH = 20
 
-    doc.setFillColor(0)
-    doc.setDrawColor(0)
+    doc.setFillColor(0, 0, 0)
+    doc.setDrawColor(0, 0, 0)
     const pattern = generateBarcodePattern(item.sku)
     const barWidth = barcodeW / pattern.length
     for (let i = 0; i < pattern.length; i++) {
