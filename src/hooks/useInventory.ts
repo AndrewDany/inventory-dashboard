@@ -35,6 +35,7 @@ async function logStockMovement(
     previous_quantity: previousQuantity,
     new_quantity: newQuantity,
     change_amount: newQuantity - previousQuantity,
+    reason: 'inventory_update',
     user_id: user.id,
     user_email: user.email,
   })

@@ -53,11 +53,15 @@ export default function NotificationCenter() {
                         {n.action === 'created' && 'Item Created'}
                         {n.action === 'updated' && 'Item Updated'}
                         {n.action === 'deleted' && 'Item Deleted'}
+                        {n.action === 'received' && 'Purchase Order Received'}
+                        {n.action === 'shipped' && 'Sales Order Shipped'}
                       </p>
                       <p className="text-xs text-gray-600 mt-0.5">
                         {n.action === 'created' && `Added: ${n.item_name}`}
                         {n.action === 'updated' && `Modified: ${n.item_name}`}
                         {n.action === 'deleted' && `Removed: ${n.item_name}`}
+                        {n.action === 'received' && `PO: ${n.item_name}`}
+                        {n.action === 'shipped' && `SO: ${n.item_name}`}
                       </p>
                       <p className="text-[10px] text-gray-400 mt-1">
                         by {n.user_email} • {new Date(n.created_at).toLocaleString()}

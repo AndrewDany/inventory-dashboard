@@ -106,7 +106,7 @@ export default function AdminOverview() {
                   </tr>
                 </thead>
                 <tbody>
-                  {monthlyFinancials.map((m) => (
+                  {monthlyFinancials.slice(-12).map((m) => (
                     <tr key={m.month} className="border-b border-slate-50 hover:bg-slate-50">
                       <td className="py-2 pr-4 text-slate-700">
                         {new Date(m.month + '-01').toLocaleDateString(undefined, { year: 'numeric', month: 'short' })}

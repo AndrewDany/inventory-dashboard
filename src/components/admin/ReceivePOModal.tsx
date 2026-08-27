@@ -41,7 +41,9 @@ export default function ReceivePOModal({
         <Label className="mb-1 block">Receiving Location</Label>
         <Select value={locationId} onValueChange={(v) => setLocationId(v ?? '')}>
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select a location" />
+            <SelectValue placeholder="Select a location">
+              {(value: string) => locations?.find((loc) => loc.id === value)?.name ?? value}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {locations?.map((loc) => (

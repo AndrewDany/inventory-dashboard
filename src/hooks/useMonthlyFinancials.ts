@@ -18,33 +18,48 @@ export function useMonthlyFinancials() {
   return useQuery({
     queryKey: ['monthly_financials'],
     queryFn: async (): Promise<MonthlyFinancial[]> => {
-      const twelveMonthsAgo = new Date()
-      twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 11)
-      twelveMonthsAgo.setDate(1)
-      const since = twelveMonthsAgo.toISOString().slice(0, 10)
+      // Include the full sales history so older shipped goods continue to affect gross profit.
+      // The chart display can still trim to the latest 12 months when needed.
 
       // Revenue: shipped sales order items
       const { data: soItems, error: soError } = await supabase
         .from('sales_order_items')
         .select('quantity_shipped, unit_price, sales_orders!inner(created_at)')
-        .gte('sales_orders.created_at', since)
 
       if (soError) throw new Error(soError.message)
 
-      // COGS: negative stock movements (goods going out), with their cost at time of movement
+      // COGS: negative stock movements (goods going out), with their cost at time of movement.
+      // If a legacy row has a missing/zero unit_cost, fall back to the most recent batch cost for that SKU.
       const { data: movements, error: movError } = await supabase
         .from('stock_movements')
-        .select('change_amount, unit_cost, created_at')
+        .select('item_name, change_amount, unit_cost, created_at')
         .lt('change_amount', 0)
-        .gte('created_at', since)
 
       if (movError) throw new Error(movError.message)
+
+      const { data: batchCosts, error: batchCostError } = await supabase
+        .from('inventory_batches')
+        .select('sku, unit_cost, received_date, created_at')
+
+      if (batchCostError) throw new Error(batchCostError.message)
+
+      const latestBatchCostBySku = new Map<string, number>()
+      for (const batch of batchCosts ?? []) {
+        const sku = String(batch.sku ?? '')
+        if (!sku) continue
+        const cost = Number(batch.unit_cost ?? 0)
+        const key = batch.received_date ?? batch.created_at ?? ''
+        const current = latestBatchCostBySku.get(sku)
+        if (!current || (key && (!latestBatchCostBySku.get(`${sku}__date`) || key > latestBatchCostBySku.get(`${sku}__date`)!))) {
+          latestBatchCostBySku.set(sku, cost)
+          if (key) latestBatchCostBySku.set(`${sku}__date`, key)
+        }
+      }
 
       // Operating expenses
       const { data: expenses, error: expError } = await supabase
         .from('expenses')
         .select('amount, expense_date')
-        .gte('expense_date', since)
 
       if (expError) throw new Error(expError.message)
 
@@ -67,7 +82,10 @@ export function useMonthlyFinancials() {
       for (const m of movements ?? []) {
         const key = monthKey(m.created_at)
         const changeAmount = Number(m.change_amount ?? 0)
-        const unitCost = Number(m.unit_cost ?? 0)
+        const movementCost = Number(m.unit_cost ?? 0)
+        const sku = String(m.item_name ?? '')
+        const batchFallbackCost = sku ? Number(latestBatchCostBySku.get(sku) ?? 0) : 0
+        const unitCost = movementCost > 0 ? movementCost : batchFallbackCost
         ensure(key).cogs += Math.abs(changeAmount) * unitCost
       }
 

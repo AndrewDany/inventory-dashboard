@@ -121,7 +121,9 @@ export default function InventoryForm({
           onValueChange={(v) => setValue('location_id', v || undefined)}
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select a location" />
+            <SelectValue placeholder="Select a location">
+              {(value: string) => locations?.find((loc) => loc.id === value)?.name ?? value}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {locations?.map((loc) => (

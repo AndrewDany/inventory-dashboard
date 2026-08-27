@@ -132,11 +132,11 @@ begin
 
     insert into public.stock_movements (
       item_id, item_name, previous_quantity, new_quantity, change_amount,
-      user_id, user_email, batch_id, unit_cost
+      reason, user_id, user_email, batch_id, unit_cost
     ) values (
       v_return.inventory_item_id, v_return.sku,
       v_prev_qty, v_new_qty, v_return.quantity,
-      v_actor, v_actor_email, null, v_return.unit_cost
+      'return_restock', v_actor, v_actor_email, null, v_return.unit_cost
     );
 
     -- Add back to the most recent batch for this SKU at this location (best effort)
@@ -174,11 +174,11 @@ begin
 
       insert into public.stock_movements (
         item_id, item_name, previous_quantity, new_quantity, change_amount,
-        user_id, user_email, batch_id, unit_cost
+        reason, user_id, user_email, batch_id, unit_cost
       ) values (
         v_return.inventory_item_id, v_return.sku,
         v_prev_qty, v_new_qty, -v_return.quantity,
-        v_actor, v_actor_email, null, v_return.unit_cost
+        'return_replacement', v_actor, v_actor_email, null, v_return.unit_cost
       );
 
       -- Remove replacement units FIFO from batches (best effort)
@@ -216,11 +216,11 @@ begin
 
     insert into public.stock_movements (
       item_id, item_name, previous_quantity, new_quantity, change_amount,
-      user_id, user_email, batch_id, unit_cost
+      reason, user_id, user_email, batch_id, unit_cost
     ) values (
       v_return.inventory_item_id, v_return.sku,
       v_prev_qty, v_new_qty, -v_return.quantity,
-      v_actor, v_actor_email, null, v_return.unit_cost
+      'return_write_off', v_actor, v_actor_email, null, v_return.unit_cost
     );
 
     -- Remove FIFO from batches (best effort)

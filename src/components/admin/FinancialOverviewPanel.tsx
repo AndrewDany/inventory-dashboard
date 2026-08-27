@@ -99,7 +99,7 @@ export default function FinancialOverviewPanel() {
       {/* 12-month trend */}
       {monthly && monthly.length > 0 && (
         <div className="rounded-2xl border border-slate-100 bg-white p-4">
-          <p className="text-sm font-semibold text-slate-900 mb-3">Last 12 months</p>
+          <p className="text-sm font-semibold text-slate-900 mb-3">Recent trend</p>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -111,7 +111,7 @@ export default function FinancialOverviewPanel() {
                 </tr>
               </thead>
               <tbody>
-                {monthly.map((m) => (
+                {monthly.slice(-12).map((m) => (
                   <tr key={m.month} className="border-b border-slate-50 hover:bg-slate-50">
                     <td className="py-2 pr-4 text-slate-700">
                       {new Date(m.month + '-01').toLocaleDateString(undefined, { year: 'numeric', month: 'short' })}

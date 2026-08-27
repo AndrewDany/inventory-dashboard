@@ -125,20 +125,31 @@ begin
       previous_quantity,
       new_quantity,
       change_amount,
+      reason,
       user_id,
       user_email,
+      batch_id,
       unit_cost
     )
     select
-      v_line.inventory_item_id,
+      ii.id,
       v_line.sku,
       ii.quantity + v_line.remaining_qty,
       ii.quantity,
       -v_line.remaining_qty,
+      'sales_shipment',
       v_actor,
       v_actor_email,
-      coalesce(ii.unit_price, 0)
+      latest_batch.id,
+      coalesce(latest_batch.unit_cost, ii.unit_price, 0)
     from public.inventory_items ii
+    left join lateral (
+      select b.id, b.unit_cost
+      from public.inventory_batches b
+      where b.sku = v_line.sku
+      order by b.received_date desc, b.created_at desc
+      limit 1
+    ) latest_batch on true
     where ii.id = v_line.inventory_item_id;
 
     update public.sales_order_items
