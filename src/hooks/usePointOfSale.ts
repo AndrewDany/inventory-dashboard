@@ -8,6 +8,47 @@ import type { InventoryItem } from '../types/inventory'
 export interface CartLine {
   item: InventoryItem
   quantity: number
+  // Only meaningful when item.unit_type === 'box' && item.units_per_box is set.
+  // 'box' (default): quantity counts whole boxes. 'piece': quantity counts
+  // individual pieces broken out of a box.
+  sellMode?: 'box' | 'piece'
+}
+
+// Inventory stock (and reorder levels) for a box item with units_per_box set
+// is tracked in pieces — the base sellable unit — so a box can be sold whole
+// or broken open without losing track of stock. This converts a cart line's
+// display quantity into that base-unit quantity for stock checks/deduction.
+export function basePieceQuantity(line: CartLine): number {
+  const upb = line.item.unit_type === 'box' ? line.item.units_per_box : null
+  if (!upb) return line.quantity
+  return line.sellMode === 'piece' ? line.quantity : line.quantity * upb
+}
+
+// Price per base unit (per piece, when selling loose from a box; otherwise
+// the item's normal unit_price). Used for records that need a true
+// per-base-unit price rather than the display-quantity subtotal.
+export function pricePerBaseUnit(line: CartLine): number {
+  const price = line.item.unit_price ?? 0
+  const upb = line.item.unit_type === 'box' ? line.item.units_per_box : null
+  if (upb && line.sellMode === 'piece') {
+    return price / upb
+  }
+  return price
+}
+
+// Price for the cart line's display quantity (boxes or loose pieces,
+// whichever sellMode is active) — used for cart/invoice subtotals.
+export function lineSubtotal(line: CartLine): number {
+  return line.quantity * pricePerBaseUnit(line)
+}
+
+// Human-readable unit label for the invoice line ("box", "pcs", "kg", etc.)
+export function invoiceUnitLabel(line: CartLine): string {
+  const upb = line.item.unit_type === 'box' ? line.item.units_per_box : null
+  if (upb) return line.sellMode === 'piece' ? 'pcs' : 'box'
+  if (line.item.unit_type === 'box') return 'box'
+  if (line.item.unit_of_measure) return line.item.unit_of_measure
+  return 'unit'
 }
 
 interface CheckoutInput {
@@ -51,13 +92,17 @@ export function usePointOfSaleCheckout() {
         .single()
       if (soError) throw new Error(soError.message)
 
-      // 2. Create line items
+      // 2. Create line items. quantity_ordered must be in the same base
+      // unit as inventory_items.quantity (pieces, for box items with a
+      // units_per_box conversion set) since ship_sales_order deducts it
+      // 1:1 from stock — it has no knowledge of "sold as a box" vs.
+      // "sold as loose pieces".
       const itemRows = cart.map((line) => ({
         so_id: so.id,
         sku: line.item.sku,
         inventory_item_id: Number(line.item.id),
-        quantity_ordered: line.quantity,
-        unit_price: line.item.unit_price ?? 0,
+        quantity_ordered: basePieceQuantity(line),
+        unit_price: pricePerBaseUnit(line),
       }))
       const { error: itemsError } = await supabase.from('sales_order_items').insert(itemRows)
       if (itemsError) throw new Error(itemsError.message)
@@ -88,7 +133,8 @@ export function usePointOfSaleCheckout() {
           sku: line.item.sku,
           name: line.item.name,
           quantity: line.quantity,
-          unitPrice: line.item.unit_price ?? 0,
+          unitPrice: pricePerBaseUnit(line),
+          unitLabel: invoiceUnitLabel(line),
         })),
       })
 
@@ -107,4 +153,3 @@ export function usePointOfSaleCheckout() {
     },
   })
 }
-

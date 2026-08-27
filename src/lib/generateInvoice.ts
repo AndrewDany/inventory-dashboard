@@ -6,6 +6,7 @@ export interface InvoiceLineItem {
   name: string
   quantity: number
   unitPrice: number
+  unitLabel?: string
 }
 
 export interface InvoiceData {
@@ -81,8 +82,8 @@ export function generateInvoiceBlob(data: InvoiceData): string {
     head: [['Catalog Product Line', 'Retail Unit Price', 'Checkout Qty', 'Subtotal']],
     body: data.items.map((item) => [
       item.name,
-      `GHS ${item.unitPrice.toFixed(2)}`,
-      item.quantity.toString(),
+      `GHS ${item.unitPrice.toFixed(2)}${item.unitLabel ? ` /${item.unitLabel}` : ''}`,
+      `${item.quantity}${item.unitLabel ? ` ${item.unitLabel}` : ''}`,
       `GHS ${(item.quantity * item.unitPrice).toFixed(2)}`,
     ]),
     headStyles: { fillColor: [79, 70, 229] },
@@ -125,4 +126,3 @@ export function generateInvoice(data: InvoiceData) {
   link.click()
   URL.revokeObjectURL(url)
 }
-

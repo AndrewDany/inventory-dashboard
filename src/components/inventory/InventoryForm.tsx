@@ -14,8 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import type { InventoryItem } from '../../types/inventory'
 
 const UNIT_TYPE_LABELS: Record<string, string> = {
-  unit: 'Whole Unit (box, piece, bag)',
-  measured: 'Measured (weight or length)',
+  unit: 'Unit (piece, bag, item)',
+  box: 'Box',
+  weight: 'Weight',
 }
 
 export default function InventoryForm({
@@ -42,8 +43,13 @@ export default function InventoryForm({
           name: item.name,
           sku: item.sku,
           category: item.category ?? '',
-          unit_type: item.unit_type,
-          unit_of_measure: item.unit_of_measure ?? null,
+          // Legacy rows may still carry the old 'measured' type or 'm'
+          // (meters) unit before the box/weight/unit split — normalize
+          // them so the form doesn't render an unknown option.
+          unit_type:
+            (item.unit_type as string) === 'measured' ? 'weight' : item.unit_type,
+          unit_of_measure: item.unit_of_measure === 'kg' ? 'kg' : null,
+          units_per_box: item.units_per_box ?? null,
           quantity: item.quantity,
           reorder_level: item.reorder_level,
           unit_price: item.unit_price ?? undefined,
@@ -61,6 +67,7 @@ export default function InventoryForm({
           location_id: undefined,
           unit_type: 'unit',
           unit_of_measure: null,
+          units_per_box: null,
         },
   })
 
@@ -70,8 +77,11 @@ export default function InventoryForm({
   const locationValue = watch('location_id')
   const unitTypeValue = watch('unit_type')
   const unitOfMeasureValue = watch('unit_of_measure')
+  const unitsPerBoxValue = watch('units_per_box')
   const supplierValue = watch('supplier')
-  const isMeasured = unitTypeValue === 'measured'
+  const isWeight = unitTypeValue === 'weight'
+  const isBox = unitTypeValue === 'box'
+  const hasBoxConversion = isBox && Boolean(unitsPerBoxValue)
 
   async function onSubmit(values: InventoryFormValues) {
     if (isEditMode && item) {
@@ -149,9 +159,14 @@ export default function InventoryForm({
           <Select
             value={unitTypeValue ?? 'unit'}
             onValueChange={(v) => {
-              setValue('unit_type', (v as 'unit' | 'measured') ?? 'unit')
-              if (v !== 'measured') {
+              setValue('unit_type', (v as 'unit' | 'box' | 'weight') ?? 'unit')
+              if (v !== 'weight') {
                 setValue('unit_of_measure', null)
+              } else if (!unitOfMeasureValue) {
+                setValue('unit_of_measure', 'kg')
+              }
+              if (v !== 'box') {
+                setValue('units_per_box', null)
               }
             }}
           >
@@ -161,25 +176,25 @@ export default function InventoryForm({
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="unit">Whole Unit (box, piece, bag)</SelectItem>
-              <SelectItem value="measured">Measured (weight or length)</SelectItem>
+              <SelectItem value="unit">Unit (piece, bag, item)</SelectItem>
+              <SelectItem value="box">Box</SelectItem>
+              <SelectItem value="weight">Weight</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        {isMeasured && (
+        {isWeight && (
           <div>
             <Label className="mb-1 block">Unit of Measure</Label>
             <Select
-              value={unitOfMeasureValue ?? ''}
-              onValueChange={(v) => setValue('unit_of_measure', (v as 'kg' | 'm') ?? null)}
+              value={unitOfMeasureValue ?? 'kg'}
+              onValueChange={(v) => setValue('unit_of_measure', (v as 'kg') ?? 'kg')}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a unit" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="kg">Kilograms (kg)</SelectItem>
-                <SelectItem value="m">Meters (m)</SelectItem>
               </SelectContent>
             </Select>
             {errors.unit_of_measure && (
@@ -189,15 +204,40 @@ export default function InventoryForm({
         )}
       </div>
 
+      {isBox && (
+        <div>
+          <Label htmlFor="units_per_box" className="mb-1 block">
+            Units per Box (optional)
+          </Label>
+          <Input
+            id="units_per_box"
+            type="number"
+            step="1"
+            min="1"
+            placeholder="e.g. 100"
+            {...register('units_per_box')}
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            {hasBoxConversion
+              ? `This box can be sold whole or broken open and sold as individual pieces. Stock below is tracked in pieces (${unitsPerBoxValue} per box).`
+              : 'Leave blank if you only ever sell this sealed — stock will be tracked in whole boxes. Set a number if boxes get opened and sold as loose pieces too.'}
+          </p>
+          {errors.units_per_box && (
+            <p className="text-red-600 text-sm mt-1">{errors.units_per_box.message}</p>
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="quantity" className="mb-1 block">
-            Quantity {isMeasured && unitOfMeasureValue ? `(${unitOfMeasureValue})` : ''}
+            Quantity {isWeight && unitOfMeasureValue ? `(${unitOfMeasureValue})` : ''}
+            {isBox ? (hasBoxConversion ? '(pieces)' : '(boxes)') : ''}
           </Label>
           <Input
             id="quantity"
             type="number"
-            step={isMeasured ? '0.01' : '1'}
+            step={isWeight ? '0.01' : '1'}
             {...register('quantity')}
           />
           {errors.quantity && <p className="text-red-600 text-sm mt-1">{errors.quantity.message}</p>}
@@ -205,12 +245,13 @@ export default function InventoryForm({
 
         <div>
           <Label htmlFor="reorder_level" className="mb-1 block">
-            Reorder Level {isMeasured && unitOfMeasureValue ? `(${unitOfMeasureValue})` : ''}
+            Reorder Level {isWeight && unitOfMeasureValue ? `(${unitOfMeasureValue})` : ''}
+            {isBox ? (hasBoxConversion ? '(pieces)' : '(boxes)') : ''}
           </Label>
           <Input
             id="reorder_level"
             type="number"
-            step={isMeasured ? '0.01' : '1'}
+            step={isWeight ? '0.01' : '1'}
             {...register('reorder_level')}
           />
           {errors.reorder_level && <p className="text-red-600 text-sm mt-1">{errors.reorder_level.message}</p>}
@@ -219,7 +260,7 @@ export default function InventoryForm({
 
       <div>
         <Label htmlFor="unit_price" className="mb-1 block">
-          Unit Price {isMeasured && unitOfMeasureValue ? `(per ${unitOfMeasureValue})` : ''}
+          Unit Price {isWeight && unitOfMeasureValue ? `(per ${unitOfMeasureValue})` : unitTypeValue === 'box' ? '(per box)' : ''}
         </Label>
         <Input id="unit_price" type="number" step="0.01" {...register('unit_price')} />
         {errors.unit_price && <p className="text-red-600 text-sm mt-1">{errors.unit_price.message}</p>}
