@@ -17,14 +17,21 @@ export default function SuppliersTable() {
   const { data: suppliers, isLoading, error } = useSuppliers()
   const deleteSupplier = useDeleteSupplier()
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null)
+  const [showAddModal, setShowAddModal] = useState(false)
 
   if (isLoading) return <p className="text-gray-500 text-sm">Loading suppliers...</p>
   if (error) return <p className="text-red-600 text-sm">Error: {error.message}</p>
 
   return (
-    <div>
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button onClick={() => setShowAddModal(true)} className="bg-indigo-600 hover:bg-indigo-700">
+          Add Supplier
+        </Button>
+      </div>
+
       {(!suppliers || suppliers.length === 0) && (
-        <p className="text-gray-500 text-sm">No suppliers yet — add your first one from the sidebar.</p>
+        <p className="text-gray-500 text-sm">No suppliers yet — click "Add Supplier" above to create one.</p>
       )}
 
       {suppliers && suppliers.length > 0 && (
@@ -67,6 +74,12 @@ export default function SuppliersTable() {
       {editingSupplier && (
         <Modal title="Edit Supplier" onClose={() => setEditingSupplier(null)}>
           <SupplierForm supplier={editingSupplier} onClose={() => setEditingSupplier(null)} />
+        </Modal>
+      )}
+
+      {showAddModal && (
+        <Modal title="Add Supplier" onClose={() => setShowAddModal(false)}>
+          <SupplierForm onClose={() => setShowAddModal(false)} />
         </Modal>
       )}
     </div>

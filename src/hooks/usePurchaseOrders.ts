@@ -36,37 +36,18 @@ export function useCreatePurchaseOrder() {
 
   return useMutation({
     mutationFn: async (input: CreatePOInput) => {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const userId = sessionData.session?.user.id
-      if (!userId) throw new Error('Not authenticated')
+      // Header + line items are inserted atomically server-side via the
+      // create_purchase_order RPC, so a bad line item can't leave an
+      // orphaned PO header behind (see supabase/create-purchase-order.sql).
+      const { data, error } = await supabase.rpc('create_purchase_order', {
+        p_po_number: input.po_number,
+        p_supplier_id: input.supplier_id ?? null,
+        p_notes: input.notes ?? null,
+        p_items: input.items,
+      })
 
-      const { data: po, error: poError } = await supabase
-        .from('purchase_orders')
-        .insert({
-          po_number: input.po_number,
-          supplier_id: input.supplier_id ?? null,
-          notes: input.notes ?? null,
-          status: 'ordered',
-          created_by: userId,
-        })
-        .select()
-        .single()
-
-      if (poError) throw new Error(poError.message)
-
-      const itemRows = input.items.map((item) => ({
-        po_id: po.id,
-        sku: item.sku,
-        inventory_item_id: item.inventory_item_id ?? null,
-        quantity_ordered: item.quantity_ordered,
-        unit_cost: item.unit_cost ?? null,
-        currency: item.currency ?? null,
-      }))
-
-      const { error: itemsError } = await supabase.from('purchase_order_items').insert(itemRows)
-      if (itemsError) throw new Error(itemsError.message)
-
-      return po
+      if (error) throw new Error(error.message)
+      return data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase_orders'] })

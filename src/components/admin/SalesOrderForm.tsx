@@ -1,4 +1,4 @@
-import { useForm, useFieldArray, Controller } from 'react-hook-form'
+import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -11,22 +11,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useCreatePurchaseOrder } from '../../hooks/usePurchaseOrders'
-import { useSuppliers } from '../../hooks/useSuppliers'
+import { useCreateSalesOrder } from '../../hooks/useSalesOrders'
 import { useInventory } from '../../hooks/useInventory'
 import {
-  purchaseOrderSchema,
-  type PurchaseOrderFormValues,
-  type PurchaseOrderFormInput,
+  salesOrderSchema,
+  type SalesOrderFormValues,
+  type SalesOrderFormInput,
 } from '../../lib/procurementSchemas'
 
-type PurchaseOrderFormProps = {
+type SalesOrderFormProps = {
   onClose: () => void
 }
 
-export default function PurchaseOrderForm({ onClose }: PurchaseOrderFormProps) {
-  const createPO = useCreatePurchaseOrder()
-  const { data: suppliers } = useSuppliers()
+export default function SalesOrderForm({ onClose }: SalesOrderFormProps) {
+  const createSO = useCreateSalesOrder()
   const { data: inventoryItems = [] } = useInventory()
 
   const {
@@ -36,13 +34,12 @@ export default function PurchaseOrderForm({ onClose }: PurchaseOrderFormProps) {
     watch,
     setValue,
     formState: { errors, isSubmitting },
-  } = useForm<PurchaseOrderFormInput, unknown, PurchaseOrderFormValues>({
-    resolver: zodResolver(purchaseOrderSchema),
+  } = useForm<SalesOrderFormInput, unknown, SalesOrderFormValues>({
+    resolver: zodResolver(salesOrderSchema),
     defaultValues: {
-      po_number: `PO-${Date.now().toString().slice(-8)}`,
-      supplier_id: '',
+      so_number: `SO-${Date.now().toString().slice(-8)}`,
       notes: '',
-      items: [{ sku: '', quantity_ordered: 1, unit_cost: 0 }],
+      items: [{ sku: '', quantity_ordered: 1, unit_price: 0 }],
     },
   })
 
@@ -51,8 +48,8 @@ export default function PurchaseOrderForm({ onClose }: PurchaseOrderFormProps) {
 
   const total = items.reduce((sum, item) => {
     const qty = Number(item.quantity_ordered) || 0
-    const cost = Number(item.unit_cost) || 0
-    return sum + qty * cost
+    const price = Number(item.unit_price) || 0
+    return sum + qty * price
   }, 0)
 
   function handlePickInventoryItem(index: number, inventoryItemId: string) {
@@ -61,62 +58,37 @@ export default function PurchaseOrderForm({ onClose }: PurchaseOrderFormProps) {
     setValue(`items.${index}.inventory_item_id`, item.id)
     setValue(`items.${index}.sku`, item.sku)
     if (item.unit_price != null) {
-      setValue(`items.${index}.unit_cost`, item.unit_price)
+      setValue(`items.${index}.unit_price`, item.unit_price)
     }
   }
 
-  async function onSubmit(values: PurchaseOrderFormValues) {
+  async function onSubmit(values: SalesOrderFormValues) {
     try {
-      await createPO.mutateAsync({
-        po_number: values.po_number,
-        supplier_id: values.supplier_id || undefined,
+      await createSO.mutateAsync({
+        so_number: values.so_number,
         notes: values.notes || undefined,
         items: values.items.map((item) => ({
           sku: item.sku,
           inventory_item_id: item.inventory_item_id,
           quantity_ordered: item.quantity_ordered,
-          unit_cost: item.unit_cost,
+          unit_price: item.unit_price,
           currency: 'GHS',
         })),
       })
-      toast.success(`PO #${values.po_number} created`)
+      toast.success(`SO #${values.so_number} created`)
       onClose()
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error'
-      toast.error(`Failed to create purchase order: ${message}`)
+      toast.error(`Failed to create sales order: ${message}`)
     }
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-2">
-        <div>
-          <Label htmlFor="po-number" className="mb-1 block">PO number</Label>
-          <Input id="po-number" {...register('po_number')} />
-          {errors.po_number && <p className="text-red-600 text-sm mt-1">{errors.po_number.message}</p>}
-        </div>
-
-        <div>
-          <Label className="mb-1 block">Supplier</Label>
-          <Controller
-            control={control}
-            name="supplier_id"
-            render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a supplier (optional)">
-                    {(value: string) => suppliers?.find((s) => s.id === value)?.name}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {suppliers?.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-        </div>
+      <div>
+        <Label htmlFor="so-number" className="mb-1 block">SO number</Label>
+        <Input id="so-number" {...register('so_number')} />
+        {errors.so_number && <p className="text-red-600 text-sm mt-1">{errors.so_number.message}</p>}
       </div>
 
       <div className="space-y-3">
@@ -126,7 +98,7 @@ export default function PurchaseOrderForm({ onClose }: PurchaseOrderFormProps) {
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => append({ sku: '', quantity_ordered: 1, unit_cost: 0 })}
+            onClick={() => append({ sku: '', quantity_ordered: 1, unit_price: 0 })}
           >
             + Add line
           </Button>
@@ -141,17 +113,17 @@ export default function PurchaseOrderForm({ onClose }: PurchaseOrderFormProps) {
                 onValueChange={(v) => handlePickInventoryItem(index, v as string)}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Pick an existing item, or enter a new SKU below">
+                  <SelectValue placeholder="Pick an existing item">
                     {(value: string) => {
                       const picked = inventoryItems.find((i) => String(i.id) === value)
-                      return picked ? `${picked.name} (${picked.sku})` : undefined
+                      return picked ? `${picked.name} (${picked.sku}) — ${picked.quantity} on hand` : undefined
                     }}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {inventoryItems.map((item) => (
                     <SelectItem key={item.id} value={String(item.id)}>
-                      {item.name} ({item.sku})
+                      {item.name} ({item.sku}) — {item.quantity} on hand
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -161,7 +133,7 @@ export default function PurchaseOrderForm({ onClose }: PurchaseOrderFormProps) {
             <div className="grid gap-3 md:grid-cols-3">
               <div>
                 <Label className="mb-1 block text-xs">SKU</Label>
-                <Input {...register(`items.${index}.sku`)} placeholder="e.g. LAPTOP-CHARGER" />
+                <Input {...register(`items.${index}.sku`)} readOnly className="bg-slate-50" />
                 {errors.items?.[index]?.sku && (
                   <p className="text-red-600 text-xs mt-1">{errors.items[index]?.sku?.message}</p>
                 )}
@@ -179,12 +151,12 @@ export default function PurchaseOrderForm({ onClose }: PurchaseOrderFormProps) {
                 )}
               </div>
               <div>
-                <Label className="mb-1 block text-xs">Unit cost</Label>
+                <Label className="mb-1 block text-xs">Unit price</Label>
                 <Input
                   type="number"
                   min="0"
                   step="0.01"
-                  {...register(`items.${index}.unit_cost`)}
+                  {...register(`items.${index}.unit_price`)}
                 />
               </div>
             </div>
@@ -208,17 +180,17 @@ export default function PurchaseOrderForm({ onClose }: PurchaseOrderFormProps) {
       </div>
 
       <div>
-        <Label htmlFor="notes" className="mb-1 block">Notes</Label>
-        <Input id="notes" {...register('notes')} placeholder="Optional" />
+        <Label htmlFor="so-notes" className="mb-1 block">Notes</Label>
+        <Input id="so-notes" {...register('notes')} placeholder="Optional" />
       </div>
 
       <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-3">
-        <p className="text-[10px] uppercase tracking-[0.2em] text-indigo-600">Estimated total</p>
+        <p className="text-[10px] uppercase tracking-[0.2em] text-indigo-600">Order total</p>
         <p className="mt-1 text-lg font-semibold text-slate-900">GHS {total.toFixed(2)}</p>
       </div>
 
       <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700" disabled={isSubmitting}>
-        {isSubmitting ? 'Creating...' : 'Record Purchase'}
+        {isSubmitting ? 'Creating...' : 'Create Sales Order'}
       </Button>
     </form>
   )

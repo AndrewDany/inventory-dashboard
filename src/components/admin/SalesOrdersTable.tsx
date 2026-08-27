@@ -40,10 +40,28 @@ export default function SalesOrdersTable() {
   const [shipLocationId, setShipLocationId] = useState('')
 
   const { data: locationBatches } = useInventoryBatches(undefined, shipLocationId || undefined)
+  // Unfiltered (all locations) — used only to determine which SKUs are
+  // batch-tracked at all, so a tracked SKU with zero stock at THIS location
+  // doesn't wrongly fall back to the item's global quantity.
+  const { data: allBatches } = useInventoryBatches()
   const selectedOrder = shippingSO ? orders?.find((so) => so.id === shippingSO.id) : null
 
+  // Mirrors the location-scoping logic in the ship_sales_order() DB function:
+  // - If a SKU has batch records at all, it's "batch-tracked" — its available
+  //   quantity is whatever is on hand AT THE SELECTED LOCATION only (this is
+  //   what actually gets checked/deducted server-side).
+  // - Otherwise it's a "simple" item — available only if that item's own
+  //   location_id matches the selected location.
+  // Previously this summed batch stock at the location AND the item's global
+  // quantity together, which double-counted stock and ignored location
+  // entirely for items that do have batch records.
   const availableBySku = useMemo(() => {
     const qtyBySku: Record<string, number> = {}
+    const batchTrackedSkus = new Set<string>()
+
+    for (const row of allBatches ?? []) {
+      batchTrackedSkus.add(row.inventory_batches.sku)
+    }
 
     for (const row of locationBatches ?? []) {
       const sku = row.inventory_batches.sku
@@ -51,12 +69,13 @@ export default function SalesOrdersTable() {
     }
 
     for (const item of inventoryItems) {
-      const sku = item.sku
-      qtyBySku[sku] = (qtyBySku[sku] ?? 0) + Number(item.quantity ?? 0)
+      if (batchTrackedSkus.has(item.sku)) continue
+      if (!shipLocationId || item.location_id !== shipLocationId) continue
+      qtyBySku[item.sku] = (qtyBySku[item.sku] ?? 0) + Number(item.quantity ?? 0)
     }
 
     return qtyBySku
-  }, [locationBatches, inventoryItems])
+  }, [locationBatches, allBatches, inventoryItems, shipLocationId])
 
   const shortages = useMemo(() => {
     if (!selectedOrder) return []
@@ -82,7 +101,7 @@ export default function SalesOrdersTable() {
   if (error) return <p className="text-red-600 text-sm">Error: {error.message}</p>
 
   if (!orders || orders.length === 0) {
-    return <p className="text-gray-500 text-sm">No sales orders yet — create one from Point of Sale.</p>
+    return <p className="text-gray-500 text-sm">No sales orders yet — use "New Sales Order" above to create one.</p>
   }
 
   async function handleShip() {

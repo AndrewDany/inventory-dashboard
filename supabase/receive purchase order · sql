@@ -1,0 +1,142 @@
+-- ============================================================
+-- receive_purchase_order — activity_logs fix
+--
+-- Same bug as ship_sales_order: this function logged the receipt
+-- with action = 'received', but activity_logs_action_check only
+-- allows 'created' | 'updated' | 'deleted'. Every purchase-order
+-- receipt was therefore failing with:
+--   new row for relation "activity_logs" violates check
+--   constraint "activity_logs_action_check"
+--
+-- Everything else in this function is unchanged from what's
+-- currently deployed — only the final activity_logs insert is
+-- fixed to use an allowed action value.
+-- ============================================================
+
+create or replace function public.receive_purchase_order(
+  p_po_id uuid,
+  p_location_id uuid,
+  p_items jsonb default null
+)
+returns jsonb
+language plpgsql
+security definer
+as $function$
+declare
+  v_actor uuid := auth.uid();
+  v_actor_email text;
+  v_po record;
+  v_line record;
+  v_qty_to_receive numeric(14,3);
+  v_batch_id uuid;
+  v_batch_code text;
+  v_all_complete boolean := true;
+  v_received_lines jsonb := '[]'::jsonb;
+begin
+  if not public.is_admin() then
+    raise exception 'Only admins can receive purchase orders';
+  end if;
+
+  select email into v_actor_email from auth.users where id = v_actor;
+
+  select * into v_po from public.purchase_orders where id = p_po_id;
+  if v_po is null then
+    raise exception 'Purchase order not found';
+  end if;
+  if v_po.status = 'cancelled' then
+    raise exception 'Cannot receive a cancelled purchase order';
+  end if;
+
+  v_batch_code := v_po.po_number;
+
+  for v_line in
+    select * from public.purchase_order_items where po_id = p_po_id
+  loop
+    if p_items is not null then
+      select coalesce((elem->>'quantity')::numeric(14,3), 0)
+      into v_qty_to_receive
+      from jsonb_array_elements(p_items) elem
+      where (elem->>'item_id')::uuid = v_line.id;
+      v_qty_to_receive := coalesce(v_qty_to_receive, 0);
+    else
+      v_qty_to_receive := v_line.quantity_ordered - v_line.quantity_received;
+    end if;
+
+    if v_qty_to_receive <= 0 then
+      if v_line.quantity_received < v_line.quantity_ordered then
+        v_all_complete := false;
+      end if;
+      continue;
+    end if;
+
+    if v_line.quantity_received + v_qty_to_receive > v_line.quantity_ordered then
+      raise exception 'Cannot receive more than ordered for SKU %', v_line.sku;
+    end if;
+
+    select id into v_batch_id
+    from public.inventory_batches
+    where sku = v_line.sku and batch_code = v_batch_code;
+
+    if v_batch_id is null then
+      insert into public.inventory_batches (sku, batch_code, received_date, supplier_id, unit_cost, currency)
+      values (v_line.sku, v_batch_code, current_date, v_po.supplier_id, v_line.unit_cost, v_line.currency)
+      returning id into v_batch_id;
+    end if;
+
+    insert into public.inventory_batch_stock (batch_id, location_id, on_hand_quantity, avg_unit_cost, updated_at)
+    values (v_batch_id, p_location_id, v_qty_to_receive, v_line.unit_cost, now())
+    on conflict (batch_id, location_id)
+    do update set
+      on_hand_quantity = public.inventory_batch_stock.on_hand_quantity + excluded.on_hand_quantity,
+      updated_at = now();
+
+    if v_line.inventory_item_id is not null then
+      update public.inventory_items
+      set quantity = quantity + v_qty_to_receive,
+          last_updated = now()
+      where id = v_line.inventory_item_id;
+    end if;
+
+    insert into public.stock_movements (
+      item_id, item_name, previous_quantity, new_quantity, change_amount,
+      user_id, user_email, batch_id, unit_cost, reason
+    )
+    select
+      v_line.inventory_item_id, v_line.sku,
+      coalesce(ii.quantity - v_qty_to_receive, 0), coalesce(ii.quantity, v_qty_to_receive), v_qty_to_receive,
+      v_actor, v_actor_email, v_batch_id, v_line.unit_cost, 'purchase'
+    from (select 1) x
+    left join public.inventory_items ii on ii.id = v_line.inventory_item_id;
+
+    insert into public.audit_events (
+      event_type, entity_type, entity_id, sku, batch_id, location_id,
+      quantity_delta, unit_cost, actor_user_id, actor_user_email, metadata
+    ) values (
+      'purchase_order_received', 'purchase_order', p_po_id, v_line.sku, v_batch_id, p_location_id,
+      v_qty_to_receive, v_line.unit_cost, v_actor, v_actor_email,
+      jsonb_build_object('po_number', v_po.po_number, 'po_item_id', v_line.id)
+    );
+
+    update public.purchase_order_items
+    set quantity_received = quantity_received + v_qty_to_receive
+    where id = v_line.id;
+
+    if v_line.quantity_received + v_qty_to_receive < v_line.quantity_ordered then
+      v_all_complete := false;
+    end if;
+
+    v_received_lines := v_received_lines || jsonb_build_object('sku', v_line.sku, 'received', v_qty_to_receive);
+  end loop;
+
+  update public.purchase_orders
+  set status = case when v_all_complete then 'received'::public.po_status else 'ordered'::public.po_status end,
+      received_at = case when v_all_complete then now() else received_at end
+  where id = p_po_id;
+
+  -- FIX: 'received' is not an allowed action value in
+  -- activity_logs_action_check (only created/updated/deleted are).
+  insert into public.activity_logs (user_id, user_email, action, item_name)
+  values (v_actor, v_actor_email, 'updated', 'Purchase order ' || v_po.po_number || ' received');
+
+  return jsonb_build_object('success', true, 'po_id', p_po_id, 'complete', v_all_complete, 'lines', v_received_lines);
+end;$function$;

@@ -35,36 +35,16 @@ export function useCreateSalesOrder() {
 
   return useMutation({
     mutationFn: async (input: CreateSOInput) => {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const userId = sessionData.session?.user.id
-      if (!userId) throw new Error('Not authenticated')
+      // Header + line items are inserted atomically server-side via the
+      // create_sales_order RPC (see supabase/create-sales-order.sql).
+      const { data, error } = await supabase.rpc('create_sales_order', {
+        p_so_number: input.so_number,
+        p_notes: input.notes ?? null,
+        p_items: input.items,
+      })
 
-      const { data: so, error: soError } = await supabase
-        .from('sales_orders')
-        .insert({
-          so_number: input.so_number,
-          notes: input.notes ?? null,
-          status: 'confirmed',
-          created_by: userId,
-        })
-        .select()
-        .single()
-
-      if (soError) throw new Error(soError.message)
-
-      const itemRows = input.items.map((item) => ({
-        so_id: so.id,
-        sku: item.sku,
-        inventory_item_id: item.inventory_item_id ?? null,
-        quantity_ordered: item.quantity_ordered,
-        unit_price: item.unit_price ?? null,
-        currency: item.currency ?? null,
-      }))
-
-      const { error: itemsError } = await supabase.from('sales_order_items').insert(itemRows)
-      if (itemsError) throw new Error(itemsError.message)
-
-      return so
+      if (error) throw new Error(error.message)
+      return data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sales_orders'] })

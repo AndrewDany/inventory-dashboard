@@ -5,6 +5,7 @@ import { ScanLine } from 'lucide-react'
 import { inventoryItemSchema, type InventoryFormValues } from '../../lib/schemas'
 import { useAddInventoryItem, useUpdateInventoryItem } from '../../hooks/useInventory'
 import { useLocations } from '../../hooks/useLocations'
+import { useSuppliers } from '../../hooks/useSuppliers'
 import BarcodeScanner from './BarcodeScanner'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -26,6 +27,7 @@ export default function InventoryForm({
 }) {
   const [showScanner, setShowScanner] = useState(false)
   const { data: locations } = useLocations()
+  const { data: suppliers } = useSuppliers()
 
   const {
     register,
@@ -68,6 +70,7 @@ export default function InventoryForm({
   const locationValue = watch('location_id')
   const unitTypeValue = watch('unit_type')
   const unitOfMeasureValue = watch('unit_of_measure')
+  const supplierValue = watch('supplier')
   const isMeasured = unitTypeValue === 'measured'
 
   async function onSubmit(values: InventoryFormValues) {
@@ -223,8 +226,27 @@ export default function InventoryForm({
       </div>
 
       <div>
-        <Label htmlFor="supplier" className="mb-1 block">Supplier</Label>
-        <Input id="supplier" {...register('supplier')} />
+        <Label className="mb-1 block">Supplier</Label>
+        <Select
+          value={supplierValue ?? ''}
+          onValueChange={(v) => setValue('supplier', v || '')}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select a supplier (optional)" />
+          </SelectTrigger>
+          <SelectContent>
+            {suppliers?.map((s) => (
+              <SelectItem key={s.id} value={s.name}>
+                {s.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {(!suppliers || suppliers.length === 0) && (
+          <p className="text-xs text-gray-500 mt-1">
+            No suppliers yet — add one under Admin Panel → Suppliers first.
+          </p>
+        )}
       </div>
 
       <div className="flex justify-end gap-3 pt-2">

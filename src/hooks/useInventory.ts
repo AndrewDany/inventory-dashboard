@@ -21,7 +21,8 @@ async function logStockMovement(
   itemId: string,
   itemName: string,
   previousQuantity: number,
-  newQuantity: number
+  newQuantity: number,
+  reason: 'manual_adjustment' | 'purchase' | 'sale' | 'write_off' | 'return' | 'cycle_count' | 'transfer' | 'other' = 'manual_adjustment'
 ) {
   if (previousQuantity === newQuantity) return
 
@@ -35,7 +36,11 @@ async function logStockMovement(
     previous_quantity: previousQuantity,
     new_quantity: newQuantity,
     change_amount: newQuantity - previousQuantity,
-    reason: 'inventory_update',
+    // FIX: 'inventory_update' is not an allowed value in
+    // stock_movements_reason_check (only purchase/sale/manual_adjustment/
+    // write_off/return/cycle_count/transfer/other are). This was silently
+    // failing on every quantity edit, breaking the audit trail.
+    reason,
     user_id: user.id,
     user_email: user.email,
   })
@@ -92,13 +97,24 @@ export function useAddInventoryItem() {
 
   return useMutation({
     mutationFn: async (values: InventoryFormValues) => {
-      const { error } = await supabase.from('inventory_items').insert([values])
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .insert([values])
+        .select()
+        .single()
       if (error) throw new Error(error.message)
+
       await logActivity('created', values.name)
+      // Log a movement so a manually-entered starting quantity leaves an
+      // audit trail instead of appearing with no history at all.
+      if (values.quantity > 0) {
+        await logStockMovement(data.id, values.name, 0, values.quantity, 'manual_adjustment')
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory_items'] })
       queryClient.invalidateQueries({ queryKey: ['activity_logs'] })
+      queryClient.invalidateQueries({ queryKey: ['stock_movements'] })
       toast.success('Item added successfully')
     },
     onError: (error) => {
