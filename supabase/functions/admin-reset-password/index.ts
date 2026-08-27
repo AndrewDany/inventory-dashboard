@@ -36,16 +36,16 @@ Deno.serve(async (req) => {
       .single()
 
     if (profile?.role !== 'admin') {
-      return new Response(JSON.stringify({ error: 'Only admins can invite users' }), {
+      return new Response(JSON.stringify({ error: 'Only admins can reset passwords' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    const { email, password, role } = await req.json()
+    const { userId, newPassword } = await req.json()
 
-    if (!email || !password) {
-      return new Response(JSON.stringify({ error: 'Email and password are required' }), {
+    if (!userId || !newPassword) {
+      return new Response(JSON.stringify({ error: 'userId and newPassword are required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -56,27 +56,18 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      password: newPassword,
     })
 
-    if (createError) {
-      return new Response(JSON.stringify({ error: createError.message }), {
+    if (updateError) {
+      return new Response(JSON.stringify({ error: updateError.message }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    if ((role === 'admin' || role === 'demo') && newUser.user) {
-      await supabaseAdmin
-        .from('profiles')
-        .update({ role })
-        .eq('id', newUser.user.id)
-    }
-
-    return new Response(JSON.stringify({ success: true, user: newUser.user }), {
+    return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
