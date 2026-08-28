@@ -44,3 +44,106 @@ export const adjustmentSchema = z.object({
 })
 
 export type AdjustmentFormValues = z.infer<typeof adjustmentSchema>
+
+// ------------------------------------------------------------
+// DB entity types (row shapes as returned by Supabase queries).
+// These are separate from the Zod schemas above, which validate
+// *form input* for creating new records.
+// ------------------------------------------------------------
+
+export type PurchaseOrderStatus = 'draft' | 'ordered' | 'received' | 'cancelled'
+
+export interface PurchaseOrder {
+  id: string
+  po_number: string
+  supplier_id: string | null
+  notes: string | null
+  status: PurchaseOrderStatus
+  created_by: string
+  created_at: string
+}
+
+export interface PurchaseOrderItem {
+  id: string
+  po_id: string
+  sku: string
+  inventory_item_id: number | null
+  quantity_ordered: number
+  quantity_received: number
+  unit_cost: number | null
+  currency: string | null
+}
+
+export type SalesOrderStatus = 'draft' | 'confirmed' | 'shipped' | 'cancelled'
+
+export interface SalesOrder {
+  id: string
+  so_number: string
+  notes: string | null
+  status: SalesOrderStatus
+  created_by: string
+  created_at: string
+  shipped_at?: string | null
+}
+
+export interface SalesOrderItem {
+  id: string
+  so_id: string
+  sku: string
+  inventory_item_id: number | null
+  quantity_ordered: number
+  quantity_shipped?: number
+  unit_price: number | null
+  currency: string | null
+}
+
+export interface InventoryBatch {
+  id: string
+  sku: string
+  batch_code: string
+  received_date: string
+  expiry_date: string | null
+  supplier_id: string | null
+  unit_cost: number | null
+  currency: string | null
+}
+
+export type AdjustmentReason = 'manual_add' | 'manual_remove' | 'cycle_count' | 'write_off' | 'other'
+
+export interface InventoryAdjustment {
+  id: string
+  adjustment_number: string
+  inventory_item_id: number | null
+  sku: string
+  location_id: string
+  quantity_delta: number
+  reason: AdjustmentReason
+  notes: string | null
+  status: string
+  created_by: string
+  created_at: string
+}
+
+export interface AuditEvent {
+  id: string
+  event_type: string
+  entity_type: string | null
+  entity_id: string | null
+  sku: string | null
+  quantity_delta: number | null
+  unit_cost: number | null
+  actor_user_id: string | null
+  actor_user_email: string | null
+  created_at: string
+}
+
+export interface ValuationRun {
+  id: string
+  costing_method: string
+  started_at: string
+  finished_at: string | null
+  total_value?: number | null
+  total_units?: number | null
+  notes: string | null
+  created_by?: string | null
+}

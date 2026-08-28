@@ -14,7 +14,8 @@ export const purchaseOrderSchema = z.object({
   items: z.array(poLineItemSchema).min(1, 'Add at least one line item'),
 })
 
-export type PurchaseOrderFormValues = z.infer<typeof purchaseOrderSchema>
+export type PurchaseOrderFormValues = z.output<typeof purchaseOrderSchema>
+export type PurchaseOrderFormInput = z.input<typeof purchaseOrderSchema>
 export type POLineItem = z.infer<typeof poLineItemSchema>
 
 export const soLineItemSchema = z.object({
@@ -30,7 +31,8 @@ export const salesOrderSchema = z.object({
   items: z.array(soLineItemSchema).min(1, 'Add at least one line item'),
 })
 
-export type SalesOrderFormValues = z.infer<typeof salesOrderSchema>
+export type SalesOrderFormValues = z.output<typeof salesOrderSchema>
+export type SalesOrderFormInput = z.input<typeof salesOrderSchema>
 
 export const adjustmentSchema = z.object({
   sku: z.string().min(1, 'SKU is required'),

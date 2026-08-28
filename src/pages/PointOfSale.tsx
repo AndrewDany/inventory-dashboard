@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { useInventory } from '../hooks/useInventory'
 import type { InventoryItem } from '../types/inventory'
 import { useLocations } from '../hooks/useLocations'
-import { usePointOfSaleCheckout, basePieceQuantity, lineSubtotal, type CartLine } from '../hooks/usePointOfSale'
+import { usePointOfSaleCheckout, type CartLine } from '../hooks/usePointOfSale'
 import BarcodeScanner from '../components/inventory/BarcodeScanner'
 import PageLayout from '../components/layout/PageLayout'
 import Modal from '../components/ui/Modal'
@@ -57,26 +57,21 @@ export default function PointOfSale() {
 
   function addToCart(item: (typeof filteredItems)[number]) {
     const available = stockBySku[item.sku] ?? 0
-    const existing = cart.find((line) => line.item.id === item.id)
-    const upb = item.unit_type === 'box' ? item.units_per_box : null
-    // Default to selling a whole box at a time for box items; otherwise +1 unit.
-    const incrementBase = upb ?? 1
-    const existingBase = existing ? basePieceQuantity(existing) : 0
+    const existingQty = cart.find((line) => line.item.id === item.id)?.quantity ?? 0
 
-    if (existingBase + incrementBase > available) {
-      const label = upb ? 'boxes' : item.sku
-      toast.warning(`Only ${available} ${upb ? `pieces (${Math.floor(available / upb)} full ${label})` : label} available in stock.`)
+    if (existingQty + 1 > available) {
+      toast.warning(`Only ${available} ${item.sku} available in stock.`)
       return
     }
 
     setCart((prev) => {
-      const existingLine = prev.find((line) => line.item.id === item.id)
-      if (existingLine) {
+      const existing = prev.find((line) => line.item.id === item.id)
+      if (existing) {
         return prev.map((line) =>
           line.item.id === item.id ? { ...line, quantity: line.quantity + 1 } : line
         )
       }
-      return [...prev, { item, quantity: 1, sellMode: upb ? 'box' : undefined }]
+      return [...prev, { item, quantity: 1 }]
     })
     setSearch('')
   }
@@ -89,23 +84,17 @@ export default function PointOfSale() {
     )
   }
 
-  function setSellMode(itemId: string, mode: 'box' | 'piece') {
-    setCart((prev) =>
-      prev.map((line) => (line.item.id === itemId ? { ...line, sellMode: mode, quantity: 1 } : line))
-    )
-  }
-
   function removeLine(itemId: string) {
     setCart((prev) => prev.filter((line) => line.item.id !== itemId))
   }
 
-  const subtotal = cart.reduce((sum, line) => sum + lineSubtotal(line), 0)
+  const subtotal = cart.reduce((sum, line) => sum + line.quantity * (line.item.unit_price ?? 0), 0)
   const grandTotal = subtotal
 
   async function handleCheckout() {
     if (cart.length === 0 || !locationId) return
 
-    const hasOversell = cart.some((line) => (stockBySku[line.item.sku] ?? 0) < basePieceQuantity(line))
+    const hasOversell = cart.some((line) => (stockBySku[line.item.sku] ?? 0) < line.quantity)
     if (hasOversell) {
       toast.error('One or more items exceed available stock at this location.')
       return
@@ -145,22 +134,7 @@ export default function PointOfSale() {
     if (item.unit_of_measure) {
       return item.unit_of_measure
     }
-    if (item.unit_type === 'box') {
-      return item.units_per_box ? 'pcs' : 'box'
-    }
-    // 'measured' is legacy data from before the box/weight/unit split.
-    if ((item.unit_type as string) === 'measured' || item.unit_type === 'weight') {
-      return 'kg'
-    }
-    return 'piece'
-  }
-
-  function isFractionalUnit(item: InventoryItem): boolean {
-    return item.unit_type === 'weight' || (item.unit_type as string) === 'measured'
-  }
-
-  function hasBoxConversion(item: InventoryItem): boolean {
-    return item.unit_type === 'box' && Boolean(item.units_per_box)
+    return item.unit_type === 'measured' ? 'unit' : 'piece'
   }
 
   return (
@@ -205,16 +179,10 @@ export default function PointOfSale() {
                     <div>
                       <p className="text-sm font-medium">{item.name}</p>
                       <p className="text-xs text-gray-500">
-                        {item.sku} ·{' '}
-                        {hasBoxConversion(item)
-                          ? `${Math.floor(item.quantity / (item.units_per_box ?? 1))} full boxes (${item.quantity} pcs) in stock`
-                          : `${item.quantity} ${getUnitLabel(item)} in stock`}
+                        {item.sku} · {item.quantity} {getUnitLabel(item)} in stock
                       </p>
                     </div>
-                    <span className="text-sm font-medium">
-                      GHS {(item.unit_price ?? 0).toFixed(2)}
-                      {item.unit_type === 'box' && <span className="text-xs text-gray-400">/box</span>}
-                    </span>
+                    <span className="text-sm font-medium">GHS {(item.unit_price ?? 0).toFixed(2)}</span>
                   </button>
                 ))}
               </div>
@@ -245,53 +213,19 @@ export default function PointOfSale() {
                   cart.map((line) => (
                     <TableRow key={line.item.id}>
                       <TableCell>
-                        <div className="flex flex-col gap-1">
+                        <div className="flex flex-col">
                           <span className="font-medium">{line.item.name}</span>
                           <span className="text-xs text-gray-500">{line.item.sku}</span>
-                          {hasBoxConversion(line.item) && (
-                            <div className="flex gap-1 mt-1">
-                              <button
-                                type="button"
-                                onClick={() => setSellMode(line.item.id, 'box')}
-                                className={`text-xs px-2 py-0.5 rounded border ${
-                                  (line.sellMode ?? 'box') === 'box'
-                                    ? 'bg-indigo-600 text-white border-indigo-600'
-                                    : 'text-gray-600 border-gray-300'
-                                }`}
-                              >
-                                Whole Box
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setSellMode(line.item.id, 'piece')}
-                                className={`text-xs px-2 py-0.5 rounded border ${
-                                  line.sellMode === 'piece'
-                                    ? 'bg-indigo-600 text-white border-indigo-600'
-                                    : 'text-gray-600 border-gray-300'
-                                }`}
-                              >
-                                Loose Pieces
-                              </button>
-                            </div>
-                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        GHS {(line.sellMode === 'piece' && line.item.units_per_box
-                          ? (line.item.unit_price ?? 0) / line.item.units_per_box
-                          : line.item.unit_price ?? 0
-                        ).toFixed(2)}
+                        GHS {(line.item.unit_price ?? 0).toFixed(2)}
                         {line.item.unit_of_measure && (
                           <span className="text-xs text-gray-400 ml-1">/{line.item.unit_of_measure}</span>
                         )}
-                        {hasBoxConversion(line.item) && (
-                          <span className="text-xs text-gray-400 ml-1">
-                            /{line.sellMode === 'piece' ? 'pc' : 'box'}
-                          </span>
-                        )}
                       </TableCell>
                       <TableCell className="text-right">
-                        {isFractionalUnit(line.item) ? (
+                        {line.item.unit_type === 'measured' ? (
                           <Input
                             type="number"
                             step="0.01"
@@ -299,22 +233,6 @@ export default function PointOfSale() {
                             value={line.quantity}
                             onChange={(e) => {
                               const val = Math.max(0, Number(e.target.value))
-                              setCart((prev) =>
-                                prev
-                                  .map((l) => (l.item.id === line.item.id ? { ...l, quantity: val } : l))
-                                  .filter((l) => l.quantity > 0)
-                              )
-                            }}
-                            className="w-20 text-right inline-block"
-                          />
-                        ) : line.sellMode === 'piece' ? (
-                          <Input
-                            type="number"
-                            step="1"
-                            min="0"
-                            value={line.quantity}
-                            onChange={(e) => {
-                              const val = Math.max(0, Math.floor(Number(e.target.value)))
                               setCart((prev) =>
                                 prev
                                   .map((l) => (l.item.id === line.item.id ? { ...l, quantity: val } : l))
@@ -342,7 +260,7 @@ export default function PointOfSale() {
                         )}
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        GHS {lineSubtotal(line).toFixed(2)}
+                        GHS {(line.quantity * (line.item.unit_price ?? 0)).toFixed(2)}
                       </TableCell>
                       <TableCell className="text-right">
                         <button
@@ -428,7 +346,9 @@ export default function PointOfSale() {
             <Label className="mb-1 block">Location</Label>
             <Select value={locationId} onValueChange={(v) => setLocationId(v ?? '')}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a location" />
+                <SelectValue placeholder="Select a location">
+                  {(value: string) => locations?.find((loc) => loc.id === value)?.name}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {locations?.map((loc) => (
