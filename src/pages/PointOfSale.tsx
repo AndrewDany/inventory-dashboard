@@ -134,7 +134,7 @@ export default function PointOfSale() {
     if (item.unit_of_measure) {
       return item.unit_of_measure
     }
-    return item.unit_type === 'measured' ? 'unit' : 'piece'
+    return item.unit_type === 'weight' ? 'unit' : 'piece'
   }
 
   return (
@@ -225,7 +225,7 @@ export default function PointOfSale() {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        {line.item.unit_type === 'measured' ? (
+                        {line.item.unit_type === 'weight' ? (
                           <Input
                             type="number"
                             step="0.01"
