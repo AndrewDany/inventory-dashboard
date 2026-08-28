@@ -22,6 +22,7 @@ import AdminFinancials from './pages/admin/AdminFinancials'
 import PointOfSale from './pages/PointOfSale'
 import ProtectedRoute from './components/layout/ProtectedRoute'
 import AdminRoute from './components/layout/AdminRoute'
+import ScrollToTop from './components/layout/ScrollToTop'
 import { isSupabaseConfigured } from './lib/supabaseClient'
 
 function App() {
@@ -42,8 +43,9 @@ function App() {
       </div>
     )
   }
-  return (
+   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
