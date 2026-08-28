@@ -27,14 +27,28 @@ export default function ScrollToTop() {
   const { pathname } = useLocation()
 
   useEffect(() => {
+    // TEMPORARY DIAGNOSTIC LOGGING — remove once the mobile scroll issue
+    // is confirmed fixed. Open the browser console while testing to see
+    // exactly what scrollY is doing on each attempt.
+    // eslint-disable-next-line no-console
+    console.log(`[ScrollToTop] pathname changed to "${pathname}", scrollY before: ${window.scrollY}`)
+
     const scrollTop = () => window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior })
     const start = performance.now()
     let frame: number
+    let ticks = 0
 
     const tick = () => {
       scrollTop()
-      if (performance.now() - start < DRAWER_TRANSITION_MS + REASSERT_BUFFER_MS) {
+      ticks += 1
+      const elapsed = performance.now() - start
+      if (elapsed < DRAWER_TRANSITION_MS + REASSERT_BUFFER_MS) {
         frame = requestAnimationFrame(tick)
+      } else {
+        // eslint-disable-next-line no-console
+        console.log(
+          `[ScrollToTop] done after ${ticks} ticks (~${elapsed.toFixed(0)}ms), final scrollY: ${window.scrollY}`
+        )
       }
     }
     frame = requestAnimationFrame(tick)
