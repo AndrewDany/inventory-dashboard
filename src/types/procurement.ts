@@ -46,20 +46,22 @@ export const adjustmentSchema = z.object({
 export type AdjustmentFormValues = z.infer<typeof adjustmentSchema>
 
 // ------------------------------------------------------------
-// DB entity types (row shapes as returned by Supabase queries).
-// These are separate from the Zod schemas above, which validate
-// *form input* for creating new records.
+// Database entity types (rows returned from Supabase queries).
+// These mirror the underlying tables/RPCs and are distinct from
+// the *FormValues types above, which describe form input shapes.
 // ------------------------------------------------------------
 
 export type PurchaseOrderStatus = 'draft' | 'ordered' | 'received' | 'cancelled'
+export type SalesOrderStatus = 'draft' | 'confirmed' | 'shipped' | 'cancelled'
+export type AdjustmentReason = 'manual_add' | 'manual_remove' | 'cycle_count' | 'write_off' | 'other'
 
 export interface PurchaseOrder {
   id: string
   po_number: string
   supplier_id: string | null
-  notes: string | null
   status: PurchaseOrderStatus
-  created_by: string
+  notes: string | null
+  created_by: string | null
   created_at: string
 }
 
@@ -74,16 +76,13 @@ export interface PurchaseOrderItem {
   currency: string | null
 }
 
-export type SalesOrderStatus = 'draft' | 'confirmed' | 'shipped' | 'cancelled'
-
 export interface SalesOrder {
   id: string
   so_number: string
-  notes: string | null
   status: SalesOrderStatus
-  created_by: string
+  notes: string | null
+  created_by: string | null
   created_at: string
-  shipped_at?: string | null
 }
 
 export interface SalesOrderItem {
@@ -92,7 +91,7 @@ export interface SalesOrderItem {
   sku: string
   inventory_item_id: number | null
   quantity_ordered: number
-  quantity_shipped?: number
+  quantity_shipped: number
   unit_price: number | null
   currency: string | null
 }
@@ -100,27 +99,23 @@ export interface SalesOrderItem {
 export interface InventoryBatch {
   id: string
   sku: string
+  inventory_item_id: number | null
   batch_code: string
-  received_date: string
   expiry_date: string | null
-  supplier_id: string | null
-  unit_cost: number | null
-  currency: string | null
+  received_date: string
 }
-
-export type AdjustmentReason = 'manual_add' | 'manual_remove' | 'cycle_count' | 'write_off' | 'other'
 
 export interface InventoryAdjustment {
   id: string
   adjustment_number: string
+  status: string
   inventory_item_id: number | null
   sku: string
   location_id: string
   quantity_delta: number
   reason: AdjustmentReason
   notes: string | null
-  status: string
-  created_by: string
+  created_by: string | null
   created_at: string
 }
 
@@ -132,7 +127,6 @@ export interface AuditEvent {
   sku: string | null
   quantity_delta: number | null
   unit_cost: number | null
-  actor_user_id: string | null
   actor_user_email: string | null
   created_at: string
 }
@@ -142,8 +136,5 @@ export interface ValuationRun {
   costing_method: string
   started_at: string
   finished_at: string | null
-  total_value?: number | null
-  total_units?: number | null
   notes: string | null
-  created_by?: string | null
 }
