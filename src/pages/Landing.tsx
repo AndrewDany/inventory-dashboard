@@ -38,8 +38,9 @@ const features = [
   },
 ]
 
-const DEMO_EMAIL = 'amabaah45@gmail.com'
-const DEMO_PASSWORD = '78945612'
+const DEMO_EMAIL = import.meta.env.VITE_DEMO_EMAIL ?? ''
+const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD ?? ''
+const isDemoConfigured = Boolean(DEMO_EMAIL && DEMO_PASSWORD)
 
 export default function Landing() {
   const { signIn } = useAuth()
@@ -47,10 +48,9 @@ export default function Landing() {
   const [demoLoading, setDemoLoading] = useState(false)
 
   async function handleTryDemo() {
+    if (!isDemoConfigured) return
     setDemoLoading(true)
-    console.log('Attempting demo login with:', JSON.stringify(DEMO_EMAIL), JSON.stringify(DEMO_PASSWORD))
     const { error } = await signIn(DEMO_EMAIL, DEMO_PASSWORD)
-    console.log('Demo login result:', error)
     setDemoLoading(false)
 
     if (!error) {
@@ -105,13 +105,15 @@ export default function Landing() {
             >
               Get Started
             </a>
-            <button
-              onClick={handleTryDemo}
-              disabled={demoLoading}
-              className="inline-block bg-white text-indigo-700 border border-indigo-200 px-7 py-3 rounded-lg font-medium hover:bg-indigo-50 transition-colors disabled:opacity-50"
-            >
-              {demoLoading ? 'Loading demo...' : 'Try Live Demo'}
-            </button>
+            {isDemoConfigured && (
+              <button
+                onClick={handleTryDemo}
+                disabled={demoLoading}
+                className="inline-block bg-white text-indigo-700 border border-indigo-200 px-7 py-3 rounded-lg font-medium hover:bg-indigo-50 transition-colors disabled:opacity-50"
+              >
+                {demoLoading ? 'Loading demo...' : 'Try Live Demo'}
+              </button>
+            )}
           </div>
 
           {/* Real-photo showcase */}
