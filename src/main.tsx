@@ -6,6 +6,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import ErrorBoundary from './components/ErrorBoundary.tsx'
 import './index.css'
 import App from './App.tsx'
+import { LanguageProvider } from './contexts/LanguageContext.tsx'
 
 const queryClient = new QueryClient()
 window.addEventListener('unhandledrejection', (event) => {
@@ -19,8 +20,10 @@ createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <App />
-          <Toaster position="top-right" richColors />
+          <LanguageProvider>
+            <App />
+            <Toaster position="top-right" richColors />
+          </LanguageProvider>
         </TooltipProvider>
       </QueryClientProvider>
     </ErrorBoundary>

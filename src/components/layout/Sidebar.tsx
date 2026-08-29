@@ -30,6 +30,7 @@ import {
 } from 'lucide-react'
 import { useProfile } from '../../hooks/useProfile'
 import { useAuth } from '../../hooks/useAuth'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface SidebarProps {
   isOpen: boolean
@@ -98,6 +99,7 @@ const navSections: NavSection[] = [
       { path: '/admin/users', label: 'Users & Roles', icon: <Users size={17} />, adminOnly: true },
       { path: '/admin/audit-events', label: 'Audit Trail', icon: <SearchCheck size={17} />, adminOnly: true },
       { path: '/admin/activity', label: 'Activity Logs', icon: <Activity size={17} />, adminOnly: true },
+      { path: '/admin/settings', label: 'Settings', icon: <Settings size={17} />, adminOnly: true },
     ],
   },
 ]
@@ -120,6 +122,7 @@ export default function Sidebar({
   const location = useLocation()
   const { data: profile } = useProfile()
   const { signOut, session } = useAuth()
+  const { t } = useLanguage()
   const isAdmin = profile?.role === 'admin'
 
   const userEmail = session?.user.email ?? profile?.email ?? 'User'
@@ -205,7 +208,7 @@ export default function Sidebar({
                 <div key={section.title} className="space-y-1">
                   {!isCollapsed && (
                     <p className="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      {section.title}
+                      {t(section.title)}
                     </p>
                   )}
                   <div className="space-y-0.5">
@@ -219,7 +222,7 @@ export default function Sidebar({
                       >
                         <span className="shrink-0">{item.icon}</span>
                         {!isCollapsed && (
-                          <span className="truncate flex-1">{item.label}</span>
+                          <span className="truncate flex-1">{t(item.label)}</span>
                         )}
                         {!isCollapsed && item.badgeVariant === 'red' && (
                           <span className="h-1.5 w-1.5 rounded-full bg-rose-500 shrink-0" />

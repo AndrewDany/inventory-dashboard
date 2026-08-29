@@ -27,6 +27,7 @@ const AdminAuditEvents  = lazy(() => import('./pages/admin/AdminAuditEvents'))
 const AdminReturns      = lazy(() => import('./pages/admin/AdminReturns'))
 const AdminReports      = lazy(() => import('./pages/admin/AdminReports'))
 const AdminFinancials   = lazy(() => import('./pages/admin/AdminFinancials'))
+const AdminSettings     = lazy(() => import('./pages/admin/AdminSettings'))
 
 function App() {
   if (!isSupabaseConfigured) {
@@ -94,6 +95,7 @@ function App() {
           <Route path="audit-events" element={<AdminAuditEvents />} />
           <Route path="reports" element={<AdminReports />} />
           <Route path="financials" element={<AdminFinancials />} />
+          <Route path="settings" element={<AdminSettings />} />
         </Route>
         <Route
           path="/pos"

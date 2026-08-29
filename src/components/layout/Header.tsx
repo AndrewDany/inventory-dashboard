@@ -1,6 +1,7 @@
 import { Menu } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import NotificationCenter from '../notifications/NotificationCenter'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export default function Header({
   onMenuClick,
@@ -10,6 +11,7 @@ export default function Header({
   title: string
 }) {
   const { session, signOut } = useAuth()
+  const { t } = useLanguage()
 
   return (
     <header className="sticky top-0 z-30 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex items-center justify-between">
@@ -21,7 +23,7 @@ export default function Header({
         >
           <Menu size={22} />
         </button>
-        <h1 className="text-lg sm:text-xl font-bold text-gray-900">{title}</h1>
+        <h1 className="text-lg sm:text-xl font-bold text-gray-900">{t(title)}</h1>
       </div>
 
       <div className="flex items-center gap-4">
@@ -31,7 +33,7 @@ export default function Header({
           onClick={signOut}
           className="text-sm text-red-600 hover:underline"
         >
-          Sign out
+          {t('Sign out')}
         </button>
       </div>
     </header>

@@ -21,8 +21,10 @@ import ExportMenu from '../components/inventory/ExportMenu'
 import CategoryDonut from '../components/dashboard/CategoryDonut'
 import RecentActivityFeed from '../components/dashboard/RecentActivityFeed'
 import UsagePanel from '../components/dashboard/UsagePanel'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export default function Dashboard() {
+  const { t } = useLanguage()
   const { data: profile } = useProfile()
   const { data: items, isLoading, error } = useInventory()
   const { data: monthlyFinancials } = useMonthlyFinancials()
@@ -64,7 +66,7 @@ export default function Dashboard() {
     >
       {/* Zenith Welcome Banner */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold tracking-tight text-slate-900">Dashboard</h2>
+        <h2 className="text-2xl font-bold tracking-tight text-slate-900">{t('Dashboard')}</h2>
         <p className="text-sm text-slate-500 mt-1">
           Welcome back, <span className="font-semibold text-slate-700 capitalize">{userName}</span>. Here&apos;s what&apos;s happening with your inventory today.
         </p>
@@ -108,7 +110,7 @@ export default function Dashboard() {
             <div className="lg:col-span-8 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Product Management
+                  {t('Product Management')}
                 </span>
                 <ExportMenu items={items} />
               </div>
@@ -124,7 +126,7 @@ export default function Dashboard() {
             <div className="lg:col-span-4 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Live Audit Feed
+                  {t('Live Audit Feed')}
                 </span>
               </div>
 

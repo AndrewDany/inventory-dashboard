@@ -11,6 +11,7 @@ import Modal from '../components/ui/Modal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   Table,
@@ -22,6 +23,7 @@ import {
 } from '@/components/ui/table'
 
 export default function PointOfSale() {
+  const { t } = useLanguage()
   const { data: items } = useInventory()
   const { data: locations } = useLocations()
   const checkout = usePointOfSaleCheckout()
@@ -144,10 +146,10 @@ export default function PointOfSale() {
         <div className="lg:col-span-3 space-y-4">
           {/* Stage Sale Item */}
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">Stage Sale Item</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('Stage Sale Item')}</h3>
             <div className="flex gap-3">
               <Input
-                placeholder="Select Available Product SKU..."
+                placeholder={t('Select Available Product SKU...')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="flex-1"

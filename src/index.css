@@ -48,3 +48,47 @@
     @apply font-sans;
     overflow-anchor: none;
   }
+
+  .settings-input {
+    @apply block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100;
+  }
+
+  .dark body,
+  .dark #root {
+    background-color: #020617;
+  }
+
+  .dark .bg-gray-50 {
+    background-color: #020617;
+  }
+
+  .dark .bg-white,
+  .dark .admin-settings .bg-slate-50,
+  .dark .admin-settings .bg-slate-50\/70,
+  .dark .admin-settings .bg-slate-50\/80 {
+    background-color: #0f172a;
+  }
+
+  .dark .admin-settings .border-slate-100,
+  .dark .admin-settings .border-slate-200,
+  .dark .admin-settings .border-slate-300 {
+    border-color: #334155;
+  }
+
+  .dark .admin-settings .text-slate-950,
+  .dark .admin-settings .text-slate-900,
+  .dark .admin-settings .text-slate-800 {
+    color: #f1f5f9;
+  }
+
+  .dark .admin-settings .text-slate-700,
+  .dark .admin-settings .text-slate-600,
+  .dark .admin-settings .text-slate-500 {
+    color: #cbd5e1;
+  }
+
+  .dark .admin-settings .settings-input {
+    border-color: #475569;
+    background-color: #1e293b;
+    color: #f8fafc;
+  }
