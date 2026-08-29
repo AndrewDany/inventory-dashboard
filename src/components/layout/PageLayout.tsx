@@ -51,7 +51,7 @@ export default function PageLayout({
       <div className="flex-1 min-w-0 flex flex-col">
         <Header onMenuClick={() => setSidebarOpen(true)} title={title} />
         <main className="flex-1">
-          <div className="max-w-6xl mx-auto p-4 sm:p-8">{children}</div>
+          <div className="max-w-7xl mx-auto p-4 sm:p-8">{children}</div>
         </main>
       </div>
     </div>

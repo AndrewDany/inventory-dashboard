@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const returnSchema = z.object({
+const baseReturnSchema = z.object({
   return_type: z.enum(['customer_return', 'damaged_stock', 'supplier_return']),
   sku: z.string().min(1, 'SKU is required'),
   inventory_item_id: z.coerce.number().optional(),
@@ -14,4 +14,21 @@ export const returnSchema = z.object({
   notes: z.string().optional(),
 })
 
-export type ReturnFormValues = z.infer<typeof returnSchema>
+export const returnSchema = baseReturnSchema.superRefine((data, ctx) => {
+  if (data.return_type === 'customer_return' && !data.customer_name?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Customer name is required for customer returns',
+      path: ['customer_name'],
+    })
+  }
+  if (data.return_type === 'supplier_return' && !data.supplier_id) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Supplier is required for supplier returns',
+      path: ['supplier_id'],
+    })
+  }
+})
+
+export type ReturnFormValues = z.infer<typeof baseReturnSchema>

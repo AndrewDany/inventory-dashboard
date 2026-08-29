@@ -59,7 +59,9 @@ export default function AdjustmentForm({ onClose }: { onClose: () => void }) {
           onValueChange={(v) => setValue('location_id', v ?? '')}
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select a location" />
+            <SelectValue placeholder="Select a location">
+              {locationId ? (locations?.find((loc) => loc.id === locationId)?.name ?? locationId) : undefined}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {locations?.map((loc) => (
@@ -87,7 +89,13 @@ export default function AdjustmentForm({ onClose }: { onClose: () => void }) {
         <Label className="mb-1 block">Reason</Label>
         <Select value={reason} onValueChange={(v) => setValue('reason', v as AdjustmentFormValues['reason'])}>
           <SelectTrigger className="w-full">
-            <SelectValue />
+            <SelectValue>
+              {reason === 'manual_add' ? 'Manual Add' :
+               reason === 'manual_remove' ? 'Manual Remove' :
+               reason === 'cycle_count' ? 'Cycle Count' :
+               reason === 'write_off' ? 'Write Off' :
+               reason === 'other' ? 'Other' : undefined}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="manual_add">Manual Add</SelectItem>

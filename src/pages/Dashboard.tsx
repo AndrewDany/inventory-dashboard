@@ -2,9 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProfile } from '../hooks/useProfile'
 import { useInventory, useDeleteInventoryItem } from '../hooks/useInventory'
-import { useBudget } from '../hooks/useBudget'
-import { useInventoryBatches } from '../hooks/useInventoryBatches'
 import { useStockMovements } from '../hooks/useStockMovements'
+import { useMonthlyFinancials } from '../hooks/useMonthlyFinancials'
 import InventoryForm from '../components/inventory/InventoryForm'
 import InventoryTable from '../components/inventory/InventoryTable'
 import DeleteConfirmModal from '../components/inventory/DeleteConfirmModal'
@@ -19,11 +18,14 @@ import ChangePasswordForm from '../components/settings/ChangePasswordForm'
 import PageLayout from '../components/layout/PageLayout'
 import type { InventoryItem } from '../types/inventory'
 import ExportMenu from '../components/inventory/ExportMenu'
+import CategoryDonut from '../components/dashboard/CategoryDonut'
+import RecentActivityFeed from '../components/dashboard/RecentActivityFeed'
 import UsagePanel from '../components/dashboard/UsagePanel'
 
 export default function Dashboard() {
   const { data: profile } = useProfile()
   const { data: items, isLoading, error } = useInventory()
+  const { data: monthlyFinancials } = useMonthlyFinancials()
   const deleteItem = useDeleteInventoryItem()
 
   const [showAddModal, setShowAddModal] = useState(false)
@@ -38,12 +40,13 @@ export default function Dashboard() {
   const isDemo = profile?.role === 'demo'
   const navigate = useNavigate()
 
-  const { data: budgetSummary } = useBudget()
-  const { data: batches = [] } = useInventoryBatches()
   const { data: movements = [] } = useStockMovements()
 
-  const budget = budgetSummary?.monthlyBudget ?? 0
-  const spent = budgetSummary?.spentThisMonth ?? 0
+  const lastMonthSales = monthlyFinancials && monthlyFinancials.length > 0
+    ? monthlyFinancials[monthlyFinancials.length - 1].grossSales
+    : undefined
+
+  const userName = profile?.email ? profile.email.split('@')[0] : 'Admin'
 
   async function handleDelete() {
     if (!deletingItem) return
@@ -59,6 +62,14 @@ export default function Dashboard() {
       onSellItem={isDemo ? undefined : () => navigate('/pos')}
       onChangePassword={isDemo ? undefined : () => setShowPasswordForm(true)}
     >
+      {/* Zenith Welcome Banner */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold tracking-tight text-slate-900">Dashboard</h2>
+        <p className="text-sm text-slate-500 mt-1">
+          Welcome back, <span className="font-semibold text-slate-700 capitalize">{userName}</span>. Here&apos;s what&apos;s happening with your inventory today.
+        </p>
+      </div>
+
       {isDemo && (
         <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-lg p-3 mb-6">
           You're viewing a read-only demo account. Changes are disabled.
@@ -78,59 +89,46 @@ export default function Dashboard() {
 
       {items && items.length > 0 && (
         <>
-          <div className="flex justify-end mb-4">
-            <ExportMenu items={items} />
+          {/* Top 4 KPI Cards */}
+          <StatsCards items={items} monthlyRevenue={lastMonthSales} />
+
+          {/* Zenith Middle Grid (70/30 split) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+            <div className="lg:col-span-8">
+              <CategoryChart items={items} monthlyFinancials={monthlyFinancials} />
+            </div>
+            <div className="lg:col-span-4 flex flex-col gap-6">
+              <CategoryDonut items={items} />
+              <UsagePanel items={items} />
+            </div>
           </div>
 
-          <UsagePanel />
-          <StatsCards items={items} />
-          <CategoryChart items={items} />
-          <InventoryTable
-            items={items}
-            onEdit={(item) => setEditingItem(item)}
-            onDelete={(item) => setDeletingItem(item)}
-            isAdmin={isAdmin}
-          />
+          {/* Zenith Bottom Grid (70/30 split: Main Table + Recent Activity) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-8 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Product Management
+                </span>
+                <ExportMenu items={items} />
+              </div>
 
-          {/* Financial + recent batches/movements powered by store */}
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
-            <div className="rounded-2xl border bg-white p-4">
-              <p className="text-xs uppercase text-slate-500">Budget</p>
-              <div className="mt-2 text-xl font-semibold">${budget.toLocaleString()}</div>
-              <p className="mt-1 text-sm text-slate-600">Spent: ${spent.toLocaleString()}</p>
-              <p className="mt-1 text-sm text-slate-600">Remaining: ${(Math.max(budget - spent, 0)).toLocaleString()}</p>
+              <InventoryTable
+                items={items}
+                onEdit={(item) => setEditingItem(item)}
+                onDelete={(item) => setDeletingItem(item)}
+                isAdmin={isAdmin}
+              />
             </div>
 
-            <div className="rounded-2xl border bg-white p-4">
-              <p className="text-sm font-semibold">Recent batches</p>
-              <div className="mt-3 space-y-2">
-                {batches.slice(0, 5).map((b) => (
-                  <div key={b.id} className="flex justify-between">
-                    <div className="min-w-0">
-                      <div className="font-medium truncate">{b.inventory_batches.sku}</div>
-                      <div className="text-xs text-slate-500">{b.inventory_batches.batch_code} • {new Date(b.updated_at).toLocaleString()}</div>
-                    </div>
-                    <div className="font-semibold">{b.on_hand_quantity}</div>
-                  </div>
-                ))}
-                {batches.length === 0 && <div className="text-sm text-slate-500">No batches yet</div>}
+            <div className="lg:col-span-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Live Audit Feed
+                </span>
               </div>
-            </div>
 
-            <div className="rounded-2xl border bg-white p-4">
-              <p className="text-sm font-semibold">Recent movements</p>
-              <div className="mt-3 space-y-2">
-                {movements.slice(0, 5).map((m) => (
-                  <div key={m.id} className="flex justify-between">
-                    <div className="min-w-0">
-                      <div className="font-medium truncate">{m.item_name}</div>
-                      <div className="text-xs text-slate-500">{new Date(m.created_at).toLocaleString()}</div>
-                    </div>
-                    <div className="font-semibold">{m.change_amount > 0 ? `+${m.change_amount}` : m.change_amount}</div>
-                  </div>
-                ))}
-                {movements.length === 0 && <div className="text-sm text-slate-500">No movements yet</div>}
-              </div>
+              <RecentActivityFeed movements={movements} />
             </div>
           </div>
         </>

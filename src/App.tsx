@@ -1,29 +1,32 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import Landing from './pages/Landing'
-import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
-import AdminPanel from './pages/AdminPanel'
-import AdminOverview from './pages/admin/AdminOverview'
-import AdminLocations from './pages/admin/AdminLocations'
-import AdminUsers from './pages/admin/AdminUsers'
-import AdminOrders from './pages/admin/AdminOrders'
-import AdminSalesOrders from './pages/admin/AdminSalesOrders'
-import AdminLowStock from './pages/admin/AdminLowStock'
-import AdminSuppliers from './pages/admin/AdminSuppliers'
-import AdminMovements from './pages/admin/AdminMovements'
-import AdminBatches from './pages/admin/AdminBatches'
-import AdminAdjustments from './pages/admin/AdminAdjustments'
-import AdminValuation from './pages/admin/AdminValuation'
-import AdminActivity from './pages/admin/AdminActivity'
-import AdminAuditEvents from './pages/admin/AdminAuditEvents'
-import AdminReturns from './pages/admin/AdminReturns'
-import AdminReports from './pages/admin/AdminReports'
-import AdminFinancials from './pages/admin/AdminFinancials'
-import PointOfSale from './pages/PointOfSale'
 import ProtectedRoute from './components/layout/ProtectedRoute'
 import AdminRoute from './components/layout/AdminRoute'
 import ScrollToTop from './components/layout/ScrollToTop'
 import { isSupabaseConfigured } from './lib/supabaseClient'
+
+const Landing       = lazy(() => import('./pages/Landing'))
+const Login         = lazy(() => import('./pages/Login'))
+const Dashboard     = lazy(() => import('./pages/Dashboard'))
+const AdminPanel    = lazy(() => import('./pages/AdminPanel'))
+const PointOfSale   = lazy(() => import('./pages/PointOfSale'))
+
+const AdminOverview     = lazy(() => import('./pages/admin/AdminOverview'))
+const AdminLocations    = lazy(() => import('./pages/admin/AdminLocations'))
+const AdminUsers        = lazy(() => import('./pages/admin/AdminUsers'))
+const AdminOrders       = lazy(() => import('./pages/admin/AdminOrders'))
+const AdminSalesOrders  = lazy(() => import('./pages/admin/AdminSalesOrders'))
+const AdminLowStock     = lazy(() => import('./pages/admin/AdminLowStock'))
+const AdminSuppliers    = lazy(() => import('./pages/admin/AdminSuppliers'))
+const AdminMovements    = lazy(() => import('./pages/admin/AdminMovements'))
+const AdminBatches      = lazy(() => import('./pages/admin/AdminBatches'))
+const AdminAdjustments  = lazy(() => import('./pages/admin/AdminAdjustments'))
+const AdminValuation    = lazy(() => import('./pages/admin/AdminValuation'))
+const AdminActivity     = lazy(() => import('./pages/admin/AdminActivity'))
+const AdminAuditEvents  = lazy(() => import('./pages/admin/AdminAuditEvents'))
+const AdminReturns      = lazy(() => import('./pages/admin/AdminReturns'))
+const AdminReports      = lazy(() => import('./pages/admin/AdminReports'))
+const AdminFinancials   = lazy(() => import('./pages/admin/AdminFinancials'))
 
 function App() {
   if (!isSupabaseConfigured) {
@@ -43,9 +46,16 @@ function App() {
       </div>
     )
   }
-   return (
+  return (
     <BrowserRouter>
       <ScrollToTop />
+      <Suspense
+        fallback={
+          <div className="flex min-h-screen items-center justify-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
+          </div>
+        }
+      >
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
@@ -94,6 +104,7 @@ function App() {
           }
         />
       </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }

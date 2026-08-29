@@ -4,7 +4,13 @@ import { returnSchema, type ReturnFormValues } from '../../lib/returnSchema'
 import { useCreateReturn } from '../../hooks/useReturns'
 import { useLocations } from '../../hooks/useLocations'
 import { useSuppliers } from '../../hooks/useSuppliers'
-import { RESOLUTION_OPTIONS_BY_TYPE, RESOLUTION_OPTION_DESCRIPTIONS, REASON_LABELS } from '../../types/returns'
+import {
+  RETURN_TYPE_LABELS,
+  RESOLUTION_LABELS,
+  RESOLUTION_OPTIONS_BY_TYPE,
+  RESOLUTION_OPTION_DESCRIPTIONS,
+  REASON_LABELS,
+} from '../../types/returns'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -19,7 +25,6 @@ export default function ReturnForm({ onClose }: { onClose: () => void }) {
     register,
     handleSubmit,
     setValue,
-    setError,
     watch,
     formState: { errors, isSubmitting },
   } = useForm({
@@ -37,15 +42,6 @@ export default function ReturnForm({ onClose }: { onClose: () => void }) {
 
   async function onSubmit(values: FieldValues) {
     const typed = values as ReturnFormValues
-
-    if (typed.return_type === 'customer_return' && !typed.customer_name?.trim()) {
-      setError('customer_name', { type: 'manual', message: 'Customer name is required for customer returns' })
-      return
-    }
-    if (typed.return_type === 'supplier_return' && !typed.supplier_id) {
-      setError('supplier_id', { type: 'manual', message: 'Supplier is required for supplier returns' })
-      return
-    }
     await createReturn.mutateAsync(typed)
     onClose()
   }
@@ -62,7 +58,9 @@ export default function ReturnForm({ onClose }: { onClose: () => void }) {
           }}
         >
           <SelectTrigger className="w-full">
-            <SelectValue />
+            <SelectValue>
+              {returnType ? RETURN_TYPE_LABELS[returnType] : undefined}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="customer_return">Customer Return</SelectItem>
@@ -94,7 +92,11 @@ export default function ReturnForm({ onClose }: { onClose: () => void }) {
         <Label className="mb-1 block">Location</Label>
         <Select value={locationId ?? ''} onValueChange={(v) => setValue('location_id', v ?? '')}>
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select a location" />
+            <SelectValue placeholder="Select a location">
+              {locationId
+                ? (locations?.find((loc) => loc.id === locationId)?.name ?? locationId)
+                : undefined}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {locations?.map((loc) => (
@@ -111,7 +113,9 @@ export default function ReturnForm({ onClose }: { onClose: () => void }) {
         <Label className="mb-1 block">Reason</Label>
         <Select value={reason} onValueChange={(v) => setValue('reason', v as ReturnFormValues['reason'])}>
           <SelectTrigger className="w-full">
-            <SelectValue />
+            <SelectValue>
+              {reason ? REASON_LABELS[reason] : undefined}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {Object.entries(REASON_LABELS).map(([value, label]) => (
@@ -127,7 +131,9 @@ export default function ReturnForm({ onClose }: { onClose: () => void }) {
         <Label className="mb-1 block">Resolution</Label>
         <Select value={resolution} onValueChange={(v) => setValue('resolution', v as ReturnFormValues['resolution'])}>
           <SelectTrigger className="w-full">
-            <SelectValue />
+            <SelectValue>
+              {resolution ? RESOLUTION_LABELS[resolution] : undefined}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {resolutionOptions.map((opt) => (
@@ -157,7 +163,9 @@ export default function ReturnForm({ onClose }: { onClose: () => void }) {
           <Label className="mb-1 block">Supplier</Label>
           <Select value={supplierId ?? ''} onValueChange={(v) => setValue('supplier_id', v ?? '')}>
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select a supplier" />
+              <SelectValue placeholder="Select a supplier">
+                {supplierId ? (suppliers?.find((s) => s.id === supplierId)?.name ?? supplierId) : undefined}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {suppliers?.map((s) => (
