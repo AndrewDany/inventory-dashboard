@@ -2,6 +2,7 @@
   "recommendations": [
     "denoland.vscode-deno",
     "openai.chatgpt",
-    "fuzionix.devtool-plus"
+    "fuzionix.devtool-plus",
+    "punal100.antigravity-copilot"
   ]
 }
