@@ -1,11 +1,11 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, lazy, Suspense } from 'react'
 import { Plus, Minus, Trash2, ScanLine, Receipt, Printer } from 'lucide-react'
 import { toast } from 'sonner'
 import { useInventory } from '../hooks/useInventory'
 import type { InventoryItem } from '../types/inventory'
 import { useLocations } from '../hooks/useLocations'
 import { usePointOfSaleCheckout, type CartLine } from '../hooks/usePointOfSale'
-import BarcodeScanner from '../components/inventory/BarcodeScanner'
+const BarcodeScanner = lazy(() => import('../components/inventory/BarcodeScanner'))
 import PageLayout from '../components/layout/PageLayout'
 import Modal from '../components/ui/Modal'
 import { Button } from '@/components/ui/button'
@@ -160,14 +160,16 @@ export default function PointOfSale() {
             </div>
 
             {showScanner && (
-              <BarcodeScanner
-                onClose={() => setShowScanner(false)}
-                onScan={(code) => {
-                  const match = items?.find((i) => i.sku === code)
-                  if (match) addToCart(match)
-                  setShowScanner(false)
-                }}
-              />
+              <Suspense fallback={null}>
+                <BarcodeScanner
+                  onClose={() => setShowScanner(false)}
+                  onScan={(code) => {
+                    const match = items?.find((i) => i.sku === code)
+                    if (match) addToCart(match)
+                    setShowScanner(false)
+                  }}
+                />
+              </Suspense>
             )}
 
             {filteredItems.length > 0 && (

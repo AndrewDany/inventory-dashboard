@@ -5,6 +5,7 @@ import type { InventoryItem } from '../../types/inventory'
 
 export default function ExportMenu({ items }: { items: InventoryItem[] }) {
   const [open, setOpen] = useState(false)
+  const [pdfLoading, setPdfLoading] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -40,14 +41,20 @@ export default function ExportMenu({ items }: { items: InventoryItem[] }) {
             Export as CSV
           </button>
           <button
-            onClick={() => {
-              exportToPDF(items)
-              setOpen(false)
+            onClick={async () => {
+              setPdfLoading(true)
+              try {
+                await exportToPDF(items)
+              } finally {
+                setPdfLoading(false)
+                setOpen(false)
+              }
             }}
-            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 text-left"
+            disabled={pdfLoading}
+            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 text-left disabled:opacity-50"
           >
             <FileText size={16} className="text-red-600" />
-            Export as PDF
+            {pdfLoading ? 'Preparing PDF…' : 'Export as PDF'}
           </button>
         </div>
       )}

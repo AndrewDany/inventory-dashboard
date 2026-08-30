@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ScanLine } from 'lucide-react'
@@ -6,7 +6,7 @@ import { inventoryItemSchema, type InventoryFormValues } from '../../lib/schemas
 import { useAddInventoryItem, useUpdateInventoryItem } from '../../hooks/useInventory'
 import { useLocations } from '../../hooks/useLocations'
 import { useSuppliers } from '../../hooks/useSuppliers'
-import BarcodeScanner from './BarcodeScanner'
+const BarcodeScanner = lazy(() => import('./BarcodeScanner'))
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -118,13 +118,15 @@ export default function InventoryForm({
       </div>
 
       {showScanner && (
-        <BarcodeScanner
-          onClose={() => setShowScanner(false)}
-          onScan={(code) => {
-            setValue('sku', code)
-            setShowScanner(false)
-          }}
-        />
+        <Suspense fallback={null}>
+          <BarcodeScanner
+            onClose={() => setShowScanner(false)}
+            onScan={(code) => {
+              setValue('sku', code)
+              setShowScanner(false)
+            }}
+          />
+        </Suspense>
       )}
 
       <div>

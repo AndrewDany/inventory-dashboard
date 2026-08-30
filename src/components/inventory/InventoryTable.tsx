@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, lazy, Suspense } from 'react'
 import {
   useReactTable,
   getCoreRowModel,
@@ -9,7 +9,7 @@ import {
   type SortingState,
 } from '@tanstack/react-table'
 import { ScanLine } from 'lucide-react'
-import BarcodeScanner from './BarcodeScanner'
+const BarcodeScanner = lazy(() => import('./BarcodeScanner'))
 import { useLocations } from '../../hooks/useLocations'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -160,13 +160,15 @@ export default function InventoryTable({
       </div>
 
       {showScanner && (
-        <BarcodeScanner
-          onClose={() => setShowScanner(false)}
-          onScan={(code) => {
-            setSearch(code)
-            setShowScanner(false)
-          }}
-        />
+        <Suspense fallback={null}>
+          <BarcodeScanner
+            onClose={() => setShowScanner(false)}
+            onScan={(code) => {
+              setSearch(code)
+              setShowScanner(false)
+            }}
+          />
+        </Suspense>
       )}
 
       <div className="overflow-x-auto overflow-y-auto max-h-[480px] rounded-xl border border-slate-100/90">

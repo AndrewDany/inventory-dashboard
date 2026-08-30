@@ -1,5 +1,3 @@
-import jsPDF from 'jspdf'
-import autoTable from 'jspdf-autotable'
 import type { InventoryItem } from '../types/inventory'
 
 export function exportToCSV(items: InventoryItem[]) {
@@ -27,7 +25,13 @@ export function exportToCSV(items: InventoryItem[]) {
   URL.revokeObjectURL(url)
 }
 
-export function exportToPDF(items: InventoryItem[], companyName = 'Inventory Dashboard') {
+export async function exportToPDF(items: InventoryItem[], companyName = 'Inventory Dashboard') {
+  // Loaded on demand — jsPDF + autotable are large and only needed when a user actually exports a PDF.
+  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+    import('jspdf'),
+    import('jspdf-autotable'),
+  ])
+
   const doc = new jsPDF()
 
   doc.setFontSize(16)
