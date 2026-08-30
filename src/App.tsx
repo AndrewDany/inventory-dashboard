@@ -10,6 +10,7 @@ const Login         = lazy(() => import('./pages/Login'))
 const Dashboard     = lazy(() => import('./pages/Dashboard'))
 const AdminPanel    = lazy(() => import('./pages/AdminPanel'))
 const PointOfSale   = lazy(() => import('./pages/PointOfSale'))
+const NotFound      = lazy(() => import('./pages/NotFound'))
 
 const AdminOverview     = lazy(() => import('./pages/admin/AdminOverview'))
 const AdminLocations    = lazy(() => import('./pages/admin/AdminLocations'))
@@ -105,6 +106,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="*" element={<NotFound />} />
       </Routes>
       </Suspense>
     </BrowserRouter>
