@@ -1,4 +1,5 @@
-import { Link, Outlet } from 'react-router-dom'
+import { Suspense, useEffect, useRef } from 'react'
+import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useInventory } from '../hooks/useInventory'
 import { usePurchaseOrders } from '../hooks/usePurchaseOrders'
 import { useUsers } from '../hooks/useUsers'
@@ -24,6 +25,40 @@ export default function AdminPanel() {
   const bannerLabel = lowStockCount > 0 || pendingOrdersCount > 0 ? 'Action required' : 'System health good'
 
   const isLoading = inventoryLoading || purchaseOrdersLoading || usersLoading
+
+  // The banner is tall, so ScrollToTop putting the window at position 0
+  // just shows the banner again -- the sidebar link's actual destination
+  // is still hidden below it and needs a second, manual scroll. Once the
+  // user is already inside the admin section, tapping another sidebar
+  // link should instead bring this content card into view directly, so
+  // the page they navigated to is what they actually see.
+  //
+  // The very first arrival at /admin should still show the banner, so
+  // this only kicks in from the second navigation onward -- it skips
+  // both the initial mount and the "/admin" -> "/admin/overview" index
+  // redirect that happens on that first arrival.
+  const location = useLocation()
+  const contentRef = useRef<HTMLDivElement>(null)
+  const prevPathRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    const prevPath = prevPathRef.current
+    prevPathRef.current = location.pathname
+
+    if (prevPath === null || prevPath === '/admin') {
+      return
+    }
+
+    const content = contentRef.current
+    if (!content) return
+
+    const header = document.querySelector('header')
+    const headerHeight = header?.getBoundingClientRect().height ?? 0
+    const gap = 16 // breathing room below the sticky header
+
+    const targetTop = content.getBoundingClientRect().top + window.scrollY - headerHeight - gap
+    window.scrollTo({ top: Math.max(targetTop, 0), left: 0, behavior: 'smooth' })
+  }, [location.pathname])
 
   return (
     <PageLayout title="Admin Panel">
@@ -78,12 +113,29 @@ export default function AdminPanel() {
           </div>
         </div>
 
-        {/* Page content from nested route */}
-        <div className="rounded-[24px] border border-slate-200/80 bg-white/95 shadow-[0_16px_45px_rgba(15,23,42,0.06)] p-6">
-          <Outlet />
+        {/* Page content from nested route.
+            This has its own Suspense boundary so that switching between
+            admin sub-pages (each lazy-loaded in App.tsx) only shows a
+            local loader here while the chunk fetches. Without this, the
+            nearest boundary was the app-wide one in App.tsx, which
+            unmounts this entire shell -- banner, sidebar, and header
+            included -- while a not-yet-loaded sub-page's chunk downloads.
+            That collapses the page to the tiny full-screen spinner and
+            then pops it back to full height once the chunk resolves, and
+            that later layout shift is what was leaving the scroll
+            position stuck part-way down the page. */}
+        <div ref={contentRef} className="rounded-[24px] border border-slate-200/80 bg-white/95 shadow-[0_16px_45px_rgba(15,23,42,0.06)] p-6">
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center py-24">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
+              </div>
+            }
+          >
+            <Outlet />
+          </Suspense>
         </div>
       </div>
     </PageLayout>
   )
 }
-

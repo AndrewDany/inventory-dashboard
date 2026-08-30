@@ -46,6 +46,29 @@
 
   html {
     @apply font-sans;
+  }
+
+  /*
+   * Disable browser scroll anchoring app-wide.
+   *
+   * Scroll anchoring tries to keep the same visual content in place when
+   * layout shifts happen above/near the viewport, by silently re-adjusting
+   * scrollTop. That fights directly with ScrollToTop's scrollTo(0, 0) on
+   * every route change, and any layout shift after our short reassert
+   * window closes (e.g. nested admin content swapping in, images/data
+   * finishing a fetch, a chunk that took a bit longer to load) can undo
+   * the scroll-to-top, which is why the page kept requiring a manual
+   * scroll back up after tapping a sidebar link.
+   *
+   * Setting `overflow-anchor: none` only on `html` doesn't actually work
+   * here: html's overflow is `visible` (nothing overrides it), and per
+   * spec, when the root element's overflow is `visible`, the *body*
+   * element -- not html -- is what the browser propagates to the
+   * viewport for scrolling purposes, and that propagation covers
+   * overflow-anchor too. So the rule has to reach every element (or at
+   * least body) to actually disable anchoring for the page's scrollbox.
+   */
+  *, *::before, *::after {
     overflow-anchor: none;
   }
 
