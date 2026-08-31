@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import loginPhoto from '../assets/landing/forklift-team.jpg'
+import loginIllustration from '../assets/landing/undraw_access-account_aydp.svg'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -33,16 +33,9 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex flex-col lg:grid lg:grid-cols-2 bg-gray-50">
-      {/* Image panel: compact rounded card on mobile, full-bleed split on desktop */}
+      {/* Illustration panel: compact card on mobile, full-bleed split on desktop */}
       <div className="relative w-full max-w-md mx-auto mt-6 px-6 lg:px-0 lg:mt-0 lg:max-w-none lg:mx-0">
-        <div className="relative h-48 sm:h-56 lg:h-full rounded-2xl lg:rounded-none overflow-hidden shadow-md lg:shadow-none">
-          <img
-            src={loginPhoto}
-            alt="Warehouse team managing inventory"
-            className="absolute inset-0 w-full h-full object-cover object-center"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-indigo-950/90 via-indigo-950/40 to-indigo-950/10" />
-
+        <div className="relative h-48 sm:h-64 lg:h-full rounded-2xl lg:rounded-none overflow-hidden shadow-md lg:shadow-none bg-gradient-to-br from-indigo-600 to-indigo-800">
           <div className="relative h-full flex flex-col justify-between p-4 lg:p-10 text-white">
             <Link to="/" className="flex items-center gap-2 w-fit">
               <div className="w-8 h-8 rounded-lg bg-white/15 backdrop-blur flex items-center justify-center">
@@ -50,6 +43,12 @@ export default function Login() {
               </div>
               <span className="font-bold">Inventory Dashboard</span>
             </Link>
+
+            <img
+              src={loginIllustration}
+              alt="Illustration of a person accessing their account"
+              className="w-full max-h-32 sm:max-h-44 lg:max-h-none lg:h-auto object-contain mx-auto"
+            />
 
             <div className="max-w-sm hidden lg:block">
               <h2 className="text-2xl font-bold mb-3 leading-snug">
