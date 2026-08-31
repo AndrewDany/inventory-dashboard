@@ -325,7 +325,7 @@ export default function Landing() {
               <img
                 src={profilePhoto}
                 alt="Andrews Danyo"
-                className="w-full h-full object-cover object-center"
+                className="w-full h-full object-cover object-top"
               />
             </div>
             <div className="text-center sm:text-left">
