@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import loginPhoto from '../assets/landing/forklift-team.jpg'
+import loginIllustration from '../assets/illustrations/access-account.svg'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -33,37 +33,36 @@ export default function Login() {
 
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
-      {/* Left: image panel */}
-      <div className="relative hidden lg:block">
-        <img
-          src={loginPhoto}
-          alt="Warehouse team managing inventory"
-          className="absolute inset-0 w-full h-full object-cover object-center"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-indigo-950/90 via-indigo-950/40 to-indigo-950/10" />
-
-        <div className="relative h-full flex flex-col justify-between p-10 text-white">
-          <Link to="/" className="flex items-center gap-2 w-fit">
-            <div className="w-8 h-8 rounded-lg bg-white/15 backdrop-blur flex items-center justify-center">
-              <Package size={16} className="text-white" />
-            </div>
-            <span className="font-bold">Inventory Dashboard</span>
-          </Link>
-
-          <div className="max-w-sm">
-            <h2 className="text-2xl font-bold mb-3 leading-snug">
-              Know exactly what's on your shelves, every day.
-            </h2>
-            <p className="text-indigo-100 text-sm">
-              Sign in to track stock, manage orders, and keep your team aligned,
-              all from one dashboard.
-            </p>
+      {/* Left: illustration panel */}
+      <div className="relative hidden lg:flex flex-col justify-between bg-gradient-to-br from-indigo-50 via-white to-indigo-50 p-10 overflow-hidden">
+        <Link to="/" className="relative flex items-center gap-2 w-fit z-10">
+          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+            <Package size={16} className="text-white" />
           </div>
+          <span className="font-bold text-gray-900">Inventory Dashboard</span>
+        </Link>
+
+        <div className="relative flex-1 flex items-center justify-center px-4 min-h-0">
+          <img
+            src={loginIllustration}
+            alt="Illustration of a person unlocking access to their account"
+            className="w-full max-w-md xl:max-w-lg h-auto"
+          />
+        </div>
+
+        <div className="relative max-w-sm">
+          <h2 className="text-2xl font-bold mb-3 leading-snug text-gray-900">
+            Know exactly what's on your shelves, every day.
+          </h2>
+          <p className="text-gray-500 text-sm">
+            Sign in to track stock, manage orders, and keep your team aligned,
+            all from one dashboard.
+          </p>
         </div>
       </div>
 
       {/* Right: form panel */}
-      <div className="flex items-center justify-center bg-gray-50 px-6 py-16">
+      <div className="flex items-center justify-center bg-gray-50 px-6 py-10 sm:py-16">
         <div className="w-full max-w-sm">
           <Link
             to="/"
@@ -93,7 +92,7 @@ export default function Login() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="mb-4"
+              className="h-11 text-base mb-4"
             />
 
             <Label htmlFor="password" className="mb-2 block">Password</Label>
@@ -104,10 +103,10 @@ export default function Login() {
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="current-password"
-              className="mb-6"
+              className="h-11 text-base mb-6"
             />
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full h-11 text-base" disabled={loading}>
               {loading ? 'Signing in...' : 'Sign in'}
             </Button>
           </form>
