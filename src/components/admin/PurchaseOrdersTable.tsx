@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { usePurchaseOrders } from '../../hooks/usePurchaseOrders'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/status-badge'
 import {
   Table,
   TableBody,
@@ -14,11 +14,11 @@ import Modal from '../ui/Modal'
 import ReceivePOModal from './ReceivePOModal'
 import type { PurchaseOrderWithItems } from '../../hooks/usePurchaseOrders'
 
-const statusVariant: Record<string, 'default' | 'secondary' | 'destructive'> = {
-  draft: 'secondary',
-  ordered: 'secondary',
-  received: 'default',
-  cancelled: 'destructive',
+function orderTotal(po: { purchase_order_items: { quantity_ordered: number; unit_cost: number | null }[] }) {
+  return po.purchase_order_items.reduce(
+    (sum, item) => sum + item.quantity_ordered * (item.unit_cost ?? 0),
+    0
+  )
 }
 
 export default function PurchaseOrdersTable() {
@@ -39,22 +39,24 @@ export default function PurchaseOrdersTable() {
             <TableHead>Status</TableHead>
             <TableHead>Lines</TableHead>
             <TableHead>Created</TableHead>
+            <TableHead className="text-right">Amount</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {pos.map((po) => (
-            <>
-              <TableRow key={po.id}>
+            <React.Fragment key={po.id}>
+              <TableRow className="hover:bg-slate-50">
                 <TableCell className="font-medium">{po.po_number}</TableCell>
                 <TableCell>
-                  <Badge variant={statusVariant[po.status]} className="capitalize">
-                    {po.status}
-                  </Badge>
+                  <StatusBadge status={po.status} />
                 </TableCell>
                 <TableCell>{po.purchase_order_items.length} item(s)</TableCell>
                 <TableCell className="text-gray-500">
                   {new Date(po.created_at).toLocaleDateString()}
+                </TableCell>
+                <TableCell className="text-right font-semibold text-slate-900">
+                  {po.purchase_order_items[0]?.currency ?? 'GHS'} {orderTotal(po).toFixed(2)}
                 </TableCell>
                 <TableCell className="space-x-2">
                   <Button
@@ -72,8 +74,8 @@ export default function PurchaseOrdersTable() {
                 </TableCell>
               </TableRow>
               {expandedId === po.id && (
-                <TableRow key={`${po.id}-detail`}>
-                  <TableCell colSpan={5} className="bg-gray-50">
+                <TableRow>
+                  <TableCell colSpan={6} className="bg-gray-50">
                     <div className="text-sm space-y-1 py-2">
                       {po.purchase_order_items.map((item) => (
                         <div key={item.id} className="flex justify-between text-gray-600">
@@ -88,7 +90,7 @@ export default function PurchaseOrdersTable() {
                   </TableCell>
                 </TableRow>
               )}
-            </>
+            </React.Fragment>
           ))}
         </TableBody>
       </Table>

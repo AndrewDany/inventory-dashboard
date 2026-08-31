@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useSalesOrders, useShipSalesOrder } from '../../hooks/useSalesOrders'
 import { useInventory } from '../../hooks/useInventory'
 import { useInventoryBatches } from '../../hooks/useInventoryBatches'
 import { useLocations } from '../../hooks/useLocations'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/status-badge'
 import {
   Table,
   TableBody,
@@ -23,11 +23,11 @@ import {
 import Modal from '../ui/Modal'
 import { Label } from '@/components/ui/label'
 
-const statusVariant: Record<string, 'default' | 'secondary' | 'destructive'> = {
-  draft: 'secondary',
-  confirmed: 'secondary',
-  shipped: 'default',
-  cancelled: 'destructive',
+function orderTotal(so: { sales_order_items: { quantity_ordered: number; unit_price: number | null }[] }) {
+  return so.sales_order_items.reduce(
+    (sum, item) => sum + item.quantity_ordered * (item.unit_price ?? 0),
+    0
+  )
 }
 
 export default function SalesOrdersTable() {
@@ -120,22 +120,24 @@ export default function SalesOrdersTable() {
             <TableHead>Status</TableHead>
             <TableHead>Lines</TableHead>
             <TableHead>Created</TableHead>
+            <TableHead className="text-right">Amount</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {orders.map((so) => (
-            <>
-              <TableRow key={so.id}>
+            <React.Fragment key={so.id}>
+              <TableRow className="hover:bg-slate-50">
                 <TableCell className="font-medium">{so.so_number}</TableCell>
                 <TableCell>
-                  <Badge variant={statusVariant[so.status]} className="capitalize">
-                    {so.status}
-                  </Badge>
+                  <StatusBadge status={so.status} />
                 </TableCell>
                 <TableCell>{so.sales_order_items.length} item(s)</TableCell>
                 <TableCell className="text-gray-500">
                   {new Date(so.created_at).toLocaleDateString()}
+                </TableCell>
+                <TableCell className="text-right font-semibold text-slate-900">
+                  {so.sales_order_items[0]?.currency ?? 'GHS'} {orderTotal(so).toFixed(2)}
                 </TableCell>
                 <TableCell className="space-x-2">
                   <Button
@@ -157,8 +159,8 @@ export default function SalesOrdersTable() {
                 </TableCell>
               </TableRow>
               {expandedId === so.id && (
-                <TableRow key={`${so.id}-detail`}>
-                  <TableCell colSpan={5} className="bg-gray-50">
+                <TableRow>
+                  <TableCell colSpan={6} className="bg-gray-50">
                     <div className="text-sm space-y-1 py-2">
                       {so.sales_order_items.map((item) => (
                         <div key={item.id} className="flex justify-between text-gray-600">
@@ -173,7 +175,7 @@ export default function SalesOrdersTable() {
                   </TableCell>
                 </TableRow>
               )}
-            </>
+            </React.Fragment>
           ))}
         </TableBody>
       </Table>
