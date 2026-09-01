@@ -88,6 +88,19 @@ export default function ReturnForm({ onClose }: { onClose: () => void }) {
         </div>
       </div>
 
+      {resolution === 'refund' && (
+        <div>
+          <Label htmlFor="refund_amount" className="mb-1 block">Refund Amount (GHS)</Label>
+          <Input id="refund_amount" type="number" step="0.01" {...register('refund_amount')} />
+          {errors.refund_amount && (
+            <p className="text-red-600 text-sm mt-1">{errors.refund_amount.message}</p>
+          )}
+          <p className="mt-1 text-xs text-slate-500">
+            This amount is deducted from revenue for the month the return is processed.
+          </p>
+        </div>
+      )}
+
       <div>
         <Label className="mb-1 block">Location</Label>
         <Select value={locationId ?? ''} onValueChange={(v) => setValue('location_id', v ?? '')}>
@@ -195,4 +208,3 @@ export default function ReturnForm({ onClose }: { onClose: () => void }) {
     </form>
   )
 }
-

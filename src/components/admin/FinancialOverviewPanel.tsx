@@ -26,9 +26,11 @@ export default function FinancialOverviewPanel() {
       {/* Top metrics — all four working together */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-600">Monthly Gross Sales</p>
-          <p className="mt-2 text-2xl font-bold text-emerald-700">GHS {pl.revenue.toFixed(2)}</p>
-          <p className="mt-1 text-xs text-emerald-600">Cost of goods sold: GHS {pl.cogs.toFixed(2)}</p>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-600">Monthly Revenue</p>
+          <p className="mt-2 text-2xl font-bold text-emerald-700">GHS {pl.netRevenue.toFixed(2)}</p>
+          <p className="mt-1 text-xs text-emerald-600">
+            Gross sales: GHS {pl.revenue.toFixed(2)} &middot; Refunds: GHS {pl.refunds.toFixed(2)} &middot; COGS: GHS {pl.cogs.toFixed(2)}
+          </p>
         </div>
 
         <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
@@ -106,6 +108,7 @@ export default function FinancialOverviewPanel() {
                 <tr className="border-b border-slate-100">
                   <th className="text-left py-2 pr-4 font-medium text-slate-500">Month</th>
                   <th className="text-right py-2 pr-4 font-medium text-emerald-600">Gross Sales</th>
+                  <th className="text-right py-2 pr-4 font-medium text-rose-500">Refunds</th>
                   <th className="text-right py-2 pr-4 font-medium text-indigo-600">Gross Profit</th>
                   <th className="text-right py-2 font-medium text-blue-600">Net Profit</th>
                 </tr>
@@ -117,6 +120,7 @@ export default function FinancialOverviewPanel() {
                       {new Date(m.month + '-01').toLocaleDateString(undefined, { year: 'numeric', month: 'short' })}
                     </td>
                     <td className="text-right py-2 pr-4 font-medium text-emerald-700">GHS {m.grossSales.toFixed(2)}</td>
+                    <td className="text-right py-2 pr-4 font-medium text-rose-500">GHS {m.refunds.toFixed(2)}</td>
                     <td className="text-right py-2 pr-4 font-medium text-indigo-700">GHS {m.grossProfit.toFixed(2)}</td>
                     <td className={`text-right py-2 font-medium ${m.netProfit >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
                       GHS {m.netProfit.toFixed(2)}

@@ -118,6 +118,7 @@ export default function ReturnsTable() {
                 <TableHead>Location</TableHead>
                 <TableHead>Reason</TableHead>
                 <TableHead>Resolution</TableHead>
+                <TableHead>Refund</TableHead>
                 <TableHead>Customer / Supplier</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Created</TableHead>
@@ -139,6 +140,22 @@ export default function ReturnsTable() {
                     <Badge variant={RESOLUTION_BADGE_VARIANT[r.resolution]}>
                       {RESOLUTION_LABELS[r.resolution]}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {r.resolution === 'refund' ? (
+                      r.refund_amount != null ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          GHS {r.refund_amount.toFixed(2)}
+                          {r.refund_amount_estimated && (
+                            <Badge variant="outline" className="text-[10px]">Est.</Badge>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-amber-600 text-xs">Needs amount</span>
+                      )
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
                     {r.return_type === 'supplier_return'
@@ -193,4 +210,3 @@ export default function ReturnsTable() {
     </div>
   )
 }
-

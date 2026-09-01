@@ -7,6 +7,8 @@ export interface ReturnRecord {
   location_id: string
   quantity: number
   unit_cost: number | null
+  refund_amount: number | null
+  refund_amount_estimated: boolean
   reason: 'damaged' | 'defective' | 'wrong_item' | 'expired' | 'other'
   resolution: 'replace' | 'refund' | 'restock' | 'write_off' | 'supplier_credit'
   status: 'pending' | 'completed' | 'cancelled'
@@ -57,7 +59,7 @@ export const RESOLUTION_LABELS: Record<ReturnRecord['resolution'], string> = {
 
 export const RESOLUTION_OPTION_DESCRIPTIONS: Record<ReturnRecord['resolution'], string> = {
   replace: 'Restocks the returned item, then ships a replacement of the same quantity (net-zero stock).',
-  refund: 'No stock change — the customer keeps the item or it is discarded.',
+  refund: 'No stock change — the customer keeps the item or it is discarded. The refund amount is deducted from revenue.',
   restock: 'Adds the returned quantity back into sellable stock.',
   write_off: 'Removes the quantity from sellable stock (destroyed / unsellable).',
   supplier_credit: 'Removes the quantity from sellable stock and credits the supplier.',

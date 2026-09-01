@@ -39,6 +39,7 @@ export function useCreateReturn() {
         location_id: values.location_id,
         quantity: values.quantity,
         unit_cost: values.unit_cost ?? null,
+        refund_amount: values.refund_amount ?? null,
         reason: values.reason,
         resolution: values.resolution,
         supplier_id: values.supplier_id ?? null,
