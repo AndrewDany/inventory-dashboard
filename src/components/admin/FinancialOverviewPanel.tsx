@@ -3,10 +3,12 @@ import { Plus } from 'lucide-react'
 import { useProfitLoss } from '../../hooks/useProfitLoss'
 import { useMonthlyFinancials } from '../../hooks/useMonthlyFinancials'
 import { useBudget, useUpdateBudget } from '../../hooks/useBudget'
+import { monthOverMonthDelta, previousMonthRow, sparklineFor } from '../../lib/financialTrend'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import ExpensesTable from './ExpensesTable'
+import FinancialStatCard from './FinancialStatCard'
 
 export default function FinancialOverviewPanel() {
   const { data: pl, isLoading: plLoading, error: plError } = useProfitLoss()
@@ -21,51 +23,60 @@ export default function FinancialOverviewPanel() {
   if (budgetError) return <p className="text-red-600 text-sm">Error: {budgetError.message}</p>
   if (!pl || !budget) return null
 
+  const currentMonthKey = new Date().toISOString().slice(0, 7)
+  const previous = monthly ? previousMonthRow(monthly, currentMonthKey) : undefined
+  const budgetPct = budget.monthlyBudget > 0 ? (budget.spentThisMonth / budget.monthlyBudget) * 100 : 0
+
   return (
     <div className="space-y-6">
       {/* Top metrics — all four working together */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-600">Monthly Revenue</p>
-          <p className="mt-2 text-2xl font-bold text-emerald-700">GHS {pl.netRevenue.toFixed(2)}</p>
-          <p className="mt-1 text-xs text-emerald-600">
-            Gross sales: GHS {pl.revenue.toFixed(2)} &middot; Refunds: GHS {pl.refunds.toFixed(2)} &middot; COGS: GHS {pl.cogs.toFixed(2)}
-          </p>
-        </div>
+        <FinancialStatCard
+          label="Monthly Revenue"
+          colorScheme="emerald"
+          value={`GHS ${pl.netRevenue.toFixed(2)}`}
+          subtitle={
+            <>Gross sales: GHS {pl.revenue.toFixed(2)} &middot; Refunds: GHS {pl.refunds.toFixed(2)} &middot; COGS: GHS {pl.cogs.toFixed(2)}</>
+          }
+          sparklineData={monthly ? sparklineFor(monthly, 'netSales') : undefined}
+          deltaPct={monthOverMonthDelta(pl.netRevenue, previous?.netSales)}
+        />
 
-        <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-indigo-600">Gross Profit</p>
-          <p className="mt-2 text-2xl font-bold text-indigo-700">GHS {pl.grossProfit.toFixed(2)}</p>
-          <p className="mt-1 text-xs text-indigo-600">Margin: {pl.grossMargin.toFixed(1)}%</p>
-        </div>
+        <FinancialStatCard
+          label="Gross Profit"
+          colorScheme="indigo"
+          value={`GHS ${pl.grossProfit.toFixed(2)}`}
+          subtitle={<>Margin: {pl.grossMargin.toFixed(1)}%</>}
+          sparklineData={monthly ? sparklineFor(monthly, 'grossProfit') : undefined}
+          deltaPct={monthOverMonthDelta(pl.grossProfit, previous?.grossProfit)}
+        />
 
-        <div
-          className={`rounded-2xl border p-4 ${
-            pl.netProfit >= 0 ? 'border-blue-200 bg-blue-50' : 'border-red-200 bg-red-50'
-          }`}
-        >
-          <p className={`text-[10px] uppercase tracking-[0.2em] ${pl.netProfit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-            Net Profit
-          </p>
-          <p className={`mt-2 text-2xl font-bold ${pl.netProfit >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
-            GHS {pl.netProfit.toFixed(2)}
-          </p>
-          <p className={`mt-1 text-xs ${pl.netProfit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-            Expenses: GHS {pl.totalExpenses.toFixed(2)} · Margin: {pl.netMargin.toFixed(1)}%
-          </p>
-        </div>
+        <FinancialStatCard
+          label="Net Profit"
+          colorScheme={pl.netProfit >= 0 ? 'blue' : 'red'}
+          value={`GHS ${pl.netProfit.toFixed(2)}`}
+          subtitle={<>Expenses: GHS {pl.totalExpenses.toFixed(2)} &middot; Margin: {pl.netMargin.toFixed(1)}%</>}
+          sparklineData={monthly ? sparklineFor(monthly, 'netProfit') : undefined}
+          deltaPct={monthOverMonthDelta(pl.netProfit, previous?.netProfit)}
+        />
 
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
           <p className="text-[10px] uppercase tracking-[0.2em] text-amber-600">Budget Remaining</p>
           <p className="mt-2 text-2xl font-bold text-amber-700">GHS {budget.remaining.toFixed(2)}</p>
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-amber-200/60">
+            <div
+              className={`h-full rounded-full ${budgetPct > 100 ? 'bg-red-500' : 'bg-amber-500'}`}
+              style={{ width: `${Math.min(budgetPct, 100)}%` }}
+            />
+          </div>
           <p className="mt-1 text-xs text-amber-600">
-            Spent restocking: GHS {budget.spentThisMonth.toFixed(2)} of GHS {budget.monthlyBudget.toFixed(2)}
+            Spent restocking: GHS {budget.spentThisMonth.toFixed(2)} of GHS {budget.monthlyBudget.toFixed(2)} ({budgetPct.toFixed(0)}%)
           </p>
         </div>
       </div>
 
       {/* Budget control */}
-      <div className="rounded-2xl border border-slate-100 bg-white p-4">
+      <div className="rounded-lg border border-slate-100 bg-white p-4">
         <p className="text-sm font-semibold text-slate-900 mb-3">Set Monthly Purchasing Budget</p>
         <div className="flex items-end gap-3">
           <div className="flex-1">
@@ -93,14 +104,14 @@ export default function FinancialOverviewPanel() {
       </div>
 
       {/* Expenses */}
-      <div className="rounded-2xl border border-slate-100 bg-white p-4">
+      <div className="rounded-lg border border-slate-100 bg-white p-4">
         <p className="text-sm font-semibold text-slate-900 mb-3">Expenses</p>
         <ExpensesTable />
       </div>
 
       {/* 12-month trend */}
       {monthly && monthly.length > 0 && (
-        <div className="rounded-2xl border border-slate-100 bg-white p-4">
+        <div className="rounded-lg border border-slate-100 bg-white p-4">
           <p className="text-sm font-semibold text-slate-900 mb-3">Recent trend</p>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
