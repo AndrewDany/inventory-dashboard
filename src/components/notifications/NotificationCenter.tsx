@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Bell } from 'lucide-react'
-import { useNotifications } from '../../hooks/useNotifications'
+import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from '../../hooks/useNotifications'
 
 export default function NotificationCenter() {
   const { data: notifications, isLoading } = useNotifications()
+  const markRead = useMarkNotificationRead()
+  const markAllRead = useMarkAllNotificationsRead()
   const [open, setOpen] = useState(false)
 
   const unread = notifications?.filter((n) => !n.read).length ?? 0
@@ -27,8 +29,17 @@ export default function NotificationCenter() {
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-full mt-2 z-50 w-80 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100">
+            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
               <p className="text-sm font-semibold text-gray-900">Notifications</p>
+              {unread > 0 && (
+                <button
+                  onClick={() => markAllRead.mutate()}
+                  disabled={markAllRead.isPending}
+                  className="text-xs font-medium text-indigo-600 hover:text-indigo-800 disabled:opacity-50"
+                >
+                  Mark all read
+                </button>
+              )}
             </div>
 
             <div className="max-h-96 overflow-y-auto">
@@ -43,8 +54,9 @@ export default function NotificationCenter() {
               {notifications?.map((n) => (
                 <div
                   key={n.id}
+                  onClick={() => !n.read && markRead.mutate(n.id)}
                   className={`px-4 py-3 border-b border-gray-50 last:border-0 hover:bg-gray-50 ${
-                    !n.read ? 'bg-indigo-50/50' : ''
+                    !n.read ? 'bg-indigo-50/50 cursor-pointer' : ''
                   }`}
                 >
                   <div className="flex items-start gap-2">

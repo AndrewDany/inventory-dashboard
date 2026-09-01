@@ -76,12 +76,14 @@ export function useMarkAllNotificationsRead() {
 
       if (!data) return
 
-      const ids = new Set<string>(data?.map((d: { id: string }) => d.id) ?? [])
-      saveReadIds(ids)
+      const readIds = getReadIds()
+      for (const d of data as { id: string }[]) {
+        readIds.add(d.id)
+      }
+      saveReadIds(readIds)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
     },
   })
 }
-
