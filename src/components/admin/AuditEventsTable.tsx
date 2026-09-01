@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Search } from 'lucide-react'
+import { Search, PackageCheck, Truck, SlidersHorizontal, Activity } from 'lucide-react'
 import { useAuditEvents } from '../../hooks/useAuditEvents'
+import { relativeTime } from '../../lib/relativeTime'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import {
   Table,
   TableBody,
@@ -12,10 +12,16 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
-const eventTypeLabels: Record<string, string> = {
-  purchase_order_received: 'PO Received',
-  sales_order_shipped: 'SO Shipped',
-  inventory_adjustment: 'Adjustment',
+const EVENT_TYPE_META: Record<string, { label: string; icon: typeof Activity; bg: string; text: string }> = {
+  purchase_order_received: { label: 'PO Received', icon: PackageCheck, bg: 'bg-indigo-50', text: 'text-indigo-700' },
+  sales_order_shipped: { label: 'SO Shipped', icon: Truck, bg: 'bg-blue-50', text: 'text-blue-700' },
+  inventory_adjustment: { label: 'Adjustment', icon: SlidersHorizontal, bg: 'bg-amber-50', text: 'text-amber-700' },
+}
+
+const DEFAULT_META = { icon: Activity, bg: 'bg-slate-100', text: 'text-slate-600' }
+
+function eventMeta(eventType: string) {
+  return EVENT_TYPE_META[eventType] ?? { ...DEFAULT_META, label: eventType }
 }
 
 export default function AuditEventsTable() {
@@ -36,8 +42,33 @@ export default function AuditEventsTable() {
     )
   })
 
+  const counts = (events ?? []).reduce<Record<string, number>>((acc, ev) => {
+    acc[ev.event_type] = (acc[ev.event_type] ?? 0) + 1
+    return acc
+  }, {})
+
   return (
     <div>
+      {events && events.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
+            <Activity size={12} /> {events.length} total
+          </span>
+          {Object.entries(counts).map(([type, count]) => {
+            const meta = eventMeta(type)
+            const Icon = meta.icon
+            return (
+              <span
+                key={type}
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${meta.bg} ${meta.text}`}
+              >
+                <Icon size={12} /> {meta.label ?? type} &middot; {count}
+              </span>
+            )
+          })}
+        </div>
+      )}
+
       <div className="relative mb-4">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
         <Input
@@ -58,7 +89,7 @@ export default function AuditEventsTable() {
       )}
 
       {filtered.length > 0 && (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto rounded-lg border border-slate-100">
           <Table>
             <TableHeader>
               <TableRow>
@@ -72,35 +103,51 @@ export default function AuditEventsTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((ev) => (
-                <TableRow key={ev.id}>
-                  <TableCell>
-                    <Badge variant="secondary">
-                      {eventTypeLabels[ev.event_type] ?? ev.event_type}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-gray-600 text-sm">
-                    {ev.entity_type ? `${ev.entity_type.slice(0, 20)}` : '—'}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">{ev.sku || '—'}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={(ev.quantity_delta ?? 0) > 0 ? 'default' : 'destructive'}
+              {filtered.map((ev) => {
+                const meta = eventMeta(ev.event_type)
+                const Icon = meta.icon
+                const delta = ev.quantity_delta ?? 0
+                return (
+                  <TableRow key={ev.id} className="hover:bg-slate-50">
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${meta.bg} ${meta.text}`}
+                      >
+                        <Icon size={12} /> {meta.label ?? ev.event_type}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-slate-600 text-sm">
+                      {ev.entity_type ? `${ev.entity_type.slice(0, 20)}` : '—'}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{ev.sku || '—'}</TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                          delta > 0
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : delta < 0
+                              ? 'bg-rose-50 text-rose-700'
+                              : 'bg-slate-100 text-slate-600'
+                        }`}
+                      >
+                        {delta > 0 ? `+${delta}` : delta}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-slate-600 text-sm">
+                      {ev.unit_cost != null ? `GHS ${ev.unit_cost.toFixed(2)}` : '—'}
+                    </TableCell>
+                    <TableCell className="text-slate-600 text-sm">
+                      {ev.actor_user_email || '—'}
+                    </TableCell>
+                    <TableCell
+                      className="text-slate-400 text-sm whitespace-nowrap"
+                      title={new Date(ev.created_at).toLocaleString()}
                     >
-                      {(ev.quantity_delta ?? 0) > 0 ? `+${ev.quantity_delta}` : ev.quantity_delta ?? 0}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-gray-600 text-sm">
-                    {ev.unit_cost != null ? `GHS ${ev.unit_cost.toFixed(2)}` : '—'}
-                  </TableCell>
-                  <TableCell className="text-gray-600 text-sm">
-                    {ev.actor_user_email || '—'}
-                  </TableCell>
-                  <TableCell className="text-gray-500 text-sm whitespace-nowrap">
-                    {new Date(ev.created_at).toLocaleString()}
-                  </TableCell>
-                </TableRow>
-              ))}
+                      {relativeTime(ev.created_at)}
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </div>
@@ -108,4 +155,3 @@ export default function AuditEventsTable() {
     </div>
   )
 }
-
