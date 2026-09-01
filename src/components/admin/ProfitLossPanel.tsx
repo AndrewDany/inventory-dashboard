@@ -16,8 +16,10 @@ export default function ProfitLossPanel() {
       <div className="grid gap-3 md:grid-cols-3">
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
           <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-600">Revenue</p>
-          <p className="mt-2 text-2xl font-bold text-emerald-700">GHS {data.revenue.toFixed(2)}</p>
-          <p className="mt-1 text-xs text-emerald-600">COGS: GHS {data.cogs.toFixed(2)}</p>
+          <p className="mt-2 text-2xl font-bold text-emerald-700">GHS {data.netRevenue.toFixed(2)}</p>
+          <p className="mt-1 text-xs text-emerald-600">
+            Gross sales: GHS {data.revenue.toFixed(2)} &middot; Refunds: GHS {data.refunds.toFixed(2)} &middot; COGS: GHS {data.cogs.toFixed(2)}
+          </p>
         </div>
 
         <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4">

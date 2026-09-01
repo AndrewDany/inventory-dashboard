@@ -7,6 +7,7 @@ const baseReturnSchema = z.object({
   location_id: z.string().min(1, 'Location is required'),
   quantity: z.coerce.number().min(0.001, 'Quantity must be greater than 0'),
   unit_cost: z.coerce.number().min(0).optional(),
+  refund_amount: z.coerce.number().min(0).optional(),
   reason: z.enum(['damaged', 'defective', 'wrong_item', 'expired', 'other']),
   resolution: z.enum(['replace', 'refund', 'restock', 'write_off', 'supplier_credit']),
   supplier_id: z.string().optional(),
@@ -29,6 +30,13 @@ export const returnSchema = baseReturnSchema.superRefine((data, ctx) => {
       path: ['supplier_id'],
     })
   }
+  if (data.resolution === 'refund' && !(data.refund_amount && data.refund_amount > 0)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Refund amount is required so it can be deducted from revenue',
+      path: ['refund_amount'],
+    })
+  }
 })
 
-export type ReturnFormValues = z.infer<typeof baseReturnSchema>
+export type ReturnFormValues = z.infer<typeof baseReturnSchema>

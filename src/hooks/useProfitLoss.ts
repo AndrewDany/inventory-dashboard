@@ -4,6 +4,8 @@ import { useMonthlyFinancials } from './useMonthlyFinancials'
 
 export interface ProfitLossReport {
   revenue: number
+  refunds: number
+  netRevenue: number
   cogs: number
   grossProfit: number
   grossMargin: number
@@ -31,12 +33,16 @@ export function useProfitLoss() {
     queryFn: async (): Promise<ProfitLossReport> => {
       if (!monthlyFinancials) throw new Error('Monthly financials unavailable')
 
+      // Reuse useMonthlyFinancials' numbers directly rather than recomputing them here,
+      // so the two hooks can never drift out of sync (e.g. one accounting for refunds
+      // and the other not).
       const currentMonthRow = monthlyFinancials.find((m) => m.month === currentMonthKey)
       const revenue = currentMonthRow?.grossSales ?? 0
+      const refunds = currentMonthRow?.refunds ?? 0
+      const netRevenue = currentMonthRow?.netSales ?? revenue - refunds
       const cogs = currentMonthRow?.cogs ?? 0
-
-      const grossProfit = revenue - cogs
-      const grossMargin = revenue > 0 ? (grossProfit / revenue) * 100 : 0
+      const grossProfit = currentMonthRow?.grossProfit ?? netRevenue - cogs
+      const grossMargin = netRevenue > 0 ? (grossProfit / netRevenue) * 100 : 0
 
       const { data: expenses, error: expensesError } = await supabase
         .from('expenses')
@@ -58,10 +64,12 @@ export function useProfitLoss() {
         .sort((a, b) => b.total - a.total)
 
       const netProfit = grossProfit - totalExpenses
-      const netMargin = revenue > 0 ? (netProfit / revenue) * 100 : 0
+      const netMargin = netRevenue > 0 ? (netProfit / netRevenue) * 100 : 0
 
       return {
         revenue,
+        refunds,
+        netRevenue,
         cogs,
         grossProfit,
         grossMargin,
@@ -74,4 +82,3 @@ export function useProfitLoss() {
     enabled: !monthlyLoading && !monthlyError && !!monthlyFinancials,
   })
 }
-
