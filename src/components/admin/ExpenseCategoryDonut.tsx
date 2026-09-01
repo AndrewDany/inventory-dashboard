@@ -1,5 +1,7 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 
+// Muted, low-saturation palette so the donut doesn't compete with the P&L stat
+// card colors above it. "Other" (the smallest slices, bucketed) is always gray.
 const SLICE_COLORS = ['#6366f1', '#a5b4fc', '#94a3b8', '#cbd5e1']
 const OTHER_COLOR = '#e2e8f0'
 const MAX_SLICES = 4
@@ -42,7 +44,10 @@ export default function ExpenseCategoryDonut({ data, categoryLabel }: ExpenseCat
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: number, name: string) => [`GHS ${value.toFixed(2)}`, name]}
+              formatter={(value, name) => {
+                const num = typeof value === 'number' ? value : Number(value ?? 0)
+                return [`GHS ${num.toFixed(2)}`, String(name)]
+              }}
               contentStyle={{ fontSize: 12, borderRadius: 6 }}
             />
           </PieChart>
