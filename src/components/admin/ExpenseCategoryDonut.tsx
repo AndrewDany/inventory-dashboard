@@ -43,13 +43,13 @@ export default function ExpenseCategoryDonut({ data, categoryLabel }: ExpenseCat
                 <Cell key={i} fill={s.color} />
               ))}
             </Pie>
-            <Tooltip
-              formatter={(value, name) => {
-                const num = typeof value === 'number' ? value : Number(value ?? 0)
-                return [`GHS ${num.toFixed(2)}`, String(name)]
-              }}
-              contentStyle={{ fontSize: 12, borderRadius: 6 }}
-            />
+           <Tooltip
+  formatter={(value, name) => {
+    const num = typeof value === 'number' ? value : Number(value ?? 0)
+    return [`GHS ${num.toFixed(2)}`, String(name)]
+  }}
+  contentStyle={{ fontSize: 12, borderRadius: 6 }}
+/>
           </PieChart>
         </ResponsiveContainer>
       </div>

@@ -76,6 +76,8 @@ export function useProcessReturn() {
       queryClient.invalidateQueries({ queryKey: ['inventory_batches'] })
       queryClient.invalidateQueries({ queryKey: ['inventory_batch_stock'] })
       queryClient.invalidateQueries({ queryKey: ['audit_events'] })
+      queryClient.invalidateQueries({ queryKey: ['monthly_financials'] })
+      queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'profit_loss' })
       toast.success('Return processed — stock updated')
     },
     onError: (error: Error) => {
