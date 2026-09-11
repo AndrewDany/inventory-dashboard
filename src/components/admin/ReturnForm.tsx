@@ -4,6 +4,7 @@ import { returnSchema, type ReturnFormValues } from '../../lib/returnSchema'
 import { useCreateReturn } from '../../hooks/useReturns'
 import { useLocations } from '../../hooks/useLocations'
 import { useSuppliers } from '../../hooks/useSuppliers'
+import { useInventory } from '../../hooks/useInventory'
 import {
   RETURN_TYPE_LABELS,
   RESOLUTION_LABELS,
@@ -19,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 export default function ReturnForm({ onClose }: { onClose: () => void }) {
   const { data: locations } = useLocations()
   const { data: suppliers } = useSuppliers()
+  const { data: inventoryItems = [] } = useInventory()
   const createReturn = useCreateReturn()
 
   const {
@@ -37,8 +39,27 @@ export default function ReturnForm({ onClose }: { onClose: () => void }) {
   const supplierId = watch('supplier_id')
   const resolution = watch('resolution')
   const reason = watch('reason')
+  const inventoryItemId = watch('inventory_item_id')
 
   const resolutionOptions = RESOLUTION_OPTIONS_BY_TYPE[returnType]
+
+  // Resolving the picked item to both `sku` and `inventory_item_id` (rather
+  // than leaving SKU as free text) is what lets process_return() find the
+  // row to restock — a return submitted with inventory_item_id left null
+  // gets logged and marked completed, but silently never touches
+  // inventory_items.quantity.
+  function handlePickInventoryItem(inventoryItemIdValue: string) {
+    const item = inventoryItems.find((i) => String(i.id) === inventoryItemIdValue)
+    if (!item) return
+    setValue('inventory_item_id', item.id)
+    setValue('sku', item.sku)
+    if (item.unit_price != null) {
+      setValue('unit_cost', item.unit_price)
+    }
+    if (!locationId && item.location_id) {
+      setValue('location_id', item.location_id)
+    }
+  }
 
   async function onSubmit(values: FieldValues) {
     const typed = values as ReturnFormValues
@@ -71,9 +92,33 @@ export default function ReturnForm({ onClose }: { onClose: () => void }) {
       </div>
 
       <div>
-        <Label htmlFor="sku" className="mb-1 block">SKU</Label>
-        <Input id="sku" {...register('sku')} />
+        <Label className="mb-1 block">Item</Label>
+        <Select
+          value={inventoryItemId != null ? String(inventoryItemId) : ''}
+          onValueChange={(v) => handlePickInventoryItem(v as string)}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Pick an existing item">
+              {(value: string) => {
+                const picked = inventoryItems.find((i) => String(i.id) === value)
+                return picked ? `${picked.name} (${picked.sku}) — ${picked.quantity} on hand` : undefined
+              }}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {inventoryItems.map((item) => (
+              <SelectItem key={item.id} value={String(item.id)}>
+                {item.name} ({item.sku}) — {item.quantity} on hand
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         {errors.sku && <p className="text-red-600 text-sm mt-1">{errors.sku.message}</p>}
+        {errors.inventory_item_id && (
+          <p className="text-red-600 text-sm mt-1">{errors.inventory_item_id.message}</p>
+        )}
+        {/* Hidden field keeps `sku` registered with react-hook-form; it's populated by handlePickInventoryItem above. */}
+        <input type="hidden" {...register('sku')} />
       </div>
 
       <div className="grid grid-cols-2 gap-4">

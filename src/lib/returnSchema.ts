@@ -16,6 +16,13 @@ const baseReturnSchema = z.object({
 })
 
 export const returnSchema = baseReturnSchema.superRefine((data, ctx) => {
+  if (!data.inventory_item_id) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Pick an item from inventory so stock can be updated correctly',
+      path: ['inventory_item_id'],
+    })
+  }
   if (data.return_type === 'customer_return' && !data.customer_name?.trim()) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,

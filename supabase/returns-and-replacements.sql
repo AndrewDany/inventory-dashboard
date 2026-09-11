@@ -114,6 +114,29 @@ begin
     raise exception 'Only pending returns can be processed';
   end if;
 
+  -- Safety net: a return can be logged with inventory_item_id left null
+  -- (e.g. a stale client, or a row inserted directly via the API) even
+  -- though it names a real sku. Without this, the stock update below is
+  -- silently skipped, the return still gets marked completed, and the
+  -- item's quantity never moves. Resolve it from sku here so processing
+  -- can't "succeed" without actually touching stock.
+  if v_return.inventory_item_id is null then
+    select id into v_return.inventory_item_id
+    from public.inventory_items
+    where sku = v_return.sku
+    limit 1;
+
+    if v_return.inventory_item_id is not null then
+      update public.returns
+      set inventory_item_id = v_return.inventory_item_id
+      where id = p_return_id;
+    end if;
+  end if;
+
+  if v_return.inventory_item_id is null then
+    raise exception 'Cannot process return: no inventory item found for sku %', v_return.sku;
+  end if;
+
   select quantity into v_prev_qty from public.inventory_items where id = v_return.inventory_item_id;
   v_prev_qty := coalesce(v_prev_qty, 0);
   v_new_qty := v_prev_qty;
