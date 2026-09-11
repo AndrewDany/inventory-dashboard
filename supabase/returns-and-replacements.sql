@@ -136,7 +136,7 @@ begin
     ) values (
       v_return.inventory_item_id, v_return.sku,
       v_prev_qty, v_new_qty, v_return.quantity,
-      'return_restock', v_actor, v_actor_email, null, v_return.unit_cost
+      'return', v_actor, v_actor_email, null, v_return.unit_cost
     );
 
     -- Add back to the most recent batch for this SKU at this location (best effort)
@@ -178,7 +178,7 @@ begin
       ) values (
         v_return.inventory_item_id, v_return.sku,
         v_prev_qty, v_new_qty, -v_return.quantity,
-        'return_replacement', v_actor, v_actor_email, null, v_return.unit_cost
+        'return', v_actor, v_actor_email, null, v_return.unit_cost
       );
 
       -- Remove replacement units FIFO from batches (best effort)
@@ -220,7 +220,7 @@ begin
     ) values (
       v_return.inventory_item_id, v_return.sku,
       v_prev_qty, v_new_qty, -v_return.quantity,
-      'return_write_off', v_actor, v_actor_email, null, v_return.unit_cost
+      'write_off', v_actor, v_actor_email, null, v_return.unit_cost
     );
 
     -- Remove FIFO from batches (best effort)
