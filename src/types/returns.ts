@@ -38,7 +38,7 @@ export const REASON_LABELS: Record<ReturnRecord['reason'], string> = {
 export const RESOLUTION_OPTIONS_BY_TYPE: Record<ReturnRecord['return_type'], { value: ReturnRecord['resolution']; label: string }[]> = {
   customer_return: [
     { value: 'replace', label: 'Replace with new unit' },
-    { value: 'refund', label: 'Refund (no restock)' },
+    { value: 'refund', label: 'Refund (with restock)' },
     { value: 'restock', label: 'Restock (not actually damaged)' },
   ],
   damaged_stock: [
@@ -59,7 +59,7 @@ export const RESOLUTION_LABELS: Record<ReturnRecord['resolution'], string> = {
 
 export const RESOLUTION_OPTION_DESCRIPTIONS: Record<ReturnRecord['resolution'], string> = {
   replace: 'Restocks the returned item, then ships a replacement of the same quantity (net-zero stock).',
-  refund: 'No stock change — the customer keeps the item or it is discarded. The refund amount is deducted from revenue.',
+  refund: 'Adds the returned quantity back into sellable stock. The refund amount is also deducted from revenue.',
   restock: 'Adds the returned quantity back into sellable stock.',
   write_off: 'Removes the quantity from sellable stock (destroyed / unsellable).',
   supplier_credit: 'Removes the quantity from sellable stock and credits the supplier.',

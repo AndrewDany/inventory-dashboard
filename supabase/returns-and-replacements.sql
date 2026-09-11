@@ -13,7 +13,7 @@
 --                      ships out as the replacement (net-zero stock)
 --   write_off        : returned qty is removed from sellable stock
 --   supplier_credit  : returned qty is removed from sellable stock
---   refund           : no stock change (customer keeps / item discarded)
+--   refund           : returned qty is added back to sellable stock (same as restock)
 -- ============================================================
 
 -- ============================================================
@@ -120,7 +120,7 @@ begin
 
   v_integral := (v_return.quantity = floor(v_return.quantity));
 
-  if v_return.resolution in ('restock', 'replace') then
+  if v_return.resolution in ('restock', 'replace', 'refund') then
     -- Returned goods come back into sellable stock
     if v_return.inventory_item_id is not null then
       update public.inventory_items
@@ -245,9 +245,6 @@ begin
       end loop;
     end if;
 
-  else
-    -- refund: no stock change (customer keeps the item)
-    v_new_qty := v_prev_qty;
   end if;
 
   -- Audit trail (immutable)
@@ -256,7 +253,7 @@ begin
     quantity_delta, unit_cost, actor_user_id, actor_user_email, metadata
   ) values (
     'return_processed', 'return', v_return.id, v_return.sku, v_return.location_id,
-    case when v_return.resolution in ('restock','replace') then v_return.quantity::integer else -v_return.quantity::integer end,
+    case when v_return.resolution in ('restock','replace','refund') then v_return.quantity::integer else -v_return.quantity::integer end,
     v_return.unit_cost, v_actor, v_actor_email,
     jsonb_build_object(
       'return_number', v_return.return_number,
