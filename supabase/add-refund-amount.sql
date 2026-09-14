@@ -2,8 +2,8 @@
 -- Add refund_amount to returns
 -- Run AFTER returns-and-replacements.sql
 --
--- Why: process_return() correctly leaves stock untouched for a
--- 'refund' resolution, but nothing anywhere records how much money
+-- Why: process_return() restocks returned goods for a 'refund'
+-- resolution (same as 'restock'), but nothing anywhere records how much money
 -- was actually refunded to the customer. That meant the P&L
 -- (useProfitLoss / useMonthlyFinancials) kept counting the original
 -- sale as revenue in full even after it was refunded, overstating

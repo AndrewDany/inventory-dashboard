@@ -41,12 +41,17 @@ export function useMonthlyFinancials() {
 
       if (refundError) throw new Error(refundError.message)
 
-      // COGS: negative stock movements (goods going out), with their cost at time of movement.
+      // COGS: negative stock movements that represent a real cost — sales, replacement
+      // shipments, and write-offs — with their cost at time of movement. Deliberately
+      // excludes 'transfer' (stock moving between locations, not sold or lost) and
+      // 'manual_adjustment' / 'cycle_count' (inventory count corrections), which don't
+      // represent goods actually sold or destroyed and would otherwise inflate COGS.
       // If a legacy row has a missing/zero unit_cost, fall back to the most recent batch cost for that SKU.
       const { data: movements, error: movError } = await supabase
         .from('stock_movements')
-        .select('item_name, change_amount, unit_cost, created_at')
+        .select('item_name, change_amount, unit_cost, created_at, reason')
         .lt('change_amount', 0)
+        .in('reason', ['sale', 'return', 'write_off'])
 
       if (movError) throw new Error(movError.message)
 

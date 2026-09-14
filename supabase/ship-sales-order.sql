@@ -21,6 +21,14 @@
 --   - inventory_items.quantity is still maintained as the global
 --     mirror total (used elsewhere in the app), decremented in
 --     lock-step with whichever location-scoped deduction happens.
+--
+-- Also fixed: the stock_movements insert used reason = 'sales_shipment',
+-- which is not one of the values allowed by stock_movements_reason_check
+-- (purchase, sale, manual_adjustment, write_off, return, cycle_count,
+-- transfer, other). Every shipment was therefore failing at this insert
+-- and rolling back the whole function — no sales order could ever be
+-- marked shipped. Changed to 'sale', which is also what the P&L COGS
+-- calculation (useMonthlyFinancials) filters on.
 -- ============================================================
 
 drop function if exists public.ship_sales_order(uuid, uuid, jsonb);
@@ -177,7 +185,7 @@ begin
       v_prev_qty,
       v_new_qty,
       -v_line.remaining_qty,
-      'sales_shipment',
+      'sale',
       v_actor,
       v_actor_email,
       latest_batch.id,
