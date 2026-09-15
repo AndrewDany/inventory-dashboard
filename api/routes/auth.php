@@ -11,7 +11,7 @@ require_once __DIR__ . '/../middleware/auth.php';
 
 function handleAuthRoutes(PDO $pdo, string $method, array $uriParts): void
 {
-    $subAction = $uriParts[2] ?? '';
+    $subAction = $uriParts[1] ?? '';
     $config = require __DIR__ . '/../config/config.php';
 
     switch ($subAction) {
@@ -25,12 +25,16 @@ function handleAuthRoutes(PDO $pdo, string $method, array $uriParts): void
                 jsonError('Email and password are required', 400);
             }
 
-            $stmt = $pdo->prepare('SELECT u.id, u.email, u.password_hash, u.role, p.full_name, p.avatar_url FROM users u LEFT JOIN profiles p ON p.user_id = u.id WHERE u.email = ? LIMIT 1');
+            $stmt = $pdo->prepare('SELECT u.id, u.email, u.password_hash, u.role, u.status, p.full_name, p.avatar_url, p.location_id FROM users u LEFT JOIN profiles p ON p.user_id = u.id WHERE u.email = ? LIMIT 1');
             $stmt->execute([$email]);
             $user = $stmt->fetch();
 
             if (!$user || !password_verify($password, $user['password_hash'])) {
                 jsonError('Invalid email or password', 401);
+            }
+
+            if (($user['status'] ?? 'active') === 'suspended') {
+                jsonError('Account suspended. Please contact your system administrator.', 403);
             }
 
             $tokenPayload = [
@@ -49,6 +53,7 @@ function handleAuthRoutes(PDO $pdo, string $method, array $uriParts): void
                     'role' => $user['role'],
                     'full_name' => $user['full_name'],
                     'avatar_url' => $user['avatar_url'],
+                    'location_id' => $user['location_id'] ?? null,
                 ]
             ], 200, 'Login successful');
             break;
@@ -56,7 +61,7 @@ function handleAuthRoutes(PDO $pdo, string $method, array $uriParts): void
         case 'me':
             if ($method !== 'GET') jsonError('Method not allowed', 405);
             $auth = requireAuth();
-            $stmt = $pdo->prepare('SELECT u.id, u.email, u.role, p.full_name, p.avatar_url FROM users u LEFT JOIN profiles p ON p.user_id = u.id WHERE u.id = ? LIMIT 1');
+            $stmt = $pdo->prepare('SELECT u.id, u.email, u.role, u.status, p.full_name, p.avatar_url, p.location_id FROM users u LEFT JOIN profiles p ON p.user_id = u.id WHERE u.id = ? LIMIT 1');
             $stmt->execute([$auth['sub']]);
             $user = $stmt->fetch();
 
@@ -71,19 +76,21 @@ function handleAuthRoutes(PDO $pdo, string $method, array $uriParts): void
             if ($method !== 'POST') jsonError('Method not allowed', 405);
             $auth = requireAuth();
             $input = getJsonInput();
-            $currentPassword = (string)($input['current_password'] ?? '');
-            $newPassword = (string)($input['new_password'] ?? '');
+            $currentPassword = (string)($input['current_password'] ?? $input['old_password'] ?? '');
+            $newPassword = (string)($input['new_password'] ?? $input['password'] ?? '');
 
             if (strlen($newPassword) < 6) {
                 jsonError('New password must be at least 6 characters', 400);
             }
 
-            $stmt = $pdo->prepare('SELECT password_hash FROM users WHERE id = ?');
-            $stmt->execute([$auth['sub']]);
-            $hash = $stmt->fetchColumn();
+            if ($currentPassword !== '') {
+                $stmt = $pdo->prepare('SELECT password_hash FROM users WHERE id = ?');
+                $stmt->execute([$auth['sub']]);
+                $hash = $stmt->fetchColumn();
 
-            if (!$hash || !password_verify($currentPassword, $hash)) {
-                jsonError('Current password is incorrect', 400);
+                if (!$hash || !password_verify($currentPassword, $hash)) {
+                    jsonError('Current password is incorrect', 400);
+                }
             }
 
             $newHash = password_hash($newPassword, PASSWORD_BCRYPT);
@@ -99,8 +106,9 @@ function handleAuthRoutes(PDO $pdo, string $method, array $uriParts): void
             $input = getJsonInput();
             $email = trim($input['email'] ?? '');
             $role = in_array($input['role'] ?? '', ['admin', 'staff', 'demo']) ? $input['role'] : 'staff';
-            $fullName = trim($input['full_name'] ?? '');
-            $tempPassword = $input['temp_password'] ?? 'Welcome@123';
+            $fullName = trim($input['full_name'] ?? $input['fullName'] ?? '');
+            $tempPassword = $input['password'] ?? $input['temp_password'] ?? 'Welcome@123';
+            $locationId = $input['location_id'] ?? $input['locationId'] ?? null;
 
             if (empty($email)) {
                 jsonError('Email is required', 400);
@@ -119,11 +127,11 @@ function handleAuthRoutes(PDO $pdo, string $method, array $uriParts): void
 
             $pdo->beginTransaction();
             try {
-                $stmt = $pdo->prepare('INSERT INTO users (id, email, password_hash, role) VALUES (?, ?, ?, ?)');
+                $stmt = $pdo->prepare('INSERT INTO users (id, email, password_hash, role, status) VALUES (?, ?, ?, ?, "active")');
                 $stmt->execute([$userId, $email, $passwordHash, $role]);
 
-                $stmt2 = $pdo->prepare('INSERT INTO profiles (id, user_id, full_name) VALUES (?, ?, ?)');
-                $stmt2->execute([$profileId, $userId, $fullName]);
+                $stmt2 = $pdo->prepare('INSERT INTO profiles (id, user_id, full_name, location_id) VALUES (?, ?, ?, ?)');
+                $stmt2->execute([$profileId, $userId, $fullName ?: null, $locationId ?: null]);
 
                 $pdo->commit();
                 jsonSuccess(['id' => $userId, 'email' => $email, 'role' => $role], 201, 'User invited successfully');

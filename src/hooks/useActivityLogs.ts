@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '../lib/supabaseClient'
+import { api } from '../lib/apiClient'
 
 export interface ActivityLog {
   id: string
@@ -14,14 +14,8 @@ export function useActivityLogs() {
   return useQuery({
     queryKey: ['activity_logs'],
     queryFn: async (): Promise<ActivityLog[]> => {
-      const { data, error } = await supabase
-        .from('activity_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50)
-
-      if (error) throw new Error(error.message)
-      return data as ActivityLog[]
+      const data = await api.get<ActivityLog[]>('/audit/activity-logs?limit=50')
+      return data || []
     },
   })
 }

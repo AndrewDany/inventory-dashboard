@@ -11,17 +11,18 @@ require_once __DIR__ . '/../middleware/auth.php';
 function handleNotificationRoutes(PDO $pdo, string $method, array $uriParts): void
 {
     $auth = requireAuth();
-    $id = $uriParts[2] ?? null;
+    $id = $uriParts[1] ?? null;
+    $sub = $uriParts[2] ?? '';
 
-    // Mark single notification as read: PATCH /api/notifications/{id}/read
-    if ($id && ($uriParts[3] ?? '') === 'read' && $method === 'PATCH') {
+    // Mark single notification as read: PATCH /api/notifications/{id}/read or PATCH /api/notifications/{id}
+    if ($id && ($sub === 'read' || $sub === '') && ($method === 'PATCH' || $method === 'PUT')) {
         $stmt = $pdo->prepare('UPDATE notifications SET is_read = 1 WHERE id = ?');
         $stmt->execute([$id]);
         jsonSuccess(null, 200, 'Marked as read');
     }
 
-    // Mark all as read: POST /api/notifications/read-all
-    if ($id === 'read-all' && $method === 'POST') {
+    // Mark all as read: POST /api/notifications/read-all or PATCH /api/notifications/read-all
+    if ($id === 'read-all' && ($method === 'POST' || $method === 'PATCH' || $method === 'PUT')) {
         $pdo->query('UPDATE notifications SET is_read = 1');
         jsonSuccess(null, 200, 'All marked as read');
     }

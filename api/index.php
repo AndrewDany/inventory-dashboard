@@ -94,7 +94,7 @@ try {
             break;
 
         case 'reports':
-            handleReportRoutes($pdo, $method);
+            handleReportRoutes($pdo, $method, $uriParts);
             break;
 
         case 'users':

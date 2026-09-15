@@ -11,7 +11,7 @@ require_once __DIR__ . '/../middleware/auth.php';
 function handleAuditRoutes(PDO $pdo, string $method, array $uriParts): void
 {
     $auth = requireAuth();
-    $subAction = $uriParts[2] ?? '';
+    $subAction = $uriParts[1] ?? '';
 
     // GET /api/audit/events
     if ($subAction === 'events' || $subAction === '') {
@@ -35,14 +35,16 @@ function handleAuditRoutes(PDO $pdo, string $method, array $uriParts): void
     if ($subAction === 'activity-logs' && $method === 'POST') {
         $input = getJsonInput();
         $id = generateUuid();
-        $stmt = $pdo->prepare('INSERT INTO activity_logs (id, action, entity_type, entity_id, details, user_email) VALUES (?, ?, ?, ?, ?, ?)');
+        $stmt = $pdo->prepare('INSERT INTO activity_logs (id, user_id, user_email, action, item_name, entity_type, entity_id, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
         $stmt->execute([
             $id,
+            $auth['sub'] ?? null,
+            $auth['email'] ?? 'system',
             $input['action'] ?? 'system_event',
+            $input['item_name'] ?? null,
             $input['entity_type'] ?? null,
             $input['entity_id'] ?? null,
-            isset($input['details']) ? json_encode($input['details']) : null,
-            $auth['email'] ?? 'system'
+            isset($input['details']) ? (is_string($input['details']) ? $input['details'] : json_encode($input['details'])) : null
         ]);
         jsonSuccess(['id' => $id], 201);
     }

@@ -23,7 +23,7 @@ export default function StockMovementsTable() {
         <TableRow>
           <TableHead>Item</TableHead>
           <TableHead>Change</TableHead>
-          <TableHead>Before → After</TableHead>
+          <TableHead>Reason</TableHead>
           <TableHead>User</TableHead>
           <TableHead>When</TableHead>
         </TableRow>
@@ -37,9 +37,7 @@ export default function StockMovementsTable() {
                 {m.change_amount > 0 ? `+${m.change_amount}` : m.change_amount}
               </Badge>
             </TableCell>
-            <TableCell className="text-gray-600">
-              {m.previous_quantity} → {m.new_quantity}
-            </TableCell>
+            <TableCell className="text-gray-600">{m.reason || '-'}</TableCell>
             <TableCell className="text-gray-600">{m.user_email}</TableCell>
             <TableCell className="text-gray-500">{new Date(m.created_at).toLocaleString()}</TableCell>
           </TableRow>

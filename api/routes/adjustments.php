@@ -22,7 +22,7 @@ function handleMovementRoutes(PDO $pdo, string $method): void
 function handleBatchRoutes(PDO $pdo, string $method, array $uriParts): void
 {
     $auth = requireAuth();
-    $id = $uriParts[2] ?? null;
+    $id = $uriParts[1] ?? null;
 
     if ($id) {
         if ($method === 'PATCH' || $method === 'PUT') {

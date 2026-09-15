@@ -11,11 +11,11 @@ require_once __DIR__ . '/../middleware/auth.php';
 function handleUserRoutes(PDO $pdo, string $method, array $uriParts): void
 {
     $auth = requireAdmin();
-    $id = $uriParts[2] ?? null;
+    $id = $uriParts[1] ?? null;
 
     if ($id) {
         // Reset password: POST /api/users/{id}/reset-password
-        $sub = $uriParts[3] ?? null;
+        $sub = $uriParts[2] ?? null;
         if ($sub === 'reset-password' && $method === 'POST') {
             $input = getJsonInput();
             $newPassword = $input['new_password'] ?? 'Welcome@123';
@@ -37,6 +37,25 @@ function handleUserRoutes(PDO $pdo, string $method, array $uriParts): void
                 $stmt = $pdo->prepare('UPDATE profiles SET full_name = ? WHERE user_id = ?');
                 $stmt->execute([$input['full_name'], $id]);
             }
+            if (isset($input['location_id'])) {
+                $locationId = $input['location_id'] ?: null;
+                if ($locationId !== null) {
+                    $locationStmt = $pdo->prepare('SELECT id FROM locations WHERE id = ?');
+                    $locationStmt->execute([$locationId]);
+                    if (!$locationStmt->fetchColumn()) jsonError('Location not found', 400);
+                }
+                $stmt = $pdo->prepare('UPDATE profiles SET location_id = ? WHERE user_id = ?');
+                $stmt->execute([$locationId, $id]);
+            }
+            if (isset($input['status'])) {
+                $status = in_array($input['status'], ['active', 'suspended'], true) ? $input['status'] : null;
+                if ($status === null) jsonError('Invalid user status', 400);
+                if ($id === $auth['sub'] && $status === 'suspended') {
+                    jsonError('Cannot suspend your own admin account', 400);
+                }
+                $stmt = $pdo->prepare('UPDATE users SET status = ? WHERE id = ?');
+                $stmt->execute([$status, $id]);
+            }
             jsonSuccess(null, 200, 'User updated');
         }
 
@@ -51,7 +70,8 @@ function handleUserRoutes(PDO $pdo, string $method, array $uriParts): void
 
     if ($method === 'GET') {
         $stmt = $pdo->query('
-            SELECT u.id, u.email, u.role, u.created_at, p.full_name, p.avatar_url
+                 SELECT u.id, u.email, u.role, u.status, u.created_at, p.full_name,
+                     p.avatar_url, p.location_id
             FROM users u
             LEFT JOIN profiles p ON p.user_id = u.id
             ORDER BY u.created_at ASC

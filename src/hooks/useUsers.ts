@@ -15,8 +15,9 @@ export function useUsers() {
         full_name: u.full_name,
         avatar_url: u.avatar_url,
         created_at: u.created_at,
-        status: 'active',
-      })) as Profile[]
+        location_id: u.location_id ?? null,
+        status: u.status === 'suspended' ? 'suspended' : 'active',
+      }))
     },
   })
 }

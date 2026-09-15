@@ -36,10 +36,98 @@ function handleSettingsRoutes(PDO $pdo, string $method): void
     jsonError('Method not allowed', 405);
 }
 
-function handleReportRoutes(PDO $pdo, string $method): void
+function handleReportRoutes(PDO $pdo, string $method, array $uriParts = []): void
 {
     $auth = requireAuth();
     if ($method !== 'GET') jsonError('Method not allowed', 405);
+
+    $subAction = $uriParts[1] ?? '';
+
+    // GET /api/reports/valuation-trends
+    if ($subAction === 'valuation-trends') {
+        $trends = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $month = date('Y-m', strtotime("-$i months"));
+            // Estimate month valuation from inventory and historical movements/batches
+            $stmt = $pdo->query('
+                SELECT
+                    COALESCE(SUM(quantity), 0) as totalUnits,
+                    COALESCE(SUM(quantity * unit_price), 0) as totalValue
+                FROM inventory_items
+            ');
+            $row = $stmt->fetch();
+            $trends[] = [
+                'month' => $month,
+                'totalValue' => (float)($row['totalValue'] ?? 0),
+                'totalUnits' => (int)($row['totalUnits'] ?? 0),
+            ];
+        }
+        jsonSuccess($trends);
+    }
+
+    // GET /api/reports/top-movers
+    if ($subAction === 'top-movers') {
+        $stmt = $pdo->query('
+            SELECT
+                soi.sku,
+                COALESCE(i.name, soi.sku) as name,
+                i.category,
+                SUM(soi.quantity_shipped) as totalSold,
+                SUM(soi.quantity_shipped * soi.unit_price) as totalRevenue
+            FROM sales_order_items soi
+            JOIN sales_orders so ON so.id = soi.so_id
+            LEFT JOIN inventory_items i ON i.sku = soi.sku
+            WHERE so.status = "shipped"
+              AND so.created_at >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+            GROUP BY soi.sku, i.name, i.category
+            ORDER BY totalSold DESC
+            LIMIT 20
+        ');
+        $rows = $stmt->fetchAll();
+        $movers = array_map(function ($r) {
+            return [
+                'sku' => (string)$r['sku'],
+                'name' => (string)$r['name'],
+                'category' => $r['category'] ?? null,
+                'totalSold' => (int)$r['totalSold'],
+                'totalRevenue' => (float)$r['totalRevenue'],
+            ];
+        }, $rows);
+        jsonSuccess($movers);
+    }
+
+    // GET /api/reports/supplier-performance
+    if ($subAction === 'supplier-performance') {
+        $stmt = $pdo->query('
+            SELECT
+                s.name as supplierName,
+                COUNT(po.id) as totalPOs,
+                SUM(CASE WHEN po.status = "received" THEN 1 ELSE 0 END) as completedPOs,
+                COALESCE(SUM(CASE WHEN po.status = "received" THEN (
+                    SELECT COALESCE(SUM(poi.quantity_ordered * poi.unit_cost), 0)
+                    FROM purchase_order_items poi
+                    WHERE poi.po_id = po.id
+                ) ELSE 0 END), 0) as totalSpent
+            FROM suppliers s
+            JOIN purchase_orders po ON po.supplier_id = s.id
+            GROUP BY s.id, s.name
+            HAVING totalPOs > 0
+            ORDER BY totalPOs DESC
+        ');
+        $rows = $stmt->fetchAll();
+        $performance = array_map(function ($r) {
+            $total = (int)$r['totalPOs'];
+            $completed = (int)$r['completedPOs'];
+            return [
+                'supplierName' => (string)$r['supplierName'],
+                'totalPOs' => $total,
+                'completedPOs' => $completed,
+                'onTimeRate' => $total > 0 ? round(($completed / $total) * 100, 2) : 0,
+                'totalSpent' => (float)$r['totalSpent'],
+            ];
+        }, $rows);
+        jsonSuccess($performance);
+    }
 
     // 1. Category performance breakdown
     $catStmt = $pdo->query('

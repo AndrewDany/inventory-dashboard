@@ -11,8 +11,8 @@ require_once __DIR__ . '/../middleware/auth.php';
 function handlePurchaseOrderRoutes(PDO $pdo, string $method, array $uriParts): void
 {
     $auth = requireAuth();
-    $id = $uriParts[2] ?? null;
-    $subAction = $uriParts[3] ?? null;
+    $id = $uriParts[1] ?? null;
+    $subAction = $uriParts[2] ?? null;
 
     // Receive PO endpoint: POST /api/purchase-orders/{id}/receive
     if ($id && $subAction === 'receive' && $method === 'POST') {

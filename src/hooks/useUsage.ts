@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '../lib/supabaseClient'
+import { api } from '../lib/apiClient'
+import type { InventoryItem } from '../types/inventory'
+import type { Location } from '../types/location'
 
 export interface UsageData {
   itemCount: number
@@ -13,25 +15,27 @@ export function useUsage() {
     queryKey: ['usage'],
     queryFn: async (): Promise<UsageData> => {
       const [itemsRes, usersRes, locationsRes] = await Promise.all([
-        supabase.from('inventory_items').select('quantity, unit_price, reorder_level'),
-        supabase.from('profiles').select('id', { count: 'exact', head: true }),
-        supabase.from('locations').select('id', { count: 'exact', head: true }),
+        api.get<InventoryItem[]>('/inventory'),
+        api.get<unknown[]>('/users'),
+        api.get<Location[]>('/locations'),
       ])
 
-      const items = (itemsRes.data ?? []) as Array<{ quantity?: number; unit_price?: number; reorder_level?: number }>
+      const items: InventoryItem[] = itemsRes || []
+      const users: unknown[] = usersRes || []
+      const locations: Location[] = locationsRes || []
+
       const itemCount = items.length
       const storageUsed = items.reduce(
-        (sum: number, item) => sum + (item.quantity ?? 0) * (item.unit_price ?? 0),
+        (sum: number, item: InventoryItem) => sum + (item.quantity ?? 0) * (item.unit_price ?? 0),
         0
       )
 
       return {
         itemCount,
-        userCount: usersRes.count ?? 0,
-        locationCount: locationsRes.count ?? 0,
+        userCount: users.length,
+        locationCount: locations.length,
         storageUsed,
       }
     },
   })
 }
-

@@ -11,7 +11,7 @@ require_once __DIR__ . '/../middleware/auth.php';
 function handleExpenseRoutes(PDO $pdo, string $method, array $uriParts): void
 {
     $auth = requireAuth();
-    $id = $uriParts[2] ?? null;
+    $id = $uriParts[1] ?? null;
 
     if ($id && $method === 'DELETE') {
         if ($auth['role'] === 'demo') jsonError('Demo account cannot delete expenses', 403);
@@ -62,12 +62,11 @@ function handleExpenseRoutes(PDO $pdo, string $method, array $uriParts): void
 // unit_price * 0.6 (the previous logic) was never anchored to what was
 // actually paid for the stock and made every margin/profit number fictional.
 const COGS_SUBQUERY = 'COALESCE(soi.unit_cost, 0)';
-';
 
 function handleFinancialRoutes(PDO $pdo, string $method, array $uriParts): void
 {
     $auth = requireAuth();
-    $subAction = $uriParts[2] ?? '';
+    $subAction = $uriParts[1] ?? '';
 
     switch ($subAction) {
         // GET /api/financials/profit-loss

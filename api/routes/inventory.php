@@ -11,7 +11,7 @@ require_once __DIR__ . '/../middleware/auth.php';
 function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
 {
     $auth = requireAuth();
-    $id = $uriParts[2] ?? null;
+    $id = $uriParts[1] ?? null;
 
     // Bulk Import endpoint: POST /api/inventory/bulk
     if ($id === 'bulk' && $method === 'POST') {

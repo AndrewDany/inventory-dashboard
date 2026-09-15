@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `email` VARCHAR(255) NOT NULL UNIQUE,
   `password_hash` VARCHAR(255) NOT NULL,
   `role` ENUM('admin', 'staff', 'demo') NOT NULL DEFAULT 'staff',
+  `status` ENUM('active', 'suspended') NOT NULL DEFAULT 'active',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
@@ -25,6 +26,7 @@ CREATE TABLE IF NOT EXISTS `profiles` (
   `user_id` VARCHAR(36) NOT NULL UNIQUE,
   `full_name` VARCHAR(255) NULL,
   `avatar_url` TEXT NULL,
+  `location_id` VARCHAR(36) NULL,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   CONSTRAINT `fk_profiles_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
@@ -255,11 +257,13 @@ CREATE TABLE IF NOT EXISTS `budget_settings` (
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `activity_logs` (
   `id` VARCHAR(36) NOT NULL,
+  `user_id` VARCHAR(36) NULL,
+  `user_email` VARCHAR(255) NULL,
   `action` VARCHAR(255) NOT NULL,
+  `item_name` VARCHAR(255) NULL,
   `entity_type` VARCHAR(100) NULL,
   `entity_id` VARCHAR(100) NULL,
   `details` JSON NULL,
-  `user_email` VARCHAR(255) NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_activity_created` (`created_at`)
