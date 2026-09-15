@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '../lib/supabaseClient'
+import { api } from '../lib/apiClient'
 
 export interface StockMovement {
   id: string
   item_id: string | null
   item_name: string
-  previous_quantity: number
-  new_quantity: number
   change_amount: number
+  reason?: string
+  location_id?: string | null
   user_email: string
   created_at: string
 }
@@ -16,14 +16,8 @@ export function useStockMovements() {
   return useQuery({
     queryKey: ['stock_movements'],
     queryFn: async (): Promise<StockMovement[]> => {
-      const { data, error } = await supabase
-        .from('stock_movements')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50)
-
-      if (error) throw new Error(error.message)
-      return data as StockMovement[]
+      const data = await api.get<StockMovement[]>('/movements?limit=50')
+      return data || []
     },
   })
 }

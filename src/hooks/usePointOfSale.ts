@@ -1,32 +1,22 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { supabase } from '../lib/supabaseClient'
+import { api, getStoredUser } from '../lib/apiClient'
 import { generateInvoiceBlob } from '../lib/generateInvoice'
-import { useAuth } from './useAuth'
 import type { InventoryItem } from '../types/inventory'
+import type { AuthUser } from './useAuth'
 
 export interface CartLine {
   item: InventoryItem
   quantity: number
-  // Only meaningful when item.unit_type === 'box' && item.units_per_box is set.
-  // 'box' (default): quantity counts whole boxes. 'piece': quantity counts
-  // individual pieces broken out of a box.
   sellMode?: 'box' | 'piece'
 }
 
-// Inventory stock (and reorder levels) for a box item with units_per_box set
-// is tracked in pieces — the base sellable unit — so a box can be sold whole
-// or broken open without losing track of stock. This converts a cart line's
-// display quantity into that base-unit quantity for stock checks/deduction.
 export function basePieceQuantity(line: CartLine): number {
   const upb = line.item.unit_type === 'box' ? line.item.units_per_box : null
   if (!upb) return line.quantity
   return line.sellMode === 'piece' ? line.quantity : line.quantity * upb
 }
 
-// Price per base unit (per piece, when selling loose from a box; otherwise
-// the item's normal unit_price). Used for records that need a true
-// per-base-unit price rather than the display-quantity subtotal.
 export function pricePerBaseUnit(line: CartLine): number {
   const price = line.item.unit_price ?? 0
   const upb = line.item.unit_type === 'box' ? line.item.units_per_box : null
@@ -36,13 +26,10 @@ export function pricePerBaseUnit(line: CartLine): number {
   return price
 }
 
-// Price for the cart line's display quantity (boxes or loose pieces,
-// whichever sellMode is active) — used for cart/invoice subtotals.
 export function lineSubtotal(line: CartLine): number {
   return line.quantity * pricePerBaseUnit(line)
 }
 
-// Human-readable unit label for the invoice line ("box", "pcs", "kg", etc.)
 export function invoiceUnitLabel(line: CartLine): string {
   const upb = line.item.unit_type === 'box' ? line.item.units_per_box : null
   if (upb) return line.sellMode === 'piece' ? 'pcs' : 'box'
@@ -65,8 +52,6 @@ interface CheckoutInput {
 export function usePointOfSaleCheckout() {
   const queryClient = useQueryClient()
 
-  useAuth()
-
   return useMutation({
     mutationFn: async ({
       cart,
@@ -78,46 +63,23 @@ export function usePointOfSaleCheckout() {
       paymentStatus,
       companyName,
     }: CheckoutInput): Promise<string> => {
-      const { data: authSession } = await supabase.auth.getSession()
-      const userId = authSession.session?.user?.id
-      if (!userId) throw new Error('Not authenticated')
+      const user = getStoredUser<AuthUser>()
 
-      const soNumber = `SO-${Date.now().toString().slice(-8)}`
+      const checkoutPayload = {
+        customer_name: customerName,
+        payment_method: paymentStatus,
+        location_id: locationId,
+        items: cart.map((line) => ({
+          id: line.item.id,
+          sku: line.item.sku,
+          name: line.item.name,
+          quantity: basePieceQuantity(line),
+          unit_price: pricePerBaseUnit(line),
+        })),
+      }
 
-      // 1. Create the sales order
-      const { data: so, error: soError } = await supabase
-        .from('sales_orders')
-        .insert({ so_number: soNumber, status: 'confirmed', created_by: userId })
-        .select()
-        .single()
-      if (soError) throw new Error(soError.message)
-
-      // 2. Create line items. quantity_ordered must be in the same base
-      // unit as inventory_items.quantity (pieces, for box items with a
-      // units_per_box conversion set) since ship_sales_order deducts it
-      // 1:1 from stock — it has no knowledge of "sold as a box" vs.
-      // "sold as loose pieces".
-      const itemRows = cart.map((line) => ({
-        so_id: so.id,
-        sku: line.item.sku,
-        inventory_item_id: Number(line.item.id),
-        quantity_ordered: basePieceQuantity(line),
-        unit_price: pricePerBaseUnit(line),
-      }))
-      const { error: itemsError } = await supabase.from('sales_order_items').insert(itemRows)
-      if (itemsError) throw new Error(itemsError.message)
-
-      // 3. Ship immediately (FIFO deduction via the RPC)
-      const { error: shipError } = await supabase.rpc('ship_sales_order', {
-        p_so_id: so.id,
-        p_location_id: locationId,
-        p_items: null,
-      })
-      if (shipError) throw new Error(shipError.message)
-
-      // 4. Generate invoice blob URL for preview
-      const { data: invoiceSession } = await supabase.auth.getSession()
-      const processedBy = invoiceSession.session?.user?.email ?? undefined
+      const res = await api.post<{ so_number: string; so_id: string }>('/pos/checkout', checkoutPayload)
+      const soNumber = res?.so_number || `SO-${Date.now().toString().slice(-8)}`
 
       const blobUrl = generateInvoiceBlob({
         invoiceNumber: soNumber,
@@ -126,7 +88,7 @@ export function usePointOfSaleCheckout() {
         customerEmail,
         customerPhone,
         shippingAddress,
-        processedBy,
+        processedBy: user?.email ?? undefined,
         paymentStatus,
         companyName,
         items: cart.map((line) => ({
@@ -145,7 +107,8 @@ export function usePointOfSaleCheckout() {
       queryClient.invalidateQueries({ queryKey: ['sales_orders'] })
       queryClient.invalidateQueries({ queryKey: ['stock_movements'] })
       queryClient.invalidateQueries({ queryKey: ['inventory_batches'] })
-
+      queryClient.invalidateQueries({ queryKey: ['monthly_financials'] })
+      queryClient.invalidateQueries({ queryKey: ['profit_loss'] })
       toast.success('Sale completed successfully')
     },
     onError: (error: Error) => {

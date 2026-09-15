@@ -1,8 +1,6 @@
-// src/hooks/useSalesOrders.ts
-// ------------------------------------------------------------
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { supabase } from '../lib/supabaseClient'
+import { api } from '../lib/apiClient'
 import type { SalesOrder, SalesOrderItem } from '../types/procurement'
 
 export interface SalesOrderWithItems extends SalesOrder {
@@ -13,13 +11,11 @@ export function useSalesOrders() {
   return useQuery({
     queryKey: ['sales_orders'],
     queryFn: async (): Promise<SalesOrderWithItems[]> => {
-      const { data, error } = await supabase
-        .from('sales_orders')
-        .select('*, sales_order_items(*)')
-        .order('created_at', { ascending: false })
-
-      if (error) throw new Error(error.message)
-      return data as SalesOrderWithItems[]
+      const data = await api.get<any[]>('/sales-orders')
+      return (data || []).map((so) => ({
+        ...so,
+        sales_order_items: so.items || so.sales_order_items || [],
+      }))
     },
   })
 }
@@ -27,6 +23,7 @@ export function useSalesOrders() {
 interface CreateSOInput {
   so_number: string
   notes?: string
+  customer_name?: string
   items: { sku: string; inventory_item_id?: number; quantity_ordered: number; unit_price?: number; currency?: string }[]
 }
 
@@ -35,19 +32,12 @@ export function useCreateSalesOrder() {
 
   return useMutation({
     mutationFn: async (input: CreateSOInput) => {
-      // Header + line items are inserted atomically server-side via the
-      // create_sales_order RPC (see supabase/create-sales-order.sql).
-      const { data, error } = await supabase.rpc('create_sales_order', {
-        p_so_number: input.so_number,
-        p_notes: input.notes ?? null,
-        p_items: input.items,
-      })
-
-      if (error) throw new Error(error.message)
-      return data
+      return await api.post('/sales-orders', input)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sales_orders'] })
+      queryClient.invalidateQueries({ queryKey: ['monthly_financials'] })
+      queryClient.invalidateQueries({ queryKey: ['profit_loss'] })
       toast.success('Sales order created')
     },
     onError: (error: Error) => {
@@ -59,43 +49,24 @@ export function useCreateSalesOrder() {
 interface ShipSOInput {
   so_id: string
   location_id: string
-  items?: { item_id: string; quantity: number }[] // omit for full shipment
+  items?: { item_id?: string; sku?: string; quantity?: number }[]
 }
 
 export function useShipSalesOrder() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ so_id, location_id, items }: ShipSOInput) => {
-      const { data, error } = await supabase.rpc('ship_sales_order', {
-        p_so_id: so_id,
-        p_location_id: location_id,
-        p_items: items ?? null,
-      })
-
-      if (error) throw new Error(error.message)
-
-      // Surface partial-shipment shortfalls as a warning, not just a generic success
-      const result = data as { complete: boolean; lines: { sku: string; shortfall: number }[] }
-      if (!result.complete) {
-        const shortLines = result.lines.filter((l) => l.shortfall > 0)
-        if (shortLines.length > 0) {
-          toast.warning(
-            `Partially shipped — insufficient stock for: ${shortLines.map((l) => l.sku).join(', ')}`
-          )
-        }
-      }
-
-      return data
+    mutationFn: async ({ so_id, location_id }: ShipSOInput) => {
+      return await api.post(`/sales-orders/${so_id}/ship`, { location_id })
     },
-    onSuccess: (data: any) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sales_orders'] })
       queryClient.invalidateQueries({ queryKey: ['inventory_items'] })
       queryClient.invalidateQueries({ queryKey: ['stock_movements'] })
       queryClient.invalidateQueries({ queryKey: ['inventory_batches'] })
-      if (data?.complete) {
-        toast.success('Sales order shipped — stock deducted')
-      }
+      queryClient.invalidateQueries({ queryKey: ['monthly_financials'] })
+      queryClient.invalidateQueries({ queryKey: ['profit_loss'] })
+      toast.success('Sales order shipped — stock deducted')
     },
     onError: (error: Error) => {
       toast.error(`Failed to ship sales order: ${error.message}`)

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { supabase } from '../lib/supabaseClient'
+import { api } from '../lib/apiClient'
 import type { Location } from '../types/location'
 import type { LocationFormValues } from '../lib/locationSchema'
 
@@ -8,13 +8,8 @@ export function useLocations() {
   return useQuery({
     queryKey: ['locations'],
     queryFn: async (): Promise<Location[]> => {
-      const { data, error } = await supabase
-        .from('locations')
-        .select('*')
-        .order('name', { ascending: true })
-
-      if (error) throw new Error(error.message)
-      return data as Location[]
+      const data = await api.get<Location[]>('/locations')
+      return data || []
     },
   })
 }
@@ -24,14 +19,13 @@ export function useAddLocation() {
 
   return useMutation({
     mutationFn: async (values: LocationFormValues) => {
-      const { error } = await supabase.from('locations').insert([values])
-      if (error) throw new Error(error.message)
+      await api.post<Location>('/locations', values)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['locations'] })
       toast.success('Location added')
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error(`Failed to add location: ${error.message}`)
     },
   })
@@ -42,14 +36,13 @@ export function useUpdateLocation() {
 
   return useMutation({
     mutationFn: async ({ id, values }: { id: string; values: LocationFormValues }) => {
-      const { error } = await supabase.from('locations').update(values).eq('id', id)
-      if (error) throw new Error(error.message)
+      await api.put<Location>(`/locations/${id}`, values)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['locations'] })
       toast.success('Location updated')
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error(`Failed to update location: ${error.message}`)
     },
   })
@@ -60,14 +53,13 @@ export function useDeleteLocation() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('locations').delete().eq('id', id)
-      if (error) throw new Error(error.message)
+      await api.delete(`/locations/${id}`)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['locations'] })
       toast.success('Location deleted')
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error(`Failed to delete location: ${error.message}`)
     },
   })
