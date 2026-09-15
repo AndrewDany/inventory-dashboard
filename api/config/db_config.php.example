@@ -1,0 +1,8 @@
+<?php
+// Rename this file to db_config.php on your Namecheap cPanel server
+return [
+    'host'     => 'localhost',
+    'database' => 'cpaneluser_inventory_db',
+    'username' => 'cpaneluser_dbuser',
+    'password' => 'YourStrongDbPasswordHere',
+];

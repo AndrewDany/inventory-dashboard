@@ -1,0 +1,75 @@
+diff --git a/src/hooks/useMonthlyFinancials.ts b/src/hooks/useMonthlyFinancials.ts
+index 29e776d..6643dc2 100644
+--- a/src/hooks/useMonthlyFinancials.ts
++++ b/src/hooks/useMonthlyFinancials.ts
+@@ -41,12 +41,17 @@ export function useMonthlyFinancials() {
+ 
+       if (refundError) throw new Error(refundError.message)
+ 
+-      // COGS: negative stock movements (goods going out), with their cost at time of movement.
++      // COGS: negative stock movements that represent a real cost — sales, replacement
++      // shipments, and write-offs — with their cost at time of movement. Deliberately
++      // excludes 'transfer' (stock moving between locations, not sold or lost) and
++      // 'manual_adjustment' / 'cycle_count' (inventory count corrections), which don't
++      // represent goods actually sold or destroyed and would otherwise inflate COGS.
+       // If a legacy row has a missing/zero unit_cost, fall back to the most recent batch cost for that SKU.
+       const { data: movements, error: movError } = await supabase
+         .from('stock_movements')
+-        .select('item_name, change_amount, unit_cost, created_at')
++        .select('item_name, change_amount, unit_cost, created_at, reason')
+         .lt('change_amount', 0)
++        .in('reason', ['sale', 'return', 'write_off'])
+ 
+       if (movError) throw new Error(movError.message)
+ 
+diff --git a/supabase/add-refund-amount.sql b/supabase/add-refund-amount.sql
+index 1d62b0b..4eec60a 100644
+--- a/supabase/add-refund-amount.sql
++++ b/supabase/add-refund-amount.sql
+@@ -2,12 +2,12 @@
+ -- Add refund_amount to returns
+ -- Run AFTER returns-and-replacements.sql
+ --
+--- Why: process_return() correctly leaves stock untouched for a
+--- 'refund' resolution, but nothing anywhere records how much money
+--- was actually refunded to the customer. That meant the P&L
+--- (useProfitLoss / useMonthlyFinancials) kept counting the original
+--- sale as revenue in full even after it was refunded, overstating
+--- gross profit and net profit for any month with refunds.
++-- Why: process_return() restocks returned goods for a 'refund'
++-- resolution (same as 'restock'), but nothing anywhere records how
++-- much money was actually refunded to the customer. That meant the
++-- P&L (useProfitLoss / useMonthlyFinancials) kept counting the
++-- original sale as revenue in full even after it was refunded,
++-- overstating gross profit and net profit for any month with refunds.
+ --
+ -- This column lets the app capture the refunded amount when the
+ -- return is logged, so it can be subtracted from revenue for the
+diff --git a/supabase/ship-sales-order.sql b/supabase/ship-sales-order.sql
+index 90d2b23..1acbe09 100644
+--- a/supabase/ship-sales-order.sql
++++ b/supabase/ship-sales-order.sql
+@@ -21,6 +21,14 @@
+ --   - inventory_items.quantity is still maintained as the global
+ --     mirror total (used elsewhere in the app), decremented in
+ --     lock-step with whichever location-scoped deduction happens.
++--
++-- Also fixed: the stock_movements insert used reason = 'sales_shipment',
++-- which is not one of the values allowed by stock_movements_reason_check
++-- (purchase, sale, manual_adjustment, write_off, return, cycle_count,
++-- transfer, other). Every shipment was therefore failing at this insert
++-- and rolling back the whole function — no sales order could ever be
++-- marked shipped. Changed to 'sale', which is also what the P&L COGS
++-- calculation (useMonthlyFinancials) filters on.
+ -- ============================================================
+ 
+ drop function if exists public.ship_sales_order(uuid, uuid, jsonb);
+@@ -177,7 +185,7 @@ begin
+       v_prev_qty,
+       v_new_qty,
+       -v_line.remaining_qty,
+-      'sales_shipment',
++      'sale',
+       v_actor,
+       v_actor_email,
+       latest_batch.id,

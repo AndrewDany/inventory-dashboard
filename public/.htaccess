@@ -1,0 +1,21 @@
+# ============================================================
+# Root .htaccess - React SPA & API Routing for Namecheap cPanel
+# ============================================================
+
+RewriteEngine On
+RewriteBase /
+
+# Pass Authorization Header to PHP on Apache / cPanel
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+# 1. Do NOT rewrite requests targeting the /api/ directory (handled by api/.htaccess)
+RewriteRule ^api(/.*)?$ - [L]
+
+# 2. Existing files, directories, or assets should be served directly
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# 3. Route all other client-side paths (/dashboard, /admin/*, /pos, etc.) to index.html
+RewriteRule ^ index.html [L]

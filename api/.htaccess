@@ -1,0 +1,14 @@
+# ============================================================
+# API .htaccess - Route rewriting to index.php & Header handling
+# ============================================================
+
+RewriteEngine On
+
+# Ensure Authorization header is passed to PHP in FastCGI/CGI mode on cPanel
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+# Direct all requests through index.php unless file physically exists
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]

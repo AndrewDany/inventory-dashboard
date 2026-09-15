@@ -1,0 +1,53 @@
+From 87fedcf9efed057263a43804081b785a3ae8121f Mon Sep 17 00:00:00 2001
+From: Claude <claude@anthropic.com>
+Date: Fri, 11 Sep 2026 12:05:33 +0000
+Subject: [PATCH] Fix invalid stock_movements.reason values in process_return
+
+The stock_movements_reason_check constraint only allows:
+purchase, sale, manual_adjustment, write_off, return, cycle_count,
+transfer, other.
+
+process_return was inserting 'return_restock', 'return_replacement',
+and 'return_write_off', none of which are valid, causing every
+resolution type (not just refund) to fail once it tried to insert
+a stock movement. Mapped to the closest valid values: 'return' for
+restock/replace/refund movements, 'write_off' for write_off/
+supplier_credit movements.
+---
+ supabase/returns-and-replacements.sql | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/supabase/returns-and-replacements.sql b/supabase/returns-and-replacements.sql
+index df47cd0..9f9298f 100644
+--- a/supabase/returns-and-replacements.sql
++++ b/supabase/returns-and-replacements.sql
+@@ -136,7 +136,7 @@ begin
+     ) values (
+       v_return.inventory_item_id, v_return.sku,
+       v_prev_qty, v_new_qty, v_return.quantity,
+-      'return_restock', v_actor, v_actor_email, null, v_return.unit_cost
++      'return', v_actor, v_actor_email, null, v_return.unit_cost
+     );
+ 
+     -- Add back to the most recent batch for this SKU at this location (best effort)
+@@ -178,7 +178,7 @@ begin
+       ) values (
+         v_return.inventory_item_id, v_return.sku,
+         v_prev_qty, v_new_qty, -v_return.quantity,
+-        'return_replacement', v_actor, v_actor_email, null, v_return.unit_cost
++        'return', v_actor, v_actor_email, null, v_return.unit_cost
+       );
+ 
+       -- Remove replacement units FIFO from batches (best effort)
+@@ -220,7 +220,7 @@ begin
+     ) values (
+       v_return.inventory_item_id, v_return.sku,
+       v_prev_qty, v_new_qty, -v_return.quantity,
+-      'return_write_off', v_actor, v_actor_email, null, v_return.unit_cost
++      'write_off', v_actor, v_actor_email, null, v_return.unit_cost
+     );
+ 
+     -- Remove FIFO from batches (best effort)
+-- 
+2.43.0
+
