@@ -61,7 +61,7 @@ function handleExpenseRoutes(PDO $pdo, string $method, array $uriParts): void
 // records at all — a missing real cost should not be silently invented.
 // unit_price * 0.6 (the previous logic) was never anchored to what was
 // actually paid for the stock and made every margin/profit number fictional.
-const COGS_SUBQUERY = 'COALESCE(soi.unit_cost, 0)';
+const COGS_SUBQUERY = 'COALESCE((SELECT ib.unit_cost FROM inventory_batches ib WHERE ib.sku = soi.sku AND ib.received_date <= so.created_at ORDER BY ib.received_date DESC LIMIT 1), 0)';
 
 function handleFinancialRoutes(PDO $pdo, string $method, array $uriParts): void
 {
