@@ -19,7 +19,6 @@ require_once __DIR__ . '/routes/adjustments.php';
 require_once __DIR__ . '/routes/purchase_orders.php';
 require_once __DIR__ . '/routes/sales_orders.php';
 require_once __DIR__ . '/routes/returns.php';
-require_once __DIR__ . '/routes/expenses.php';
 require_once __DIR__ . '/routes/financials.php';
 require_once __DIR__ . '/routes/users.php';
 require_once __DIR__ . '/routes/audit.php';
