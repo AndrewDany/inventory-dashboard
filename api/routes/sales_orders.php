@@ -87,9 +87,9 @@ function handleSalesOrderRoutes(PDO $pdo, string $method, array $uriParts): void
                     $weightedUnitCost = null;
                 }
 
-                // 4. Update sales_order_items quantity_shipped AND the real cost consumed
-                $upSoi = $pdo->prepare('UPDATE sales_order_items SET quantity_shipped = quantity_ordered, unit_cost = ? WHERE id = ?');
-                $upSoi->execute([$weightedUnitCost, $line['id']]);
+                // 4. Update sales_order_items quantity_shipped
+                $upSoi = $pdo->prepare('UPDATE sales_order_items SET quantity_shipped = quantity_ordered WHERE id = ?');
+                $upSoi->execute([$line['id']]);
             }
 
             // Mark SO as shipped
@@ -259,12 +259,13 @@ function handlePosCheckout(PDO $pdo, string $method): void
             }
             $weightedUnitCost = $costedUnits > 0 ? $costTotal / $costedUnits : null;
 
-            // Insert sales order item WITH real cost captured
+            // Insert sales order item (real cost is derived from inventory_batches
+            // at report time in financials.php, not stored here -- see COGS_SUBQUERY)
             $itemStmt = $pdo->prepare('
-                INSERT INTO sales_order_items (id, so_id, sku, inventory_item_id, quantity_ordered, quantity_shipped, unit_price, unit_cost)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO sales_order_items (id, so_id, sku, inventory_item_id, quantity_ordered, quantity_shipped, unit_price)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             ');
-            $itemStmt->execute([generateUuid(), $soId, $sku, $itemId, $qty, $qty, $price, $weightedUnitCost]);
+            $itemStmt->execute([generateUuid(), $soId, $sku, $itemId, $qty, $qty, $price]);
 
             // Decrement inventory item quantity
             if ($itemId) {
