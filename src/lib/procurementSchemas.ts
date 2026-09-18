@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 export const poLineItemSchema = z.object({
   sku: z.string().min(1, 'SKU is required'),
-  inventory_item_id: z.coerce.number().optional(),
+  inventory_item_id: z.string().optional(),
   quantity_ordered: z.coerce.number().int().min(1, 'Quantity must be at least 1'),
   unit_cost: z.coerce.number().min(0).optional(),
 })
@@ -20,7 +20,7 @@ export type POLineItem = z.infer<typeof poLineItemSchema>
 
 export const soLineItemSchema = z.object({
   sku: z.string().min(1, 'SKU is required'),
-  inventory_item_id: z.coerce.number().optional(),
+  inventory_item_id: z.string().optional(),
   quantity_ordered: z.coerce.number().int().min(1, 'Quantity must be at least 1'),
   unit_price: z.coerce.number().min(0).optional(),
 })
@@ -36,7 +36,7 @@ export type SalesOrderFormInput = z.input<typeof salesOrderSchema>
 
 export const adjustmentSchema = z.object({
   sku: z.string().min(1, 'SKU is required'),
-  inventory_item_id: z.coerce.number().optional(),
+  inventory_item_id: z.string().optional(),
   location_id: z.string().min(1, 'Location is required'),
   quantity_delta: z.coerce.number().int().refine((v) => v !== 0, 'Quantity change cannot be zero'),
   reason: z.enum(['manual_add', 'manual_remove', 'cycle_count', 'write_off', 'other']),
