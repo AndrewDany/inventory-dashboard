@@ -6,6 +6,39 @@
 declare(strict_types=1);
 
 /**
+ * PDO always returns MySQL DECIMAL columns (and SUM/AVG aggregate results)
+ * as numeric strings, e.g. "10.00" instead of 10.0, to avoid float precision
+ * loss. json_encode() then serializes them as JSON strings, so every price,
+ * cost, total, and margin field silently reaches the frontend as a string
+ * unless corrected here. This walks every response body once, centrally,
+ * and casts numeric-looking string values to real numbers -- except for
+ * keys that look like identifiers, codes, or numbers-as-labels (id, sku,
+ * *_number, phone, zip, etc.), which must stay exact strings even when
+ * every character happens to be a digit.
+ */
+function castNumericStrings(mixed $value): mixed
+{
+    if (is_array($value)) {
+        $isList = array_is_list($value);
+        $result = [];
+        foreach ($value as $key => $item) {
+            if (!$isList && is_string($key) && preg_match('/(^id$|_id$|sku|code|number|phone|zip|postal|barcode)/i', $key)) {
+                $result[$key] = $item; // identifier-like field: leave untouched
+            } else {
+                $result[$key] = castNumericStrings($item);
+            }
+        }
+        return $result;
+    }
+
+    if (is_string($value) && $value !== '' && is_numeric($value)) {
+        return $value + 0; // '10.00' -> 10.0, '5' -> 5 (PHP picks float or int)
+    }
+
+    return $value;
+}
+
+/**
  * Send JSON success response
  */
 function jsonSuccess(mixed $data = null, int $statusCode = 200, string $message = 'Success'): void
@@ -14,7 +47,7 @@ function jsonSuccess(mixed $data = null, int $statusCode = 200, string $message 
     echo json_encode([
         'success' => true,
         'message' => $message,
-        'data'    => $data,
+        'data'    => castNumericStrings($data),
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
