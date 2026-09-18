@@ -2,7 +2,7 @@ export interface ReturnRecord {
   id: string
   return_number: string
   return_type: 'customer_return' | 'damaged_stock' | 'supplier_return'
-  inventory_item_id: number | null
+  inventory_item_id: string | null
   sku: string
   location_id: string
   quantity: number

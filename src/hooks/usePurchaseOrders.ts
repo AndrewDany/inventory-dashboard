@@ -24,7 +24,7 @@ interface CreatePOInput {
   po_number: string
   supplier_id?: string
   notes?: string
-  items: { sku: string; inventory_item_id?: number; quantity_ordered: number; unit_cost?: number; currency?: string }[]
+  items: { sku: string; inventory_item_id?: string; quantity_ordered: number; unit_cost?: number; currency?: string }[]
 }
 
 export function useCreatePurchaseOrder() {

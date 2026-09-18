@@ -14,7 +14,7 @@ export function useInventoryAdjustments() {
 }
 
 interface ApplyAdjustmentInput {
-  inventory_item_id?: number | null
+  inventory_item_id?: string | null
   sku: string
   location_id: string
   quantity_delta: number

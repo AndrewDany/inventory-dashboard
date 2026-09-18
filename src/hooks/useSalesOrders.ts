@@ -24,7 +24,7 @@ interface CreateSOInput {
   so_number: string
   notes?: string
   customer_name?: string
-  items: { sku: string; inventory_item_id?: number; quantity_ordered: number; unit_price?: number; currency?: string }[]
+  items: { sku: string; inventory_item_id?: string; quantity_ordered: number; unit_price?: number; currency?: string }[]
 }
 
 export function useCreateSalesOrder() {
