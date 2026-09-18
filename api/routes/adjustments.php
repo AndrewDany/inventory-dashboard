@@ -43,7 +43,7 @@ function handleBatchRoutes(PDO $pdo, string $method, array $uriParts): void
 
     if ($method === 'GET') {
         $stmt = $pdo->query('
-            SELECT b.*, i.name as item_name
+            SELECT b.*, i.name as item_name, i.location_id
             FROM inventory_batches b
             LEFT JOIN inventory_items i ON i.sku = b.sku
             ORDER BY b.received_date DESC
