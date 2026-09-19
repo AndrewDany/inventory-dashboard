@@ -184,6 +184,11 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
             $quantity = (int)($input['quantity'] ?? 0);
             $reorderLevel = (int)($input['reorder_level'] ?? 0);
             $unitPrice = isset($input['unit_price']) ? (float)$input['unit_price'] : 0.00;
+            // What was actually paid for the initial stock, for accurate
+            // P&L margin. Falls back to unit_price only for old clients
+            // that don't send this field yet -- not because cost and
+            // price are assumed equal.
+            $unitCost = isset($input['unit_cost']) ? (float)$input['unit_cost'] : $unitPrice;
 
             $stmt = $pdo->prepare('
                 INSERT INTO inventory_items (id, name, sku, category, unit_type, unit_of_measure, units_per_box, quantity, reorder_level, unit_price, supplier, location_id)
@@ -226,7 +231,7 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
                     'INIT-' . strtoupper(substr(uniqid(), -6)),
                     $quantity,
                     $quantity,
-                    $unitPrice
+                    $unitCost
                 ]);
             }
 

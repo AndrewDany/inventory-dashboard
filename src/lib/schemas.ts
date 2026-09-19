@@ -7,6 +7,7 @@ export const inventoryItemSchema = z.object({
   quantity: z.coerce.number().min(0, 'Quantity cannot be negative'),
   reorder_level: z.coerce.number().min(0, 'Reorder level cannot be negative'),
   unit_price: z.coerce.number().min(0, 'Price cannot be negative').optional(),
+  unit_cost: z.coerce.number().min(0, 'Cost cannot be negative').optional(),
   supplier: z.string().optional(),
   location_id: z.string().optional(),
   unit_type: z.enum(['unit', 'box', 'weight']).default('unit'),
