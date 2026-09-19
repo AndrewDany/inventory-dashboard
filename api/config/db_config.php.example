@@ -1,8 +1,10 @@
-<?php
-// Rename this file to db_config.php on your Namecheap cPanel server
+﻿<?php
+// Copy this file to db_config.php and fill in your real local database
+// credentials. db_config.php itself is gitignored and never committed --
+// this .example file is the only one that should ever be in version control.
 return [
-    'host'     => 'localhost',
-    'database' => 'cpaneluser_inventory_db',
-    'username' => 'cpaneluser_dbuser',
-    'password' => 'YourStrongDbPasswordHere',
+    'host'     => '127.0.0.1',
+    'database' => 'inventory_db',
+    'username' => 'root',
+    'password' => '',
 ];
