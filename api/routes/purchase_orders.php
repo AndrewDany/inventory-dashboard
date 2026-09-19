@@ -83,7 +83,7 @@ function handlePurchaseOrderRoutes(PDO $pdo, string $method, array $uriParts): v
                         $unitCost
                     ]);
 
-                    // 4. Log stock movement
+                                        // 4. Log stock movement
                     $movStmt = $pdo->prepare('
                         INSERT INTO stock_movements (id, item_id, item_name, change_amount, reason, location_id, user_email)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -93,7 +93,7 @@ function handlePurchaseOrderRoutes(PDO $pdo, string $method, array $uriParts): v
                         $item['id'],
                         $item['name'],
                         $qtyRecv,
-                        'PO Received: ' . $po['po_number'],
+                        'purchase',
                         $locationId,
                         $auth['email'] ?? 'system'
                     ]);

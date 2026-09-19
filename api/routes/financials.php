@@ -55,13 +55,13 @@ function handleExpenseRoutes(PDO $pdo, string $method, array $uriParts): void
     jsonError('Method not allowed', 405);
 }
 
-// Real COGS per shipped sales_order_item: quantity_shipped × that SKU's most
-// recent inventory_batches.unit_cost as of the order's ship/creation date.
-// Falls back to 0 (rather than a guessed markup) when a SKU has no batch
-// records at all — a missing real cost should not be silently invented.
-// unit_price * 0.6 (the previous logic) was never anchored to what was
-// actually paid for the stock and made every margin/profit number fictional.
-const COGS_SUBQUERY = 'COALESCE((SELECT ib.unit_cost FROM inventory_batches ib WHERE ib.sku = soi.sku AND ib.received_date <= so.created_at ORDER BY ib.received_date DESC LIMIT 1), 0)';
+// Real COGS per shipped sales_order_item: prefer the exact weighted-average
+// cost recorded at ship/POS time (sales_order_items.unit_cost). Older rows
+// shipped before this was wired up correctly will have NULL here, so fall
+// back to a batch-lookup-by-date approximation (most recent inventory_batches
+// row for that SKU as of the order's created_at) for those, and finally to 0
+// if neither exists — never a guessed markup, since that's not a real cost.
+const COGS_SUBQUERY = 'COALESCE(soi.unit_cost, (SELECT ib.unit_cost FROM inventory_batches ib WHERE ib.sku = soi.sku AND ib.received_date <= so.created_at ORDER BY ib.received_date DESC LIMIT 1), 0)';
 
 function handleFinancialRoutes(PDO $pdo, string $method, array $uriParts): void
 {
@@ -94,7 +94,7 @@ function handleFinancialRoutes(PDO $pdo, string $method, array $uriParts): void
             $totalRefunds = (float)$refundStmt->fetchColumn();
             $netSales = $grossSales - $totalRefunds;
 
-            // 3. COGS — real cost from inventory_batches, not a guessed markup.
+            // 3. COGS — real per-sale cost where recorded, batch-lookup fallback otherwise.
             $cogsStmt = $pdo->query('
                 SELECT COALESCE(SUM(soi.quantity_shipped * (' . COGS_SUBQUERY . ')), 0) as real_cogs
                 FROM sales_order_items soi
@@ -160,7 +160,7 @@ function handleFinancialRoutes(PDO $pdo, string $method, array $uriParts): void
                 $rStmt->execute([$monthDate]);
                 $refunds = (float)$rStmt->fetchColumn();
 
-                // COGS in month — real batch cost, not a guessed markup
+                // COGS in month — real per-sale cost where recorded, batch-lookup fallback otherwise
                 $cStmt = $pdo->prepare('
                     SELECT COALESCE(SUM(soi.quantity_shipped * (' . COGS_SUBQUERY . ')), 0)
                     FROM sales_order_items soi
@@ -248,8 +248,7 @@ function handleFinancialRoutes(PDO $pdo, string $method, array $uriParts): void
             // actual on-hand batch cost (sum of on_hand_quantity * unit_cost
             // across all batches for that SKU), not a guessed 0.7 markdown.
             // Items with no batch records fall back to unit_price * 0.7 as
-            // a last-resort estimate, same as before, since no real cost
-            // exists for them.
+            // a last-resort estimate, since no real cost exists for them.
             $stmt = $pdo->query('
                 SELECT
                     i.id,
