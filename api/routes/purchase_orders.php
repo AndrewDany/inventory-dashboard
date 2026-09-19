@@ -35,6 +35,25 @@ function handlePurchaseOrderRoutes(PDO $pdo, string $method, array $uriParts): v
 
                 if ($qtyRecv <= 0) continue;
 
+                // Guard against over-receiving: cap at what's actually still
+                // outstanding on this line, regardless of what the client
+                // sends. Without this, a stale UI, a double-click, or a
+                // repeated request silently duplicates real inventory every
+                // time it's accepted.
+                $lineStmt = $pdo->prepare('SELECT quantity_ordered, quantity_received FROM purchase_order_items WHERE po_id = ? AND sku = ?');
+                $lineStmt->execute([$id, $sku]);
+                $line = $lineStmt->fetch();
+                if (!$line) {
+                    throw new Exception("No purchase order line found for {$sku} on this order");
+                }
+                $remaining = (int)$line['quantity_ordered'] - (int)$line['quantity_received'];
+                if ($remaining <= 0) {
+                    throw new Exception("{$sku} has already been fully received on this order");
+                }
+                if ($qtyRecv > $remaining) {
+                    throw new Exception("Cannot receive {$qtyRecv} of {$sku}: only {$remaining} remaining on this order");
+                }
+
                 // 1. Update purchase_order_items
                 $upPoi = $pdo->prepare('UPDATE purchase_order_items SET quantity_received = quantity_received + ? WHERE po_id = ? AND sku = ?');
                 $upPoi->execute([$qtyRecv, $id, $sku]);
