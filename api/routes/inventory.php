@@ -41,21 +41,47 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
 
             foreach ($items as $item) {
                 $itemId = generateUuid();
+                $sku = $item['sku'] ?? ('SKU-' . strtoupper(substr(uniqid(), -6)));
+                $unitPrice = isset($item['unit_price']) ? (float)$item['unit_price'] : 0.00;
+                // Same fallback reasoning as the single-item endpoint: prefer
+                // a real cost if the CSV provides one, otherwise fall back
+                // to unit_price rather than leaving margin undefined.
+                $unitCost = isset($item['unit_cost']) ? (float)$item['unit_cost'] : $unitPrice;
+                $quantity = (int)($item['quantity'] ?? 0);
+
                 $stmt->execute([
                     $itemId,
                     $item['name'] ?? 'Unnamed Product',
-                    $item['sku'] ?? ('SKU-' . strtoupper(substr(uniqid(), -6))),
+                    $sku,
                     $item['category'] ?? null,
                     $item['unit_type'] ?? 'unit',
                     $item['unit_of_measure'] ?? null,
                     isset($item['units_per_box']) ? (int)$item['units_per_box'] : null,
-                    (int)($item['quantity'] ?? 0),
+                    $quantity,
                     (int)($item['reorder_level'] ?? 0),
-                    isset($item['unit_price']) ? (float)$item['unit_price'] : 0.00,
+                    $unitPrice,
                     $item['supplier'] ?? null,
                     $item['location_id'] ?? null,
                 ]);
                 $insertedCount++;
+
+                // MySQL's ON DUPLICATE KEY UPDATE reports rowCount() 1 for a
+                // fresh insert, 2 for an update that changed a value, 0 for
+                // a no-op update. Only a genuine new row should get an
+                // initial batch -- re-importing a CSV to fix a typo on an
+                // existing SKU must never silently add phantom stock.
+                if ($stmt->rowCount() === 1 && $quantity > 0) {
+                    $batchStmt = $pdo->prepare('INSERT INTO inventory_batches (id, sku, inventory_item_id, batch_code, initial_quantity, on_hand_quantity, unit_cost) VALUES (?, ?, ?, ?, ?, ?, ?)');
+                    $batchStmt->execute([
+                        generateUuid(),
+                        $sku,
+                        $itemId,
+                        'BULK-' . strtoupper(substr(uniqid(), -6)),
+                        $quantity,
+                        $quantity,
+                        $unitCost,
+                    ]);
+                }
             }
 
             $pdo->commit();

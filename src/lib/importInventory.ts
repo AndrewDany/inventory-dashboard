@@ -7,6 +7,7 @@ export const csvRowSchema = z.object({
   quantity: z.coerce.number().int().min(0, 'Quantity cannot be negative').default(0),
   reorder_level: z.coerce.number().int().min(0, 'Reorder level cannot be negative').default(0),
   unit_price: z.coerce.number().min(0, 'Price cannot be negative').optional(),
+  unit_cost: z.coerce.number().min(0, 'Cost cannot be negative').optional(),
   supplier: z.string().optional().default(''),
   location_id: z.string().optional().default(''),
 })

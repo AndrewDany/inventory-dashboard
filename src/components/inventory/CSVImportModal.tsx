@@ -58,7 +58,7 @@ export default function CSVImportModal({ onClose }: { onClose: () => void }) {
           {file ? file.name : 'Click to select CSV file'}
         </p>
         <p className="text-xs text-gray-500 mt-1">
-          Required columns: name, sku — Optional: quantity, unit_price, category, reorder_level, supplier
+          Required columns: name, sku — Optional: quantity, unit_cost, unit_price, category, reorder_level, supplier
         </p>
       </div>
 
@@ -85,6 +85,7 @@ export default function CSVImportModal({ onClose }: { onClose: () => void }) {
                 <th className="text-left px-3 py-2 text-gray-500">Name</th>
                 <th className="text-left px-3 py-2 text-gray-500">SKU</th>
                 <th className="text-right px-3 py-2 text-gray-500">Qty</th>
+                <th className="text-right px-3 py-2 text-gray-500">Cost</th>
                 <th className="text-right px-3 py-2 text-gray-500">Price</th>
               </tr>
             </thead>
@@ -94,12 +95,13 @@ export default function CSVImportModal({ onClose }: { onClose: () => void }) {
                   <td className="px-3 py-2">{row.name}</td>
                   <td className="px-3 py-2 text-gray-500">{row.sku}</td>
                   <td className="px-3 py-2 text-right">{row.quantity}</td>
-                  <td className="px-3 py-2 text-right">GHS {row.unit_price?.toFixed(2)}</td>
+                  <td className="px-3 py-2 text-right">GHS {row.unit_cost?.toFixed(2) ?? '—'}</td>
+                  <td className="px-3 py-2 text-right">GHS {row.unit_price?.toFixed(2) ?? '—'}</td>
                 </tr>
               ))}
               {rows.length > 50 && (
                 <tr>
-                  <td colSpan={4} className="px-3 py-2 text-center text-gray-400">
+                  <td colSpan={5} className="px-3 py-2 text-center text-gray-400">
                     ...and {rows.length - 50} more rows
                   </td>
                 </tr>
