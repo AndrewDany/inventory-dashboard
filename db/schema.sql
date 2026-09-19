@@ -176,11 +176,18 @@ CREATE TABLE IF NOT EXISTS `sales_orders` (
   `status` ENUM('draft', 'confirmed', 'shipped', 'cancelled') NOT NULL DEFAULT 'confirmed',
   `notes` TEXT NULL,
   `customer_name` VARCHAR(255) NULL,
+  `customer_phone` VARCHAR(50) NULL,
+  `is_preorder` TINYINT(1) NOT NULL DEFAULT 0,
+  `fulfillment_method` ENUM('pickup', 'delivery') NOT NULL DEFAULT 'pickup',
+  `delivery_address` TEXT NULL,
+  `deposit_amount` DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+  `amount_paid` DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
   `created_by` VARCHAR(255) NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `idx_so_status` (`status`)
+  KEY `idx_so_status` (`status`),
+  KEY `idx_so_preorder` (`is_preorder`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sales_order_items` (

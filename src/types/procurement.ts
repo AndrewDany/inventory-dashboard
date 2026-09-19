@@ -81,6 +81,13 @@ export interface SalesOrder {
   so_number: string
   status: SalesOrderStatus
   notes: string | null
+  customer_name: string | null
+  customer_phone: string | null
+  is_preorder: boolean | number
+  fulfillment_method: 'pickup' | 'delivery'
+  delivery_address: string | null
+  deposit_amount: number
+  amount_paid: number
   created_by: string | null
   created_at: string
 }

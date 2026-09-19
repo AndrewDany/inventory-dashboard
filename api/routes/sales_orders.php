@@ -14,6 +14,26 @@ function handleSalesOrderRoutes(PDO $pdo, string $method, array $uriParts): void
     $id = $uriParts[1] ?? null;
     $subAction = $uriParts[2] ?? null;
 
+    // Record a payment against a pre-order: POST /api/sales-orders/{id}/payment
+    if ($id && $subAction === 'payment' && $method === 'POST') {
+        if ($auth['role'] === 'demo') jsonError('Demo account cannot record payments', 403);
+        $input = getJsonInput();
+        $amount = (float)($input['amount'] ?? 0);
+        if ($amount <= 0) jsonError('Payment amount must be greater than zero', 400);
+
+        $soStmt = $pdo->prepare('SELECT id, amount_paid FROM sales_orders WHERE id = ?');
+        $soStmt->execute([$id]);
+        $so = $soStmt->fetch();
+        if (!$so) jsonError('Sales order not found', 404);
+
+        $upStmt = $pdo->prepare('UPDATE sales_orders SET amount_paid = amount_paid + ? WHERE id = ?');
+        $upStmt->execute([$amount, $id]);
+
+        $newTotalStmt = $pdo->prepare('SELECT amount_paid FROM sales_orders WHERE id = ?');
+        $newTotalStmt->execute([$id]);
+        jsonSuccess(['amount_paid' => $newTotalStmt->fetchColumn()], 200, 'Payment recorded');
+    }
+
     // Ship / Fulfill Sales Order endpoint: POST /api/sales-orders/{id}/ship
     if ($id && $subAction === 'ship' && $method === 'POST') {
         if ($auth['role'] === 'demo') jsonError('Demo account cannot ship orders', 403);
@@ -158,6 +178,12 @@ function handleSalesOrderRoutes(PDO $pdo, string $method, array $uriParts): void
         $soNumber = trim($input['so_number'] ?? ('SO-' . strtoupper(substr(uniqid(), -6))));
         $notes = $input['notes'] ?? null;
         $customerName = $input['customer_name'] ?? null;
+        $customerPhone = $input['customer_phone'] ?? null;
+        $isPreorder = !empty($input['is_preorder']) ? 1 : 0;
+        $fulfillmentMethod = in_array($input['fulfillment_method'] ?? 'pickup', ['pickup', 'delivery'], true)
+            ? $input['fulfillment_method'] : 'pickup';
+        $deliveryAddress = $input['delivery_address'] ?? null;
+        $depositAmount = (float)($input['deposit_amount'] ?? 0);
         $items = $input['items'] ?? [];
 
         if (count($items) === 0) jsonError('At least one item is required', 400);
@@ -166,8 +192,17 @@ function handleSalesOrderRoutes(PDO $pdo, string $method, array $uriParts): void
 
         $pdo->beginTransaction();
         try {
-            $stmt = $pdo->prepare('INSERT INTO sales_orders (id, so_number, status, notes, customer_name, created_by) VALUES (?, ?, ?, ?, ?, ?)');
-            $stmt->execute([$soId, $soNumber, 'confirmed', $notes, $customerName, $auth['email'] ?? 'system']);
+            $stmt = $pdo->prepare('
+                INSERT INTO sales_orders
+                    (id, so_number, status, notes, customer_name, customer_phone, is_preorder,
+                     fulfillment_method, delivery_address, deposit_amount, amount_paid, created_by)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ');
+            $stmt->execute([
+                $soId, $soNumber, 'confirmed', $notes, $customerName, $customerPhone, $isPreorder,
+                $fulfillmentMethod, $deliveryAddress, $depositAmount, $depositAmount,
+                $auth['email'] ?? 'system'
+            ]);
 
             $itemStmt = $pdo->prepare('
                 INSERT INTO sales_order_items (id, so_id, sku, inventory_item_id, quantity_ordered, quantity_shipped, unit_price, currency)

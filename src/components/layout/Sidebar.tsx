@@ -17,6 +17,7 @@ import {
   Users,
   Package,
   ShoppingCart,
+  Phone,
   AlertTriangle,
   ArrowLeftRight,
   Layers,
@@ -86,6 +87,7 @@ const navSections: NavSection[] = [
     items: [
       { path: '/admin/orders', label: 'Purchase Orders', icon: <Package size={17} />, adminOnly: true },
       { path: '/admin/sales-orders', label: 'Sales Orders', icon: <ShoppingCart size={17} />, adminOnly: true },
+      { path: '/admin/pre-orders', label: 'Pre-Orders', icon: <Phone size={17} />, adminOnly: true },
       { path: '/admin/suppliers', label: 'Suppliers', icon: <Truck size={17} />, adminOnly: true },
       { path: '/admin/returns', label: 'Returns & Replacements', icon: <RotateCcw size={17} />, adminOnly: true },
     ],
