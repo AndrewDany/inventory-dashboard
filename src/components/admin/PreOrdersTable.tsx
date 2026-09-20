@@ -250,10 +250,10 @@ export default function PreOrdersTable() {
         <Modal title="Fulfill Pre-Order" onClose={() => { setShippingSO(null); setShipLocationId('') }}>
           <div className="space-y-4">
             {selectedOrder && Number(selectedOrder.amount_paid) < orderTotal(selectedOrder) && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-                This order still has a balance of GHS{' '}
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                <strong>Fulfillment is blocked:</strong> this order still has a balance of GHS{' '}
                 {(orderTotal(selectedOrder) - Number(selectedOrder.amount_paid)).toFixed(2)} outstanding.
-                Confirm with the client before handing over goods.
+                Record the remaining payment first, then come back to fulfill.
               </div>
             )}
             <div>
@@ -297,7 +297,15 @@ export default function PreOrdersTable() {
               <Button type="button" variant="outline" onClick={() => { setShippingSO(null); setShipLocationId('') }}>
                 Cancel
               </Button>
-              <Button onClick={handleShip} disabled={!shipLocationId || shipOrder.isPending || hasShortage}>
+              <Button
+                onClick={handleShip}
+                disabled={
+                  !shipLocationId ||
+                  shipOrder.isPending ||
+                  hasShortage ||
+                  (!!selectedOrder && Number(selectedOrder.amount_paid) < orderTotal(selectedOrder))
+                }
+              >
                 {shipOrder.isPending ? 'Fulfilling...' : 'Confirm Fulfillment'}
               </Button>
             </div>
