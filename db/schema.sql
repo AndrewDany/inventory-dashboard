@@ -198,6 +198,7 @@ CREATE TABLE IF NOT EXISTS `sales_order_items` (
   `quantity_ordered` INT NOT NULL,
   `quantity_shipped` INT NOT NULL DEFAULT 0,
   `unit_price` DECIMAL(12, 2) NULL DEFAULT 0.00,
+  `unit_cost` DECIMAL(12, 2) NULL,
   `currency` VARCHAR(10) NOT NULL DEFAULT 'GHS',
   PRIMARY KEY (`id`),
   KEY `idx_soi_so_id` (`so_id`),
