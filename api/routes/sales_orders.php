@@ -180,8 +180,10 @@ function handleSalesOrderRoutes(PDO $pdo, string $method, array $uriParts): void
         $customerName = $input['customer_name'] ?? null;
         $customerPhone = $input['customer_phone'] ?? null;
         $isPreorder = !empty($input['is_preorder']) ? 1 : 0;
-        $fulfillmentMethod = in_array($input['fulfillment_method'] ?? 'pickup', ['pickup', 'delivery'], true)
-            ? $input['fulfillment_method'] : 'pickup';
+        $fulfillmentMethod = $input['fulfillment_method'] ?? 'pickup';
+        if (!in_array($fulfillmentMethod, ['pickup', 'delivery'], true)) {
+            $fulfillmentMethod = 'pickup';
+        }
         $deliveryAddress = $input['delivery_address'] ?? null;
         $depositAmount = (float)($input['deposit_amount'] ?? 0);
         $items = $input['items'] ?? [];
