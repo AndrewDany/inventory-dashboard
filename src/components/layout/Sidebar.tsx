@@ -47,6 +47,7 @@ interface SidebarProps {
   onAddSupplier?: () => void
   onAddLocation?: () => void
   onAddPurchaseOrder?: () => void
+  onUpdateBudget?: () => void
 }
 
 interface NavItem {
@@ -120,6 +121,7 @@ export default function Sidebar({
   onAddSupplier,
   onAddLocation,
   onAddPurchaseOrder,
+  onUpdateBudget,
 }: SidebarProps) {
   const location = useLocation()
   const { data: profile } = useProfile()
@@ -238,7 +240,7 @@ export default function Sidebar({
           </nav>
 
           {/* Quick Operations Button List */}
-          {(onAddItem || onSellItem || onBulkAddProducts || onAddPurchaseOrder || onAddSupplier || onAddLocation || onInviteUser || onChangePassword || onSettings) && (
+          {(onAddItem || onSellItem || onBulkAddProducts || onAddPurchaseOrder || onAddSupplier || onAddLocation || onInviteUser || onChangePassword || onSettings || onUpdateBudget) && (
             <div className="mt-5 pt-4 border-t border-slate-100 space-y-1.5">
               {!isCollapsed && (
                 <p className="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
@@ -306,6 +308,13 @@ export default function Sidebar({
                 <button onClick={onSettings} className={actionBtnClass} title="Settings">
                   <Settings size={15} className="text-slate-600" />
                   {!isCollapsed && <span>Settings</span>}
+                </button>
+              )}
+
+              {onUpdateBudget && (
+                <button onClick={onUpdateBudget} className={actionBtnClass} title="Update Purchasing Budget">
+                  <DollarSign size={15} className="text-amber-600" />
+                  {!isCollapsed && <span>Update Budget</span>}
                 </button>
               )}
             </div>
