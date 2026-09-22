@@ -22,12 +22,17 @@ import CategoryDonut from '../components/dashboard/CategoryDonut'
 import RecentActivityFeed from '../components/dashboard/RecentActivityFeed'
 import UsagePanel from '../components/dashboard/UsagePanel'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useBudget, useUpdateBudget } from '../hooks/useBudget'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 
 export default function Dashboard() {
   const { t } = useLanguage()
   const { data: profile } = useProfile()
   const { data: items, isLoading, error } = useInventory()
   const { data: monthlyFinancials } = useMonthlyFinancials()
+  const { data: budget } = useBudget()
+  const updateBudget = useUpdateBudget()
   const deleteItem = useDeleteInventoryItem()
 
   const [showAddModal, setShowAddModal] = useState(false)
@@ -37,6 +42,7 @@ export default function Dashboard() {
   const [showImportModal, setShowImportModal] = useState(false)
   const [showLabelPrinter, setShowLabelPrinter] = useState(false)
   const [showBulkAddModal, setShowBulkAddModal] = useState(false)
+  const [budgetDraft, setBudgetDraft] = useState('')
 
   const isAdmin = profile?.role === 'admin'
   const isDemo = profile?.role === 'demo'
@@ -75,6 +81,40 @@ export default function Dashboard() {
       {isDemo && (
         <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-lg p-3 mb-6">
           You're viewing a read-only demo account. Changes are disabled.
+        </div>
+      )}
+
+      {isAdmin && budget && (
+        <div className="mb-6 rounded-lg border border-slate-200 bg-white p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-slate-900">Purchasing Budget</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Current monthly limit: GHS {budget.monthlyBudget.toFixed(2)}
+              </p>
+            </div>
+            <div className="flex w-full gap-2 sm:w-auto">
+              <Input
+                aria-label="Monthly purchasing budget"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="New budget"
+                value={budgetDraft}
+                onChange={(event) => setBudgetDraft(event.target.value)}
+                className="sm:w-40"
+              />
+              <Button
+                disabled={!budgetDraft || updateBudget.isPending}
+                onClick={() => {
+                  updateBudget.mutate(Number(budgetDraft))
+                  setBudgetDraft('')
+                }}
+              >
+                {updateBudget.isPending ? 'Updating...' : 'Update Budget'}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 

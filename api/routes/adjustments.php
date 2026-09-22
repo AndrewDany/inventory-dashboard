@@ -77,13 +77,18 @@ function handleAdjustmentRoutes(PDO $pdo, string $method): void
         $quantityDelta = (int)($input['quantity_delta'] ?? 0);
         $reason = $input['reason'] ?? 'other';
         $notes = $input['notes'] ?? null;
+        // Only used when quantityDelta > 0 (a new batch is being created).
+        // Falls back to the item's current unit_price so a batch is never
+        // created with a cost of 0 -- that would silently zero out COGS
+        // for every unit sold from it later.
+        $unitCost = isset($input['unit_cost']) ? (float)$input['unit_cost'] : null;
 
         if (empty($sku) || empty($locationId) || $quantityDelta === 0) {
             jsonError('SKU, location, and non-zero quantity delta are required', 400);
         }
 
         // Find matching item
-        $itemStmt = $pdo->prepare('SELECT id, name, quantity FROM inventory_items WHERE sku = ? LIMIT 1');
+        $itemStmt = $pdo->prepare('SELECT id, name, quantity, unit_price FROM inventory_items WHERE sku = ? LIMIT 1');
         $itemStmt->execute([$sku]);
         $item = $itemStmt->fetch();
 
@@ -117,6 +122,49 @@ function handleAdjustmentRoutes(PDO $pdo, string $method): void
             $newQty = max(0, (int)$item['quantity'] + $quantityDelta);
             $updateItem = $pdo->prepare('UPDATE inventory_items SET quantity = ?, last_updated = NOW() WHERE id = ?');
             $updateItem->execute([$newQty, $item['id']]);
+
+            // 2b. Keep inventory_batches in sync -- this was previously never
+            // touched here, so any stock added or removed purely through an
+            // adjustment silently desynced the FIFO ledger from the item's
+            // real quantity. A later sale/fulfillment decrements batches, not
+            // inventory_items directly, so a SKU with no matching batch
+            // record looked like its stock "never moved" even though it did.
+            if ($quantityDelta > 0) {
+                // Adding stock: create a new batch for the added quantity,
+                // same as Purchase Order receiving or the Add Item form does.
+                $costForBatch = $unitCost ?? (float)($item['unit_price'] ?? 0);
+                $batchStmt = $pdo->prepare('
+                    INSERT INTO inventory_batches (id, sku, inventory_item_id, batch_code, initial_quantity, on_hand_quantity, unit_cost)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ');
+                $batchStmt->execute([
+                    generateUuid(),
+                    $sku,
+                    $item['id'],
+                    'ADJ-' . strtoupper(substr(uniqid(), -6)),
+                    $quantityDelta,
+                    $quantityDelta,
+                    $costForBatch,
+                ]);
+            } else {
+                // Removing stock: FIFO-decrement existing batches, oldest first,
+                // same pattern as ship/POS checkout. Caps at whatever is
+                // actually on hand in batches -- if the ledger has already
+                // drifted (e.g. from adjustments made before this fix), this
+                // won't go negative or throw; it just removes what it can find.
+                $rem = abs($quantityDelta);
+                $batchesStmt = $pdo->prepare('SELECT id, on_hand_quantity FROM inventory_batches WHERE sku = ? AND on_hand_quantity > 0 ORDER BY received_date ASC');
+                $batchesStmt->execute([$sku]);
+                $batches = $batchesStmt->fetchAll();
+
+                foreach ($batches as $b) {
+                    if ($rem <= 0) break;
+                    $take = min((int)$b['on_hand_quantity'], $rem);
+                    $upB = $pdo->prepare('UPDATE inventory_batches SET on_hand_quantity = on_hand_quantity - ? WHERE id = ?');
+                    $upB->execute([$take, $b['id']]);
+                    $rem -= $take;
+                }
+            }
 
             // 3. Log stock movement
             $movStmt = $pdo->prepare('INSERT INTO stock_movements (id, item_id, item_name, change_amount, reason, location_id, user_email) VALUES (?, ?, ?, ?, ?, ?, ?)');

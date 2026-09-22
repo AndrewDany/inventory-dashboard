@@ -5,7 +5,7 @@ export interface ActivityLog {
   id: string
   user_id: string | null
   user_email: string
-  action: 'created' | 'updated' | 'deleted'
+  action: string
   item_name: string
   created_at: string
 }

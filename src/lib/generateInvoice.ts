@@ -62,7 +62,7 @@ export function generateInvoiceBlob(data: InvoiceData): string {
     yPos += 6
   }
   if (data.shippingAddress) {
-    doc.text(`Shipping Destination Address: ${data.shippingAddress}`, 14, yPos)
+    doc.text(`Delivery Address: ${data.shippingAddress}`, 14, yPos)
     yPos += 6
   }
 

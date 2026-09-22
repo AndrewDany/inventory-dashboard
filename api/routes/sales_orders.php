@@ -46,6 +46,20 @@ function handleSalesOrderRoutes(PDO $pdo, string $method, array $uriParts): void
         if (!$so) jsonError('Sales order not found', 404);
         if ($so['status'] === 'shipped') jsonError('Sales order is already shipped', 400);
 
+        // Pre-orders must be fully paid before fulfillment -- this was previously
+        // only enforced by disabling the button in the browser, which anyone
+        // calling the API directly (or a future bug in the UI) could bypass.
+        if ((int)($so['is_preorder'] ?? 0) === 1) {
+            $totalStmt = $pdo->prepare('SELECT COALESCE(SUM(quantity_ordered * unit_price), 0) FROM sales_order_items WHERE so_id = ?');
+            $totalStmt->execute([$id]);
+            $orderTotal = (float)$totalStmt->fetchColumn();
+
+            if ((float)$so['amount_paid'] < $orderTotal - 0.01) {
+                $balance = round($orderTotal - (float)$so['amount_paid'], 2);
+                jsonError("This pre-order still has a balance of GHS {$balance} outstanding. Record the remaining payment before fulfilling.", 400);
+            }
+        }
+
         // Fetch items
         $itemsStmt = $pdo->prepare('SELECT * FROM sales_order_items WHERE so_id = ?');
         $itemsStmt->execute([$id]);
@@ -102,6 +116,33 @@ function handleSalesOrderRoutes(PDO $pdo, string $method, array $uriParts): void
                         'sale',
                         $locationId,
                         $auth['email'] ?? 'system'
+                    ]);
+
+                    // Audit Trail + Activity Log: previously never logged at all
+                    // for a sale/fulfillment -- Stock Movements captured it, but
+                    // neither of these two pages ever showed a fulfillment happened.
+                    $auditStmt = $pdo->prepare('INSERT INTO audit_events (id, event_type, entity_type, entity_id, sku, quantity_delta, unit_cost, actor_user_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+                    $auditStmt->execute([
+                        generateUuid(),
+                        'sale_fulfilled',
+                        'sales_order_item',
+                        $line['id'],
+                        $sku,
+                        -$qty,
+                        $weightedUnitCost,
+                        $auth['email'] ?? 'system'
+                    ]);
+
+                    $actStmt = $pdo->prepare('INSERT INTO activity_logs (id, user_id, user_email, action, item_name, entity_type, entity_id, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+                    $actStmt->execute([
+                        generateUuid(),
+                        $auth['sub'] ?? null,
+                        $auth['email'] ?? 'system',
+                        'fulfilled',
+                        $inv['name'],
+                        'sales_order',
+                        $id,
+                        json_encode(['sku' => $sku, 'quantity' => $qty, 'so_id' => $id])
                     ]);
                 } else {
                     $weightedUnitCost = null;
@@ -255,20 +296,26 @@ function handlePosCheckout(PDO $pdo, string $method): void
     $soNumber = 'POS-' . strtoupper(substr(uniqid(), -6));
     $soId = generateUuid();
 
+    // POS sales are paid in full on the spot -- compute the total up front so
+    // amount_paid can be set correctly at insert time, instead of silently
+    // defaulting to 0.00 (which would make a completed POS sale look unpaid
+    // anywhere the app displays payment status/balance due).
+    $totalSale = 0.0;
+    foreach ($items as $line) {
+        $totalSale += ((int)($line['quantity'] ?? 1)) * ((float)($line['unit_price'] ?? 0.00));
+    }
+
     $pdo->beginTransaction();
     try {
         // 1. Create completed sales order
-        $stmt = $pdo->prepare('INSERT INTO sales_orders (id, so_number, status, notes, customer_name, created_by) VALUES (?, ?, ?, ?, ?, ?)');
-        $stmt->execute([$soId, $soNumber, 'shipped', "POS ($paymentMethod): $notes", $customerName, $auth['email'] ?? 'system']);
-
-        $totalSale = 0.0;
+        $stmt = $pdo->prepare('INSERT INTO sales_orders (id, so_number, status, notes, customer_name, amount_paid, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$soId, $soNumber, 'shipped', "POS ($paymentMethod): $notes", $customerName, $totalSale, $auth['email'] ?? 'system']);
 
         foreach ($items as $line) {
             $itemId = $line['id'] ?? null;
             $sku = $line['sku'];
             $qty = (int)($line['quantity'] ?? 1);
             $price = (float)($line['unit_price'] ?? 0.00);
-            $totalSale += ($qty * $price);
 
             // Check availability before selling (POS previously allowed oversell too)
             if ($itemId) {
@@ -324,6 +371,31 @@ function handlePosCheckout(PDO $pdo, string $method): void
                 -$qty,
                 'sale',
                 $auth['email'] ?? 'system'
+            ]);
+
+            // Audit Trail + Activity Log for POS sales -- same gap as ship.
+            $auditStmt = $pdo->prepare('INSERT INTO audit_events (id, event_type, entity_type, entity_id, sku, quantity_delta, unit_cost, actor_user_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+            $auditStmt->execute([
+                generateUuid(),
+                'pos_sale',
+                'sales_order',
+                $soId,
+                $sku,
+                -$qty,
+                $weightedUnitCost,
+                $auth['email'] ?? 'system'
+            ]);
+
+            $actStmt = $pdo->prepare('INSERT INTO activity_logs (id, user_id, user_email, action, item_name, entity_type, entity_id, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+            $actStmt->execute([
+                generateUuid(),
+                $auth['sub'] ?? null,
+                $auth['email'] ?? 'system',
+                'POS sale',
+                $line['name'] ?? $sku,
+                'sales_order',
+                $soId,
+                json_encode(['sku' => $sku, 'quantity' => $qty, 'so_id' => $soId])
             ]);
         }
 

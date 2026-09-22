@@ -40,18 +40,28 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
             ');
 
             foreach ($items as $item) {
-                $itemId = generateUuid();
                 $sku = $item['sku'] ?? ('SKU-' . strtoupper(substr(uniqid(), -6)));
+
+                // Look up any existing row for this SKU BEFORE the upsert, so we
+                // know the real previous quantity and item id -- needed to log
+                // an accurate stock movement either way (new item or updated).
+                $existingStmt = $pdo->prepare('SELECT id, quantity FROM inventory_items WHERE sku = ? LIMIT 1');
+                $existingStmt->execute([$sku]);
+                $existing = $existingStmt->fetch();
+
+                $itemId = $existing['id'] ?? generateUuid();
+                $previousQty = (int)($existing['quantity'] ?? 0);
                 $unitPrice = isset($item['unit_price']) ? (float)$item['unit_price'] : 0.00;
                 // Same fallback reasoning as the single-item endpoint: prefer
                 // a real cost if the CSV provides one, otherwise fall back
                 // to unit_price rather than leaving margin undefined.
                 $unitCost = isset($item['unit_cost']) ? (float)$item['unit_cost'] : $unitPrice;
                 $quantity = (int)($item['quantity'] ?? 0);
+                $itemName = $item['name'] ?? 'Unnamed Product';
 
                 $stmt->execute([
                     $itemId,
-                    $item['name'] ?? 'Unnamed Product',
+                    $itemName,
                     $sku,
                     $item['category'] ?? null,
                     $item['unit_type'] ?? 'unit',
@@ -65,12 +75,11 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
                 ]);
                 $insertedCount++;
 
-                // MySQL's ON DUPLICATE KEY UPDATE reports rowCount() 1 for a
-                // fresh insert, 2 for an update that changed a value, 0 for
-                // a no-op update. Only a genuine new row should get an
-                // initial batch -- re-importing a CSV to fix a typo on an
-                // existing SKU must never silently add phantom stock.
-                if ($stmt->rowCount() === 1 && $quantity > 0) {
+                $isNewRow = !$existing;
+                $delta = $quantity - $previousQty;
+
+                // Batch: only a genuine new row (with stock) gets an initial batch.
+                if ($isNewRow && $quantity > 0) {
                     $batchStmt = $pdo->prepare('INSERT INTO inventory_batches (id, sku, inventory_item_id, batch_code, initial_quantity, on_hand_quantity, unit_cost) VALUES (?, ?, ?, ?, ?, ?, ?)');
                     $batchStmt->execute([
                         generateUuid(),
@@ -82,6 +91,49 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
                         $unitCost,
                     ]);
                 }
+
+                // Stock Movements: log for every item where the quantity actually
+                // changed -- previously never logged at all for bulk import,
+                // so a whole CSV of new stock was invisible on this page.
+                if ($delta !== 0) {
+                    $movStmt = $pdo->prepare('INSERT INTO stock_movements (id, item_id, item_name, change_amount, reason, location_id, user_email) VALUES (?, ?, ?, ?, ?, ?, ?)');
+                    $movStmt->execute([
+                        generateUuid(),
+                        $itemId,
+                        $itemName,
+                        $delta,
+                        $isNewRow ? 'Bulk Import (new item)' : 'Bulk Import (quantity updated)',
+                        $item['location_id'] ?? null,
+                        $auth['email'] ?? 'system'
+                    ]);
+                }
+
+                // Audit Trail: previously never logged at all for bulk import.
+                $auditStmt = $pdo->prepare('INSERT INTO audit_events (id, event_type, entity_type, entity_id, sku, quantity_delta, unit_cost, actor_user_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+                $auditStmt->execute([
+                    generateUuid(),
+                    $isNewRow ? 'bulk_import_created' : 'bulk_import_updated',
+                    'inventory_item',
+                    $itemId,
+                    $sku,
+                    $delta,
+                    $unitCost,
+                    $auth['email'] ?? 'system'
+                ]);
+
+                // Activity Log: nothing anywhere previously called this at all,
+                // for any action in the app -- this is the first real write to it.
+                $actStmt = $pdo->prepare('INSERT INTO activity_logs (id, user_id, user_email, action, item_name, entity_type, entity_id, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+                $actStmt->execute([
+                    generateUuid(),
+                    $auth['sub'] ?? null,
+                    $auth['email'] ?? 'system',
+                    $isNewRow ? 'created' : 'updated',
+                    $itemName,
+                    'inventory_item',
+                    $itemId,
+                    json_encode(['sku' => $sku, 'quantity' => $quantity, 'source' => 'bulk_import'])
+                ]);
             }
 
             $pdo->commit();

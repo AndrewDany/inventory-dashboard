@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 // color-coding via getStatusClasses and for all backend/business logic)
 // stays exactly as stored; only what's shown to the user changes here.
 const STATUS_LABELS: Record<string, string> = {
-  shipped: 'Order Completed',
+    shipped: 'Fulfilled',
 }
 
 /**

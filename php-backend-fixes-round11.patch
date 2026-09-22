@@ -1,0 +1,1119 @@
+From c69d0c1128e87a240730e4c5a9bbffeb034fef17 Mon Sep 17 00:00:00 2001
+From: Andrews Danyo <andrews@local>
+Date: Sat, 19 Sep 2026 21:42:11 +0000
+Subject: [PATCH 1/4] Add Pre-Orders: phone-in orders with deposit/balance
+ tracking
+
+For clients who call to place an order and come later for pickup or
+delivery once they finish paying. Built as an extension of the
+existing sales_orders table (not a separate feature) so Fulfill,
+stock deduction, and P&L reporting all work automatically with zero
+duplication:
+
+- New columns: customer_phone, is_preorder, fulfillment_method
+  (pickup/delivery), delivery_address, deposit_amount, amount_paid.
+  Included in schema.sql for fresh installs, plus a standalone
+  db/migration_preorders.sql (ALTER TABLE, additive only) for
+  existing databases -- running schema.sql again would wipe data.
+- POST /sales-orders now accepts and stores these fields; a deposit
+  collected at creation counts as the first payment.
+- New POST /sales-orders/{id}/payment endpoint to record additional
+  payments as a client pays down their balance over time.
+- New PreOrderForm (client name/phone, pickup vs delivery, delivery
+  address when applicable, line items, optional deposit, live
+  balance-due preview) and PreOrdersTable (client contact, payment
+  status, Record Payment and Fulfill actions -- reusing the exact
+  same location-aware stock check already proven in the main Sales
+  Orders Fulfill flow) at /admin/pre-orders, linked from the sidebar.
+
+Verified end-to-end: create with deposit -> pay remaining balance ->
+fulfill -> stock correctly deducted and status flips to shipped.
+---
+ api/routes/sales_orders.php             |  39 ++-
+ db/migration_preorders.sql              |  16 ++
+ db/schema.sql                           |   9 +-
+ src/App.tsx                             |   2 +
+ src/components/admin/PreOrderForm.tsx   | 256 ++++++++++++++++++++
+ src/components/admin/PreOrdersTable.tsx | 309 ++++++++++++++++++++++++
+ src/components/layout/Sidebar.tsx       |   2 +
+ src/hooks/useSalesOrders.ts             |  41 ++++
+ src/lib/procurementSchemas.ts           |  21 +-
+ src/pages/admin/AdminPreOrders.tsx      |  32 +++
+ src/types/procurement.ts                |   7 +
+ 11 files changed, 730 insertions(+), 4 deletions(-)
+ create mode 100644 db/migration_preorders.sql
+ create mode 100644 src/components/admin/PreOrderForm.tsx
+ create mode 100644 src/components/admin/PreOrdersTable.tsx
+ create mode 100644 src/pages/admin/AdminPreOrders.tsx
+
+diff --git a/api/routes/sales_orders.php b/api/routes/sales_orders.php
+index 0d4a112..eb4be92 100644
+--- a/api/routes/sales_orders.php
++++ b/api/routes/sales_orders.php
+@@ -14,6 +14,26 @@ function handleSalesOrderRoutes(PDO $pdo, string $method, array $uriParts): void
+     $id = $uriParts[1] ?? null;
+     $subAction = $uriParts[2] ?? null;
+ 
++    // Record a payment against a pre-order: POST /api/sales-orders/{id}/payment
++    if ($id && $subAction === 'payment' && $method === 'POST') {
++        if ($auth['role'] === 'demo') jsonError('Demo account cannot record payments', 403);
++        $input = getJsonInput();
++        $amount = (float)($input['amount'] ?? 0);
++        if ($amount <= 0) jsonError('Payment amount must be greater than zero', 400);
++
++        $soStmt = $pdo->prepare('SELECT id, amount_paid FROM sales_orders WHERE id = ?');
++        $soStmt->execute([$id]);
++        $so = $soStmt->fetch();
++        if (!$so) jsonError('Sales order not found', 404);
++
++        $upStmt = $pdo->prepare('UPDATE sales_orders SET amount_paid = amount_paid + ? WHERE id = ?');
++        $upStmt->execute([$amount, $id]);
++
++        $newTotalStmt = $pdo->prepare('SELECT amount_paid FROM sales_orders WHERE id = ?');
++        $newTotalStmt->execute([$id]);
++        jsonSuccess(['amount_paid' => $newTotalStmt->fetchColumn()], 200, 'Payment recorded');
++    }
++
+     // Ship / Fulfill Sales Order endpoint: POST /api/sales-orders/{id}/ship
+     if ($id && $subAction === 'ship' && $method === 'POST') {
+         if ($auth['role'] === 'demo') jsonError('Demo account cannot ship orders', 403);
+@@ -158,6 +178,12 @@ function handleSalesOrderRoutes(PDO $pdo, string $method, array $uriParts): void
+         $soNumber = trim($input['so_number'] ?? ('SO-' . strtoupper(substr(uniqid(), -6))));
+         $notes = $input['notes'] ?? null;
+         $customerName = $input['customer_name'] ?? null;
++        $customerPhone = $input['customer_phone'] ?? null;
++        $isPreorder = !empty($input['is_preorder']) ? 1 : 0;
++        $fulfillmentMethod = in_array($input['fulfillment_method'] ?? 'pickup', ['pickup', 'delivery'], true)
++            ? $input['fulfillment_method'] : 'pickup';
++        $deliveryAddress = $input['delivery_address'] ?? null;
++        $depositAmount = (float)($input['deposit_amount'] ?? 0);
+         $items = $input['items'] ?? [];
+ 
+         if (count($items) === 0) jsonError('At least one item is required', 400);
+@@ -166,8 +192,17 @@ function handleSalesOrderRoutes(PDO $pdo, string $method, array $uriParts): void
+ 
+         $pdo->beginTransaction();
+         try {
+-            $stmt = $pdo->prepare('INSERT INTO sales_orders (id, so_number, status, notes, customer_name, created_by) VALUES (?, ?, ?, ?, ?, ?)');
+-            $stmt->execute([$soId, $soNumber, 'confirmed', $notes, $customerName, $auth['email'] ?? 'system']);
++            $stmt = $pdo->prepare('
++                INSERT INTO sales_orders
++                    (id, so_number, status, notes, customer_name, customer_phone, is_preorder,
++                     fulfillment_method, delivery_address, deposit_amount, amount_paid, created_by)
++                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
++            ');
++            $stmt->execute([
++                $soId, $soNumber, 'confirmed', $notes, $customerName, $customerPhone, $isPreorder,
++                $fulfillmentMethod, $deliveryAddress, $depositAmount, $depositAmount,
++                $auth['email'] ?? 'system'
++            ]);
+ 
+             $itemStmt = $pdo->prepare('
+                 INSERT INTO sales_order_items (id, so_id, sku, inventory_item_id, quantity_ordered, quantity_shipped, unit_price, currency)
+diff --git a/db/migration_preorders.sql b/db/migration_preorders.sql
+new file mode 100644
+index 0000000..6f890c3
+--- /dev/null
++++ b/db/migration_preorders.sql
+@@ -0,0 +1,16 @@
++-- ============================================================
++-- Migration: Add Pre-Order support to sales_orders
++-- Run this once against your EXISTING database (the one you already
++-- set up) via MySQL Workbench or phpMyAdmin. Do NOT re-run schema.sql
++-- from scratch -- that would wipe your data. This migration only
++-- adds new columns; nothing existing is touched or removed.
++-- ============================================================
++
++ALTER TABLE `sales_orders`
++  ADD COLUMN `customer_phone` VARCHAR(50) NULL AFTER `customer_name`,
++  ADD COLUMN `is_preorder` TINYINT(1) NOT NULL DEFAULT 0 AFTER `customer_phone`,
++  ADD COLUMN `fulfillment_method` ENUM('pickup', 'delivery') NOT NULL DEFAULT 'pickup' AFTER `is_preorder`,
++  ADD COLUMN `delivery_address` TEXT NULL AFTER `fulfillment_method`,
++  ADD COLUMN `deposit_amount` DECIMAL(12, 2) NOT NULL DEFAULT 0.00 AFTER `delivery_address`,
++  ADD COLUMN `amount_paid` DECIMAL(12, 2) NOT NULL DEFAULT 0.00 AFTER `deposit_amount`,
++  ADD KEY `idx_so_preorder` (`is_preorder`);
+diff --git a/db/schema.sql b/db/schema.sql
+index 043b96e..adce6b7 100644
+--- a/db/schema.sql
++++ b/db/schema.sql
+@@ -176,11 +176,18 @@ CREATE TABLE IF NOT EXISTS `sales_orders` (
+   `status` ENUM('draft', 'confirmed', 'shipped', 'cancelled') NOT NULL DEFAULT 'confirmed',
+   `notes` TEXT NULL,
+   `customer_name` VARCHAR(255) NULL,
++  `customer_phone` VARCHAR(50) NULL,
++  `is_preorder` TINYINT(1) NOT NULL DEFAULT 0,
++  `fulfillment_method` ENUM('pickup', 'delivery') NOT NULL DEFAULT 'pickup',
++  `delivery_address` TEXT NULL,
++  `deposit_amount` DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
++  `amount_paid` DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+   `created_by` VARCHAR(255) NULL,
+   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+   PRIMARY KEY (`id`),
+-  KEY `idx_so_status` (`status`)
++  KEY `idx_so_status` (`status`),
++  KEY `idx_so_preorder` (`is_preorder`)
+ ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+ 
+ CREATE TABLE IF NOT EXISTS `sales_order_items` (
+diff --git a/src/App.tsx b/src/App.tsx
+index f6ad942..163ce81 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -16,6 +16,7 @@ const AdminLocations    = lazy(() => import('./pages/admin/AdminLocations'))
+ const AdminUsers        = lazy(() => import('./pages/admin/AdminUsers'))
+ const AdminOrders       = lazy(() => import('./pages/admin/AdminOrders'))
+ const AdminSalesOrders  = lazy(() => import('./pages/admin/AdminSalesOrders'))
++const AdminPreOrders    = lazy(() => import('./pages/admin/AdminPreOrders'))
+ const AdminLowStock     = lazy(() => import('./pages/admin/AdminLowStock'))
+ const AdminSuppliers    = lazy(() => import('./pages/admin/AdminSuppliers'))
+ const AdminMovements    = lazy(() => import('./pages/admin/AdminMovements'))
+@@ -67,6 +68,7 @@ function App() {
+           <Route path="users" element={<AdminUsers />} />
+           <Route path="orders" element={<AdminOrders />} />
+           <Route path="sales-orders" element={<AdminSalesOrders />} />
++          <Route path="pre-orders" element={<AdminPreOrders />} />
+           <Route path="low-stock" element={<AdminLowStock />} />
+           <Route path="suppliers" element={<AdminSuppliers />} />
+           <Route path="movements" element={<AdminMovements />} />
+diff --git a/src/components/admin/PreOrderForm.tsx b/src/components/admin/PreOrderForm.tsx
+new file mode 100644
+index 0000000..5c4e6e1
+--- /dev/null
++++ b/src/components/admin/PreOrderForm.tsx
+@@ -0,0 +1,256 @@
++import { useForm, useFieldArray } from 'react-hook-form'
++import { zodResolver } from '@hookform/resolvers/zod'
++import { toast } from 'sonner'
++import { Button } from '@/components/ui/button'
++import { Input } from '@/components/ui/input'
++import { Label } from '@/components/ui/label'
++import {
++  Select,
++  SelectContent,
++  SelectItem,
++  SelectTrigger,
++  SelectValue,
++} from '@/components/ui/select'
++import { useCreateSalesOrder } from '../../hooks/useSalesOrders'
++import { useInventory } from '../../hooks/useInventory'
++import {
++  preOrderSchema,
++  type PreOrderFormValues,
++  type PreOrderFormInput,
++} from '../../lib/procurementSchemas'
++
++type PreOrderFormProps = {
++  onClose: () => void
++}
++
++export default function PreOrderForm({ onClose }: PreOrderFormProps) {
++  const createSO = useCreateSalesOrder()
++  const { data: inventoryItems = [] } = useInventory()
++
++  const {
++    register,
++    control,
++    handleSubmit,
++    watch,
++    setValue,
++    formState: { errors, isSubmitting },
++  } = useForm<PreOrderFormInput, unknown, PreOrderFormValues>({
++    resolver: zodResolver(preOrderSchema),
++    defaultValues: {
++      so_number: `PRE-${Date.now().toString().slice(-8)}`,
++      customer_name: '',
++      customer_phone: '',
++      fulfillment_method: 'pickup',
++      delivery_address: '',
++      deposit_amount: 0,
++      notes: '',
++      items: [{ sku: '', quantity_ordered: 1, unit_price: 0 }],
++    },
++  })
++
++  const { fields, append, remove } = useFieldArray({ control, name: 'items' })
++  const items = watch('items')
++  const fulfillmentMethod = watch('fulfillment_method')
++  const depositAmount = watch('deposit_amount')
++
++  const total = items.reduce((sum, item) => {
++    const qty = Number(item.quantity_ordered) || 0
++    const price = Number(item.unit_price) || 0
++    return sum + qty * price
++  }, 0)
++  const balanceDue = Math.max(0, total - (Number(depositAmount) || 0))
++
++  function handlePickInventoryItem(index: number, inventoryItemId: string) {
++    const item = inventoryItems.find((i) => String(i.id) === inventoryItemId)
++    if (!item) return
++    setValue(`items.${index}.inventory_item_id`, item.id)
++    setValue(`items.${index}.sku`, item.sku)
++    if (item.unit_price != null) {
++      setValue(`items.${index}.unit_price`, item.unit_price)
++    }
++  }
++
++  async function onSubmit(values: PreOrderFormValues) {
++    try {
++      await createSO.mutateAsync({
++        so_number: values.so_number,
++        notes: values.notes || undefined,
++        customer_name: values.customer_name,
++        customer_phone: values.customer_phone,
++        is_preorder: true,
++        fulfillment_method: values.fulfillment_method,
++        delivery_address: values.fulfillment_method === 'delivery' ? values.delivery_address : undefined,
++        deposit_amount: values.deposit_amount || 0,
++        items: values.items.map((item) => ({
++          sku: item.sku,
++          inventory_item_id: item.inventory_item_id,
++          quantity_ordered: item.quantity_ordered,
++          unit_price: item.unit_price,
++          currency: 'GHS',
++        })),
++      })
++      toast.success(`Pre-order #${values.so_number} saved`)
++      onClose()
++    } catch (err) {
++      const message = err instanceof Error ? err.message : 'Unknown error'
++      toast.error(`Failed to save pre-order: ${message}`)
++    }
++  }
++
++  return (
++    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
++      <div>
++        <Label htmlFor="preorder-number" className="mb-1 block">Order number</Label>
++        <Input id="preorder-number" {...register('so_number')} />
++        {errors.so_number && <p className="text-red-600 text-sm mt-1">{errors.so_number.message}</p>}
++      </div>
++
++      <div className="grid gap-3 md:grid-cols-2">
++        <div>
++          <Label htmlFor="customer-name" className="mb-1 block">Client name</Label>
++          <Input id="customer-name" {...register('customer_name')} placeholder="Who called" />
++          {errors.customer_name && <p className="text-red-600 text-sm mt-1">{errors.customer_name.message}</p>}
++        </div>
++        <div>
++          <Label htmlFor="customer-phone" className="mb-1 block">Phone number</Label>
++          <Input id="customer-phone" {...register('customer_phone')} placeholder="For pickup/delivery contact" />
++          {errors.customer_phone && <p className="text-red-600 text-sm mt-1">{errors.customer_phone.message}</p>}
++        </div>
++      </div>
++
++      <div>
++        <Label className="mb-1 block">How will they get it?</Label>
++        <Select
++          value={fulfillmentMethod}
++          onValueChange={(v) => setValue('fulfillment_method', v as 'pickup' | 'delivery')}
++        >
++          <SelectTrigger className="w-full">
++            <SelectValue />
++          </SelectTrigger>
++          <SelectContent>
++            <SelectItem value="pickup">Client will pick up</SelectItem>
++            <SelectItem value="delivery">Deliver to client</SelectItem>
++          </SelectContent>
++        </Select>
++      </div>
++
++      {fulfillmentMethod === 'delivery' && (
++        <div>
++          <Label htmlFor="delivery-address" className="mb-1 block">Delivery address</Label>
++          <Input id="delivery-address" {...register('delivery_address')} placeholder="Where to deliver" />
++          {errors.delivery_address && (
++            <p className="text-red-600 text-sm mt-1">{errors.delivery_address.message}</p>
++          )}
++        </div>
++      )}
++
++      <div className="space-y-3">
++        <div className="flex items-center justify-between">
++          <Label className="block">Items ordered</Label>
++          <Button
++            type="button"
++            variant="outline"
++            size="sm"
++            onClick={() => append({ sku: '', quantity_ordered: 1, unit_price: 0 })}
++          >
++            + Add line
++          </Button>
++        </div>
++
++        {fields.map((field, index) => (
++          <div key={field.id} className="rounded-xl border border-slate-200 p-3 space-y-3">
++            <div>
++              <Label className="mb-1 block text-xs">Inventory item</Label>
++              <Select
++                value={items[index]?.inventory_item_id != null ? String(items[index].inventory_item_id) : ''}
++                onValueChange={(v) => handlePickInventoryItem(index, v as string)}
++              >
++                <SelectTrigger className="w-full">
++                  <SelectValue placeholder="Pick an existing item">
++                    {(value: string) => {
++                      const picked = inventoryItems.find((i) => String(i.id) === value)
++                      return picked ? `${picked.name} (${picked.sku}) — ${picked.quantity} on hand` : undefined
++                    }}
++                  </SelectValue>
++                </SelectTrigger>
++                <SelectContent>
++                  {inventoryItems.map((item) => (
++                    <SelectItem key={item.id} value={String(item.id)}>
++                      {item.name} ({item.sku}) — {item.quantity} on hand
++                    </SelectItem>
++                  ))}
++                </SelectContent>
++              </Select>
++            </div>
++
++            <div className="grid gap-3 md:grid-cols-3">
++              <div>
++                <Label className="mb-1 block text-xs">SKU</Label>
++                <Input {...register(`items.${index}.sku`)} readOnly className="bg-slate-50" />
++                {errors.items?.[index]?.sku && (
++                  <p className="text-red-600 text-xs mt-1">{errors.items[index]?.sku?.message}</p>
++                )}
++              </div>
++              <div>
++                <Label className="mb-1 block text-xs">Quantity</Label>
++                <Input type="number" min="1" step="1" {...register(`items.${index}.quantity_ordered`)} />
++                {errors.items?.[index]?.quantity_ordered && (
++                  <p className="text-red-600 text-xs mt-1">{errors.items[index]?.quantity_ordered?.message}</p>
++                )}
++              </div>
++              <div>
++                <Label className="mb-1 block text-xs">Unit price</Label>
++                <Input type="number" min="0" step="0.01" {...register(`items.${index}.unit_price`)} />
++              </div>
++            </div>
++
++            {fields.length > 1 && (
++              <Button
++                type="button"
++                variant="ghost"
++                size="sm"
++                className="text-red-600 hover:text-red-700"
++                onClick={() => remove(index)}
++              >
++                Remove line
++              </Button>
++            )}
++          </div>
++        ))}
++        {errors.items && !Array.isArray(errors.items) && (
++          <p className="text-red-600 text-sm">{errors.items.message as string}</p>
++        )}
++      </div>
++
++      <div>
++        <Label htmlFor="deposit-amount" className="mb-1 block">Deposit collected now (optional)</Label>
++        <Input id="deposit-amount" type="number" min="0" step="0.01" {...register('deposit_amount')} placeholder="0.00" />
++        <p className="text-xs text-gray-500 mt-1">Leave at 0 if they're paying everything later.</p>
++      </div>
++
++      <div>
++        <Label htmlFor="preorder-notes" className="mb-1 block">Notes</Label>
++        <Input id="preorder-notes" {...register('notes')} placeholder="Optional" />
++      </div>
++
++      <div className="rounded-2xl border border-amber-100 bg-amber-50 p-3 space-y-1">
++        <div className="flex justify-between text-sm">
++          <span className="text-amber-700">Order total</span>
++          <span className="font-semibold text-slate-900">GHS {total.toFixed(2)}</span>
++        </div>
++        <div className="flex justify-between text-sm">
++          <span className="text-amber-700">Deposit collected</span>
++          <span className="text-slate-700">GHS {(Number(depositAmount) || 0).toFixed(2)}</span>
++        </div>
++        <div className="flex justify-between text-sm border-t border-amber-200 pt-1 mt-1">
++          <span className="font-medium text-amber-800">Balance due</span>
++          <span className="font-semibold text-slate-900">GHS {balanceDue.toFixed(2)}</span>
++        </div>
++      </div>
++
++      <Button type="submit" className="w-full bg-amber-600 hover:bg-amber-700" disabled={isSubmitting}>
++        {isSubmitting ? 'Saving...' : 'Save Pre-Order'}
++      </Button>
++    </form>
++  )
++}
+diff --git a/src/components/admin/PreOrdersTable.tsx b/src/components/admin/PreOrdersTable.tsx
+new file mode 100644
+index 0000000..92897af
+--- /dev/null
++++ b/src/components/admin/PreOrdersTable.tsx
+@@ -0,0 +1,309 @@
++import React, { useMemo, useState } from 'react'
++import { usePreOrders, useShipSalesOrder, useRecordPreOrderPayment } from '../../hooks/useSalesOrders'
++import { useInventory } from '../../hooks/useInventory'
++import { useInventoryBatches } from '../../hooks/useInventoryBatches'
++import { useLocations } from '../../hooks/useLocations'
++import { Button } from '@/components/ui/button'
++import { Input } from '@/components/ui/input'
++import { StatusBadge } from '@/components/ui/status-badge'
++import {
++  Table,
++  TableBody,
++  TableCell,
++  TableHead,
++  TableHeader,
++  TableRow,
++} from '@/components/ui/table'
++import {
++  Select,
++  SelectContent,
++  SelectItem,
++  SelectTrigger,
++  SelectValue,
++} from '@/components/ui/select'
++import Modal from '../ui/Modal'
++import { Label } from '@/components/ui/label'
++
++function orderTotal(so: { sales_order_items: { quantity_ordered: number; unit_price: number | null }[] }) {
++  return so.sales_order_items.reduce(
++    (sum, item) => sum + item.quantity_ordered * (item.unit_price ?? 0),
++    0
++  )
++}
++
++export default function PreOrdersTable() {
++  const { data: orders, isLoading, error } = usePreOrders()
++  const shipOrder = useShipSalesOrder()
++  const recordPayment = useRecordPreOrderPayment()
++  const { data: locations } = useLocations()
++  const { data: inventoryItems = [] } = useInventory()
++  const [expandedId, setExpandedId] = useState<string | null>(null)
++  const [shippingSO, setShippingSO] = useState<{ id: string } | null>(null)
++  const [shipLocationId, setShipLocationId] = useState('')
++  const [payingSO, setPayingSO] = useState<{ id: string; balance: number } | null>(null)
++  const [paymentAmount, setPaymentAmount] = useState('')
++
++  const { data: locationBatches } = useInventoryBatches(undefined, shipLocationId || undefined)
++  const { data: allBatches } = useInventoryBatches()
++  const selectedOrder = shippingSO ? orders?.find((so) => so.id === shippingSO.id) : null
++
++  // Same location-scoped availability logic as the main Sales Orders
++  // Fulfill flow -- see SalesOrdersTable.tsx for the full reasoning.
++  const availableBySku = useMemo(() => {
++    const qtyBySku: Record<string, number> = {}
++    const batchTrackedSkus = new Set<string>()
++
++    for (const row of allBatches ?? []) {
++      batchTrackedSkus.add(row.inventory_batches.sku)
++    }
++    for (const row of locationBatches ?? []) {
++      const sku = row.inventory_batches.sku
++      qtyBySku[sku] = (qtyBySku[sku] ?? 0) + Number(row.on_hand_quantity ?? 0)
++    }
++    for (const item of inventoryItems) {
++      if (batchTrackedSkus.has(item.sku)) continue
++      if (!shipLocationId || item.location_id !== shipLocationId) continue
++      qtyBySku[item.sku] = (qtyBySku[item.sku] ?? 0) + Number(item.quantity ?? 0)
++    }
++    return qtyBySku
++  }, [locationBatches, allBatches, inventoryItems, shipLocationId])
++
++  const shortages = useMemo(() => {
++    if (!selectedOrder) return []
++    return selectedOrder.sales_order_items
++      .map((item) => {
++        const remaining = item.quantity_ordered - item.quantity_shipped
++        const available = availableBySku[item.sku] ?? 0
++        return { sku: item.sku, required: remaining, available, shortage: Math.max(0, remaining - available) }
++      })
++      .filter((item) => item.shortage > 0)
++  }, [selectedOrder, availableBySku])
++
++  const hasShortage = shortages.length > 0
++  const selectedLocationName = locations?.find((loc) => loc.id === shipLocationId)?.name
++
++  if (isLoading) return <p className="text-gray-500 text-sm">Loading pre-orders...</p>
++  if (error) return <p className="text-red-600 text-sm">Error: {error.message}</p>
++
++  if (!orders || orders.length === 0) {
++    return (
++      <p className="text-gray-500 text-sm">
++        No pre-orders yet — use "New Pre-Order" above when a client calls in.
++      </p>
++    )
++  }
++
++  async function handleShip() {
++    if (!shippingSO || !shipLocationId) return
++    await shipOrder.mutateAsync({ so_id: shippingSO.id, location_id: shipLocationId })
++    setShippingSO(null)
++    setShipLocationId('')
++  }
++
++  async function handleRecordPayment() {
++    if (!payingSO) return
++    const amount = Number(paymentAmount)
++    if (!amount || amount <= 0) return
++    await recordPayment.mutateAsync({ so_id: payingSO.id, amount })
++    setPayingSO(null)
++    setPaymentAmount('')
++  }
++
++  return (
++    <div>
++      <Table>
++        <TableHeader>
++          <TableRow>
++            <TableHead>Order #</TableHead>
++            <TableHead>Client</TableHead>
++            <TableHead>Fulfillment</TableHead>
++            <TableHead>Status</TableHead>
++            <TableHead className="text-right">Total</TableHead>
++            <TableHead className="text-right">Paid</TableHead>
++            <TableHead className="text-right">Balance</TableHead>
++            <TableHead>Actions</TableHead>
++          </TableRow>
++        </TableHeader>
++        <TableBody>
++          {orders.map((so) => {
++            const total = orderTotal(so)
++            const paid = Number(so.amount_paid) || 0
++            const balance = Math.max(0, total - paid)
++            const currency = so.sales_order_items[0]?.currency ?? 'GHS'
++
++            return (
++              <React.Fragment key={so.id}>
++                <TableRow className="hover:bg-slate-50">
++                  <TableCell className="font-medium">{so.so_number}</TableCell>
++                  <TableCell>
++                    <div className="text-slate-900">{so.customer_name ?? '—'}</div>
++                    <div className="text-xs text-gray-500">{so.customer_phone ?? ''}</div>
++                  </TableCell>
++                  <TableCell className="capitalize">
++                    {so.fulfillment_method}
++                    {so.fulfillment_method === 'delivery' && so.delivery_address && (
++                      <div className="text-xs text-gray-500">{so.delivery_address}</div>
++                    )}
++                  </TableCell>
++                  <TableCell>
++                    <StatusBadge status={so.status} />
++                  </TableCell>
++                  <TableCell className="text-right font-semibold text-slate-900">
++                    {currency} {total.toFixed(2)}
++                  </TableCell>
++                  <TableCell className="text-right text-emerald-700">
++                    {currency} {paid.toFixed(2)}
++                  </TableCell>
++                  <TableCell className="text-right">
++                    {balance > 0 ? (
++                      <span className="text-amber-700 font-medium">{currency} {balance.toFixed(2)}</span>
++                    ) : (
++                      <span className="text-emerald-700 font-medium">Paid in full</span>
++                    )}
++                  </TableCell>
++                  <TableCell className="space-x-2 whitespace-nowrap">
++                    <Button
++                      variant="ghost"
++                      size="sm"
++                      onClick={() => setExpandedId(expandedId === so.id ? null : so.id)}
++                    >
++                      {expandedId === so.id ? 'Hide' : 'View'} Lines
++                    </Button>
++                    {balance > 0 && so.status !== 'cancelled' && (
++                      <Button
++                        variant="ghost"
++                        size="sm"
++                        onClick={() => setPayingSO({ id: so.id, balance })}
++                      >
++                        Record Payment
++                      </Button>
++                    )}
++                    {so.status !== 'shipped' && so.status !== 'cancelled' && (
++                      <Button
++                        variant="ghost"
++                        size="sm"
++                        onClick={() => setShippingSO({ id: so.id })}
++                      >
++                        Fulfill
++                      </Button>
++                    )}
++                  </TableCell>
++                </TableRow>
++                {expandedId === so.id && (
++                  <TableRow>
++                    <TableCell colSpan={8} className="bg-gray-50">
++                      <div className="text-sm space-y-1 py-2">
++                        {so.sales_order_items.map((item) => (
++                          <div key={item.id} className="flex justify-between text-gray-600">
++                            <span>{item.sku}</span>
++                            <span>
++                              {item.quantity_shipped} / {item.quantity_ordered} fulfilled
++                              {item.unit_price != null && ` · GHS ${item.unit_price.toFixed(2)} ea`}
++                            </span>
++                          </div>
++                        ))}
++                      </div>
++                    </TableCell>
++                  </TableRow>
++                )}
++              </React.Fragment>
++            )
++          })}
++        </TableBody>
++      </Table>
++
++      {payingSO && (
++        <Modal title="Record Payment" onClose={() => { setPayingSO(null); setPaymentAmount('') }}>
++          <div className="space-y-4">
++            <p className="text-sm text-gray-600">
++              Balance due: <strong>GHS {payingSO.balance.toFixed(2)}</strong>
++            </p>
++            <div>
++              <Label htmlFor="payment-amount" className="mb-1 block">Amount received</Label>
++              <Input
++                id="payment-amount"
++                type="number"
++                min="0"
++                step="0.01"
++                max={payingSO.balance}
++                value={paymentAmount}
++                onChange={(e) => setPaymentAmount(e.target.value)}
++                placeholder="0.00"
++              />
++            </div>
++            <div className="flex justify-end gap-3 pt-2">
++              <Button type="button" variant="outline" onClick={() => { setPayingSO(null); setPaymentAmount('') }}>
++                Cancel
++              </Button>
++              <Button
++                onClick={handleRecordPayment}
++                disabled={!paymentAmount || Number(paymentAmount) <= 0 || recordPayment.isPending}
++              >
++                {recordPayment.isPending ? 'Saving...' : 'Confirm Payment'}
++              </Button>
++            </div>
++          </div>
++        </Modal>
++      )}
++
++      {shippingSO && (
++        <Modal title="Fulfill Pre-Order" onClose={() => { setShippingSO(null); setShipLocationId('') }}>
++          <div className="space-y-4">
++            {selectedOrder && Number(selectedOrder.amount_paid) < orderTotal(selectedOrder) && (
++              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
++                This order still has a balance of GHS{' '}
++                {(orderTotal(selectedOrder) - Number(selectedOrder.amount_paid)).toFixed(2)} outstanding.
++                Confirm with the client before handing over goods.
++              </div>
++            )}
++            <div>
++              <Label className="mb-1 block">Fulfill from Location</Label>
++              <Select value={shipLocationId} onValueChange={(v) => setShipLocationId(v ?? '')}>
++                <SelectTrigger className="w-full">
++                  <SelectValue placeholder="Select a location">
++                    {(value: string) => locations?.find((loc) => loc.id === value)?.name ?? value}
++                  </SelectValue>
++                </SelectTrigger>
++                <SelectContent>
++                  {locations?.map((loc) => (
++                    <SelectItem key={loc.id} value={loc.id}>
++                      {loc.name}
++                    </SelectItem>
++                  ))}
++                </SelectContent>
++              </Select>
++            </div>
++            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
++              <p className="font-semibold">Available stock at {selectedLocationName ?? 'selected location'}:</p>
++              <ul className="mt-2 list-disc pl-5 space-y-1">
++                {selectedOrder?.sales_order_items.map((item) => (
++                  <li key={item.id}>
++                    {item.sku}: {availableBySku[item.sku] ?? 0} available · {item.quantity_ordered - item.quantity_shipped} needed
++                  </li>
++                ))}
++              </ul>
++            </div>
++            {hasShortage && (
++              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
++                <p className="font-semibold">Insufficient stock at the selected location:</p>
++                <ul className="mt-2 list-disc pl-5 space-y-1">
++                  {shortages.map((item) => (
++                    <li key={item.sku}>{item.sku}: required {item.required}, available {item.available}</li>
++                  ))}
++                </ul>
++              </div>
++            )}
++            <div className="flex justify-end gap-3 pt-2">
++              <Button type="button" variant="outline" onClick={() => { setShippingSO(null); setShipLocationId('') }}>
++                Cancel
++              </Button>
++              <Button onClick={handleShip} disabled={!shipLocationId || shipOrder.isPending || hasShortage}>
++                {shipOrder.isPending ? 'Fulfilling...' : 'Confirm Fulfillment'}
++              </Button>
++            </div>
++          </div>
++        </Modal>
++      )}
++    </div>
++  )
++}
+diff --git a/src/components/layout/Sidebar.tsx b/src/components/layout/Sidebar.tsx
+index 37db759..9119ec7 100644
+--- a/src/components/layout/Sidebar.tsx
++++ b/src/components/layout/Sidebar.tsx
+@@ -17,6 +17,7 @@ import {
+   Users,
+   Package,
+   ShoppingCart,
++  Phone,
+   AlertTriangle,
+   ArrowLeftRight,
+   Layers,
+@@ -86,6 +87,7 @@ const navSections: NavSection[] = [
+     items: [
+       { path: '/admin/orders', label: 'Purchase Orders', icon: <Package size={17} />, adminOnly: true },
+       { path: '/admin/sales-orders', label: 'Sales Orders', icon: <ShoppingCart size={17} />, adminOnly: true },
++      { path: '/admin/pre-orders', label: 'Pre-Orders', icon: <Phone size={17} />, adminOnly: true },
+       { path: '/admin/suppliers', label: 'Suppliers', icon: <Truck size={17} />, adminOnly: true },
+       { path: '/admin/returns', label: 'Returns & Replacements', icon: <RotateCcw size={17} />, adminOnly: true },
+     ],
+diff --git a/src/hooks/useSalesOrders.ts b/src/hooks/useSalesOrders.ts
+index 502f84e..9393a79 100644
+--- a/src/hooks/useSalesOrders.ts
++++ b/src/hooks/useSalesOrders.ts
+@@ -24,6 +24,11 @@ interface CreateSOInput {
+   so_number: string
+   notes?: string
+   customer_name?: string
++  customer_phone?: string
++  is_preorder?: boolean
++  fulfillment_method?: 'pickup' | 'delivery'
++  delivery_address?: string
++  deposit_amount?: number
+   items: { sku: string; inventory_item_id?: string; quantity_ordered: number; unit_price?: number; currency?: string }[]
+ }
+ 
+@@ -72,4 +77,40 @@ export function useShipSalesOrder() {
+       toast.error(`Failed to ship sales order: ${error.message}`)
+     },
+   })
++}
++
++/**
++ * Pre-orders are regular sales orders with is_preorder = 1 -- same table,
++ * same Fulfill/ship flow, same P&L reporting. This just filters the
++ * already-fetched list so the Pre-Orders screen only shows those, instead
++ * of every walk-in and POS sale too.
++ */
++export function usePreOrders() {
++  const query = useSalesOrders()
++  return {
++    ...query,
++    data: query.data?.filter((so) => Number(so.is_preorder) === 1),
++  }
++}
++
++interface RecordPaymentInput {
++  so_id: string
++  amount: number
++}
++
++export function useRecordPreOrderPayment() {
++  const queryClient = useQueryClient()
++
++  return useMutation({
++    mutationFn: async ({ so_id, amount }: RecordPaymentInput) => {
++      return await api.post(`/sales-orders/${so_id}/payment`, { amount })
++    },
++    onSuccess: () => {
++      queryClient.invalidateQueries({ queryKey: ['sales_orders'] })
++      toast.success('Payment recorded')
++    },
++    onError: (error: Error) => {
++      toast.error(`Failed to record payment: ${error.message}`)
++    },
++  })
+ }
+\ No newline at end of file
+diff --git a/src/lib/procurementSchemas.ts b/src/lib/procurementSchemas.ts
+index f1b3eca..54a7efb 100644
+--- a/src/lib/procurementSchemas.ts
++++ b/src/lib/procurementSchemas.ts
+@@ -43,4 +43,23 @@ export const adjustmentSchema = z.object({
+   notes: z.string().optional(),
+ })
+ 
+-export type AdjustmentFormValues = z.infer<typeof adjustmentSchema>
+\ No newline at end of file
++export type AdjustmentFormValues = z.infer<typeof adjustmentSchema>
++
++export const preOrderSchema = z
++  .object({
++    so_number: z.string().min(1, 'Order number is required'),
++    customer_name: z.string().min(1, "Client's name is required"),
++    customer_phone: z.string().min(1, 'Phone number is required'),
++    fulfillment_method: z.enum(['pickup', 'delivery']),
++    delivery_address: z.string().optional(),
++    deposit_amount: z.coerce.number().min(0, 'Deposit cannot be negative').optional(),
++    notes: z.string().optional(),
++    items: z.array(soLineItemSchema).min(1, 'Add at least one line item'),
++  })
++  .refine(
++    (data) => data.fulfillment_method !== 'delivery' || !!data.delivery_address?.trim(),
++    { message: 'Delivery address is required when fulfillment is by delivery', path: ['delivery_address'] }
++  )
++
++export type PreOrderFormValues = z.output<typeof preOrderSchema>
++export type PreOrderFormInput = z.input<typeof preOrderSchema>
+\ No newline at end of file
+diff --git a/src/pages/admin/AdminPreOrders.tsx b/src/pages/admin/AdminPreOrders.tsx
+new file mode 100644
+index 0000000..9f94fde
+--- /dev/null
++++ b/src/pages/admin/AdminPreOrders.tsx
+@@ -0,0 +1,32 @@
++import { useState } from 'react'
++import PreOrdersTable from '../../components/admin/PreOrdersTable'
++import PreOrderForm from '../../components/admin/PreOrderForm'
++import Modal from '../../components/ui/Modal'
++import { Button } from '@/components/ui/button'
++
++export default function AdminPreOrders() {
++  const [showModal, setShowModal] = useState(false)
++
++  return (
++    <div className="space-y-4">
++      <div className="flex items-center justify-between">
++        <div>
++          <h3 className="text-base font-semibold text-slate-900">Pre-Orders</h3>
++          <p className="mt-1 text-sm text-slate-500">
++            Orders taken by phone before the client arrives — payment collected on pickup or delivery.
++          </p>
++        </div>
++        <Button onClick={() => setShowModal(true)} className="bg-amber-600 hover:bg-amber-700">
++          New Pre-Order
++        </Button>
++      </div>
++      <PreOrdersTable />
++
++      {showModal && (
++        <Modal title="New Pre-Order" onClose={() => setShowModal(false)}>
++          <PreOrderForm onClose={() => setShowModal(false)} />
++        </Modal>
++      )}
++    </div>
++  )
++}
+diff --git a/src/types/procurement.ts b/src/types/procurement.ts
+index 0433df7..3b7995d 100644
+--- a/src/types/procurement.ts
++++ b/src/types/procurement.ts
+@@ -81,6 +81,13 @@ export interface SalesOrder {
+   so_number: string
+   status: SalesOrderStatus
+   notes: string | null
++  customer_name: string | null
++  customer_phone: string | null
++  is_preorder: boolean | number
++  fulfillment_method: 'pickup' | 'delivery'
++  delivery_address: string | null
++  deposit_amount: number
++  amount_paid: number
+   created_by: string | null
+   created_at: string
+ }
+-- 
+2.43.0
+
+
+From 2f5b4eb5931eee60a5d4d2a6c6121f5f289f8d8c Mon Sep 17 00:00:00 2001
+From: Andrews Danyo <andrews@local>
+Date: Sun, 20 Sep 2026 14:09:09 +0000
+Subject: [PATCH 2/4] Block Fulfill on pre-orders with an outstanding balance
+
+Previously only warned about unpaid balance but still let fulfillment
+proceed. Now genuinely disables the Confirm Fulfillment button when
+amount_paid is less than the order total, matching how insufficient
+stock already hard-blocks it -- releasing goods before full payment
+should require deliberately recording the payment first, not just
+clicking through a warning.
+
+Also adds a repair migration (migration_preorders_repair.sql) using
+ADD COLUMN IF NOT EXISTS, safe to re-run regardless of whether the
+original migration_preorders.sql fully applied -- for diagnosing a
+case where some pre-order columns (fulfillment_method, deposit_amount,
+amount_paid) appeared missing while others (customer_phone,
+is_preorder) were present.
+---
+ db/migration_preorders_repair.sql       | 18 ++++++++++++++++++
+ src/components/admin/PreOrdersTable.tsx | 16 ++++++++++++----
+ 2 files changed, 30 insertions(+), 4 deletions(-)
+ create mode 100644 db/migration_preorders_repair.sql
+
+diff --git a/db/migration_preorders_repair.sql b/db/migration_preorders_repair.sql
+new file mode 100644
+index 0000000..473f5d7
+--- /dev/null
++++ b/db/migration_preorders_repair.sql
+@@ -0,0 +1,18 @@
++-- ============================================================
++-- Repair migration for Pre-Orders columns
++-- Safe to run even if some or all of these columns already exist --
++-- each ADD COLUMN IF NOT EXISTS silently skips anything already there,
++-- so this won't error out partway through like a plain ALTER TABLE
++-- might have if the earlier migration only partially applied.
++-- ============================================================
++
++ALTER TABLE `sales_orders`
++  ADD COLUMN IF NOT EXISTS `customer_phone` VARCHAR(50) NULL AFTER `customer_name`,
++  ADD COLUMN IF NOT EXISTS `is_preorder` TINYINT(1) NOT NULL DEFAULT 0 AFTER `customer_phone`,
++  ADD COLUMN IF NOT EXISTS `fulfillment_method` ENUM('pickup', 'delivery') NOT NULL DEFAULT 'pickup' AFTER `is_preorder`,
++  ADD COLUMN IF NOT EXISTS `delivery_address` TEXT NULL AFTER `fulfillment_method`,
++  ADD COLUMN IF NOT EXISTS `deposit_amount` DECIMAL(12, 2) NOT NULL DEFAULT 0.00 AFTER `delivery_address`,
++  ADD COLUMN IF NOT EXISTS `amount_paid` DECIMAL(12, 2) NOT NULL DEFAULT 0.00 AFTER `deposit_amount`;
++
++-- Verify afterwards -- you should see all six of these listed:
++DESCRIBE `sales_orders`;
+diff --git a/src/components/admin/PreOrdersTable.tsx b/src/components/admin/PreOrdersTable.tsx
+index 92897af..80bdb81 100644
+--- a/src/components/admin/PreOrdersTable.tsx
++++ b/src/components/admin/PreOrdersTable.tsx
+@@ -250,10 +250,10 @@ export default function PreOrdersTable() {
+         <Modal title="Fulfill Pre-Order" onClose={() => { setShippingSO(null); setShipLocationId('') }}>
+           <div className="space-y-4">
+             {selectedOrder && Number(selectedOrder.amount_paid) < orderTotal(selectedOrder) && (
+-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+-                This order still has a balance of GHS{' '}
++              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
++                <strong>Fulfillment is blocked:</strong> this order still has a balance of GHS{' '}
+                 {(orderTotal(selectedOrder) - Number(selectedOrder.amount_paid)).toFixed(2)} outstanding.
+-                Confirm with the client before handing over goods.
++                Record the remaining payment first, then come back to fulfill.
+               </div>
+             )}
+             <div>
+@@ -297,7 +297,15 @@ export default function PreOrdersTable() {
+               <Button type="button" variant="outline" onClick={() => { setShippingSO(null); setShipLocationId('') }}>
+                 Cancel
+               </Button>
+-              <Button onClick={handleShip} disabled={!shipLocationId || shipOrder.isPending || hasShortage}>
++              <Button
++                onClick={handleShip}
++                disabled={
++                  !shipLocationId ||
++                  shipOrder.isPending ||
++                  hasShortage ||
++                  (!!selectedOrder && Number(selectedOrder.amount_paid) < orderTotal(selectedOrder))
++                }
++              >
+                 {shipOrder.isPending ? 'Fulfilling...' : 'Confirm Fulfillment'}
+               </Button>
+             </div>
+-- 
+2.43.0
+
+
+From df9ee5c5110b7c9b0bf1684d78700b4c92dc2608 Mon Sep 17 00:00:00 2001
+From: Andrews Danyo <andrews@local>
+Date: Mon, 21 Sep 2026 04:39:06 +0000
+Subject: [PATCH 3/4] Fix critical bug: fulfillment_method NULL constraint
+ violation on every regular sales order
+
+Introduced in the Pre-Orders commit: the ternary re-accessed
+$input['fulfillment_method'] directly in its true branch, skipping
+the ?? 'pickup' fallback used in the condition check. Any sales order
+that omits this field (i.e. every regular, non-pre-order sale) hit
+an undefined-array-key warning and inserted NULL, violating the
+column's NOT NULL constraint and failing outright. This broke the
+entire Sales Orders feature, not just Pre-Orders. Fixed by computing
+the default once and validating it, instead of accessing the input
+array twice with inconsistent fallback behavior.
+---
+ api/routes/sales_orders.php | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/api/routes/sales_orders.php b/api/routes/sales_orders.php
+index eb4be92..932f124 100644
+--- a/api/routes/sales_orders.php
++++ b/api/routes/sales_orders.php
+@@ -180,8 +180,10 @@ function handleSalesOrderRoutes(PDO $pdo, string $method, array $uriParts): void
+         $customerName = $input['customer_name'] ?? null;
+         $customerPhone = $input['customer_phone'] ?? null;
+         $isPreorder = !empty($input['is_preorder']) ? 1 : 0;
+-        $fulfillmentMethod = in_array($input['fulfillment_method'] ?? 'pickup', ['pickup', 'delivery'], true)
+-            ? $input['fulfillment_method'] : 'pickup';
++        $fulfillmentMethod = $input['fulfillment_method'] ?? 'pickup';
++        if (!in_array($fulfillmentMethod, ['pickup', 'delivery'], true)) {
++            $fulfillmentMethod = 'pickup';
++        }
+         $deliveryAddress = $input['delivery_address'] ?? null;
+         $depositAmount = (float)($input['deposit_amount'] ?? 0);
+         $items = $input['items'] ?? [];
+-- 
+2.43.0
+
+
+From 0b9d3501bccb82eca43b0b07c456563fceb454ad Mon Sep 17 00:00:00 2001
+From: Andrews Danyo <andrews@local>
+Date: Mon, 21 Sep 2026 04:39:06 +0000
+Subject: [PATCH 4/4] Complete the real per-sale unit_cost restoration: add the
+ actual column
+
+a5bbadb wired sales_orders.php to write and read
+sales_order_items.unit_cost, but never added the column to
+db/schema.sql -- a fresh install from that schema would immediately
+hit the exact 'write to nonexistent column' crash this repo has
+already fixed twice before (profit-loss COGS, fulfillment/POS
+checkout). Added the column to schema.sql for fresh installs, plus
+db/migration_sales_order_items_unit_cost.sql (idempotent, safe to
+re-run) for existing databases. Also stripped a UTF-8 BOM that had
+been introduced at the start of db_config.php.example -- harmless as
+a template, but would break every API response with a confusing
+'headers already sent' error if ever renamed directly to
+db_config.php without re-saving.
+---
+ api/config/db_config.php.example             |  2 +-
+ db/migration_sales_order_items_unit_cost.sql | 12 ++++++++++++
+ db/schema.sql                                |  1 +
+ 3 files changed, 14 insertions(+), 1 deletion(-)
+ create mode 100644 db/migration_sales_order_items_unit_cost.sql
+
+diff --git a/api/config/db_config.php.example b/api/config/db_config.php.example
+index 22a4b6f..ce9ce64 100644
+--- a/api/config/db_config.php.example
++++ b/api/config/db_config.php.example
+@@ -1,4 +1,4 @@
+-﻿<?php
++<?php
+ // Copy this file to db_config.php and fill in your real local database
+ // credentials. db_config.php itself is gitignored and never committed --
+ // this .example file is the only one that should ever be in version control.
+diff --git a/db/migration_sales_order_items_unit_cost.sql b/db/migration_sales_order_items_unit_cost.sql
+new file mode 100644
+index 0000000..33b9f6a
+--- /dev/null
++++ b/db/migration_sales_order_items_unit_cost.sql
+@@ -0,0 +1,12 @@
++-- ============================================================
++-- Migration: add unit_cost to sales_order_items
++-- This column stores the real weighted-average cost captured at the
++-- moment of sale (Fulfill / POS checkout), used by financials.php's
++-- COGS_SUBQUERY for accurate margin reporting. Safe to re-run --
++-- skips silently if the column already exists.
++-- ============================================================
++
++ALTER TABLE `sales_order_items`
++  ADD COLUMN IF NOT EXISTS `unit_cost` DECIMAL(12, 2) NULL AFTER `unit_price`;
++
++DESCRIBE `sales_order_items`;
+diff --git a/db/schema.sql b/db/schema.sql
+index adce6b7..dfd1252 100644
+--- a/db/schema.sql
++++ b/db/schema.sql
+@@ -198,6 +198,7 @@ CREATE TABLE IF NOT EXISTS `sales_order_items` (
+   `quantity_ordered` INT NOT NULL,
+   `quantity_shipped` INT NOT NULL DEFAULT 0,
+   `unit_price` DECIMAL(12, 2) NULL DEFAULT 0.00,
++  `unit_cost` DECIMAL(12, 2) NULL,
+   `currency` VARCHAR(10) NOT NULL DEFAULT 'GHS',
+   PRIMARY KEY (`id`),
+   KEY `idx_soi_so_id` (`so_id`),
+-- 
+2.43.0
+

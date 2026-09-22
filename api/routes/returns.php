@@ -30,18 +30,45 @@ function handleReturnRoutes(PDO $pdo, string $method, array $uriParts): void
             $qty = (int)$ret['quantity'];
             $locationId = $ret['location_id'];
             $resolution = $ret['resolution'];
+            $returnUnitCost = (float)($ret['unit_cost'] ?? 0);
 
             // Find matching item
-            $findItem = $pdo->prepare('SELECT id, name, quantity FROM inventory_items WHERE sku = ? LIMIT 1');
+            $findItem = $pdo->prepare('SELECT id, name, quantity, unit_price FROM inventory_items WHERE sku = ? LIMIT 1');
             $findItem->execute([$sku]);
             $item = $findItem->fetch();
 
             switch ($resolution) {
                 case 'restock':
-                    // Add quantity back to stock
+                case 'refund':
+                    // A refund puts money back in the customer's hands, but that's
+                    // a financial fact, not a statement about the physical item.
+                    // By default the item comes back into sellable stock here --
+                    // same treatment as an explicit "restock" resolution. If a
+                    // returned item is actually damaged/unsellable, resolve it as
+                    // write_off/supplier_credit instead, not refund.
                     if ($item) {
                         $upInv = $pdo->prepare('UPDATE inventory_items SET quantity = quantity + ?, last_updated = NOW() WHERE id = ?');
                         $upInv->execute([$qty, $item['id']]);
+
+                        // Keep inventory_batches in sync -- previously only
+                        // inventory_items.quantity moved here, so a subsequent
+                        // sale (which decrements batches, not inventory_items,
+                        // for costing) had nothing to draw from, making the
+                        // restocked units invisible to FIFO costing.
+                        $costForBatch = $returnUnitCost > 0 ? $returnUnitCost : (float)($item['unit_price'] ?? 0);
+                        $batchStmt = $pdo->prepare('
+                            INSERT INTO inventory_batches (id, sku, inventory_item_id, batch_code, initial_quantity, on_hand_quantity, unit_cost)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                        ');
+                        $batchStmt->execute([
+                            generateUuid(),
+                            $sku,
+                            $item['id'],
+                            'RET-' . strtoupper(substr(uniqid(), -6)),
+                            $qty,
+                            $qty,
+                            $costForBatch,
+                        ]);
 
                         $mov = $pdo->prepare('INSERT INTO stock_movements (id, item_id, item_name, change_amount, reason, location_id, user_email) VALUES (?, ?, ?, ?, ?, ?, ?)');
                         $mov->execute([generateUuid(), $item['id'], $item['name'], $qty, "Return Restocked: {$ret['return_number']}", $locationId, $auth['email'] ?? 'system']);
@@ -56,8 +83,23 @@ function handleReturnRoutes(PDO $pdo, string $method, array $uriParts): void
                             $upInv = $pdo->prepare('UPDATE inventory_items SET quantity = GREATEST(0, quantity - ?), last_updated = NOW() WHERE id = ?');
                             $upInv->execute([$qty, $item['id']]);
 
+                            // FIFO-decrement batches too, same reasoning as above --
+                            // a write-off previously only moved inventory_items,
+                            // leaving the batch ledger overstated indefinitely.
+                            $rem = $qty;
+                            $batchesStmt = $pdo->prepare('SELECT id, on_hand_quantity FROM inventory_batches WHERE sku = ? AND on_hand_quantity > 0 ORDER BY received_date ASC');
+                            $batchesStmt->execute([$sku]);
+                            $batches = $batchesStmt->fetchAll();
+                            foreach ($batches as $b) {
+                                if ($rem <= 0) break;
+                                $take = min((int)$b['on_hand_quantity'], $rem);
+                                $upB = $pdo->prepare('UPDATE inventory_batches SET on_hand_quantity = on_hand_quantity - ? WHERE id = ?');
+                                $upB->execute([$take, $b['id']]);
+                                $rem -= $take;
+                            }
+
                             $mov = $pdo->prepare('INSERT INTO stock_movements (id, item_id, item_name, change_amount, reason, location_id, user_email) VALUES (?, ?, ?, ?, ?, ?, ?)');
-                            $mov->execute([generateUuid(), $item['id'], $item['name'], -$qty, "Return Written Off ({$resolution}): {$ret['return_number']}", $locationId, $auth['email'] ?? 'system']);
+                            $mov->execute([generateUuid(), $item['id'], $item['name'], -$qty, "Return Written Off ($resolution): {$ret['return_number']}", $locationId, $auth['email'] ?? 'system']);
                         }
                     }
                     break;
@@ -66,10 +108,6 @@ function handleReturnRoutes(PDO $pdo, string $method, array $uriParts): void
                     // Replacement is net-zero stock: restock returned unit then ship replacement unit
                     $mov = $pdo->prepare('INSERT INTO stock_movements (id, item_id, item_name, change_amount, reason, location_id, user_email) VALUES (?, ?, ?, ?, ?, ?, ?)');
                     $mov->execute([generateUuid(), $item['id'] ?? null, $item['name'] ?? $sku, 0, "Item Replaced (Net-zero stock): {$ret['return_number']}", $locationId, $auth['email'] ?? 'system']);
-                    break;
-
-                case 'refund':
-                    // Customer keeps item or it was already written off; financial refund only
                     break;
             }
 
@@ -85,7 +123,7 @@ function handleReturnRoutes(PDO $pdo, string $method, array $uriParts): void
                 'return',
                 $id,
                 $sku,
-                ($resolution === 'restock' ? $qty : ($resolution === 'write_off' ? -$qty : 0)),
+                (in_array($resolution, ['restock', 'refund'], true) ? $qty : ($resolution === 'write_off' ? -$qty : 0)),
                 $ret['unit_cost'],
                 $auth['email'] ?? 'system'
             ]);

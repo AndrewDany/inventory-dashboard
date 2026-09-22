@@ -334,11 +334,11 @@ export default function PointOfSale() {
             />
           </div>
 
-          {/* Shipping Address */}
+          {/* Delivery Address */}
           <div>
-            <Label htmlFor="shipping-address" className="mb-1 block">Shipping Destination Address</Label>
+            <Label htmlFor="delivery-address" className="mb-1 block">Delivery Address</Label>
             <Input
-              id="shipping-address"
+              id="delivery-address"
               value={shippingAddress}
               onChange={(e) => setShippingAddress(e.target.value)}
               placeholder="Accra, Ghana"
