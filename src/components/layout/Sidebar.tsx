@@ -97,6 +97,7 @@ const navSections: NavSection[] = [
     title: 'Finance & Governance',
     items: [
       { path: '/admin/financials', label: 'P&L Financials', icon: <DollarSign size={17} />, adminOnly: true },
+      { path: '/admin/invoice-history', label: 'Invoice History', icon: <Receipt size={17} />, adminOnly: true },
       { path: '/admin/valuation', label: 'Valuation', icon: <Scale size={17} />, adminOnly: true },
       { path: '/admin/reports', label: 'Reports & Analytics', icon: <BarChart3 size={17} />, adminOnly: true },
       { path: '/admin/users', label: 'Users & Roles', icon: <Users size={17} />, adminOnly: true },

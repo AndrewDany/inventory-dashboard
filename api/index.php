@@ -24,6 +24,7 @@ require_once __DIR__ . '/routes/users.php';
 require_once __DIR__ . '/routes/audit.php';
 require_once __DIR__ . '/routes/notifications.php';
 require_once __DIR__ . '/routes/reports.php';
+require_once __DIR__ . '/routes/customers.php';
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $requestUri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
@@ -106,6 +107,10 @@ try {
 
         case 'notifications':
             handleNotificationRoutes($pdo, $method, $uriParts);
+            break;
+
+        case 'customers':
+            handleCustomerRoutes($pdo, $method, $uriParts);
             break;
 
         case 'settings':

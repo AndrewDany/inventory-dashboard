@@ -1,10 +1,11 @@
 import { useState, useMemo, useRef, lazy, Suspense } from 'react'
-import { Plus, Minus, Trash2, ScanLine, Receipt, Printer } from 'lucide-react'
+import { Plus, Minus, Trash2, ScanLine, Receipt, Printer, Mail, MessageCircle, Send, Share2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useInventory } from '../hooks/useInventory'
 import type { InventoryItem } from '../types/inventory'
 import { useLocations } from '../hooks/useLocations'
 import { usePointOfSaleCheckout, type CartLine } from '../hooks/usePointOfSale'
+import { api } from '../lib/apiClient'
 const BarcodeScanner = lazy(() => import('../components/inventory/BarcodeScanner'))
 import PageLayout from '../components/layout/PageLayout'
 import Modal from '../components/ui/Modal'
@@ -35,9 +36,14 @@ export default function PointOfSale() {
   const [customerName, setCustomerName] = useState('')
   const [customerEmail, setCustomerEmail] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
+  const [customerVerified, setCustomerVerified] = useState(false)
+  const [isVerifyingCustomer, setIsVerifyingCustomer] = useState(false)
   const [shippingAddress, setShippingAddress] = useState('')
   const [paymentStatus, setPaymentStatus] = useState('Paid')
   const [invoiceUrl, setInvoiceUrl] = useState<string | null>(null)
+  const [invoiceNumber, setInvoiceNumber] = useState('')
+  const [invoiceShareText, setInvoiceShareText] = useState('')
+  const [invoiceCount, setInvoiceCount] = useState(() => Number(localStorage.getItem('pos_invoice_count') || 0))
   const [showInvoiceModal, setShowInvoiceModal] = useState(false)
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
@@ -96,6 +102,21 @@ export default function PointOfSale() {
   async function handleCheckout() {
     if (cart.length === 0 || !locationId) return
 
+    if (customerPhone && !/^\d{10}$/.test(customerPhone)) {
+      toast.error('Contact phone must contain exactly 10 digits.')
+      return
+    }
+
+    if (customerPhone && !customerName.trim()) {
+      toast.error('Enter the customer name before completing the first purchase.')
+      return
+    }
+
+    if (customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+      toast.error('Enter a valid email address.')
+      return
+    }
+
     const hasOversell = cart.some((line) => (stockBySku[line.item.sku] ?? 0) < line.quantity)
     if (hasOversell) {
       toast.error('One or more items exceed available stock at this location.')
@@ -103,8 +124,10 @@ export default function PointOfSale() {
     }
 
     try {
-      const blobUrl = await checkout.mutateAsync({
+      const nextCount = invoiceCount + 1
+      const invoice = await checkout.mutateAsync({
         cart,
+        invoiceCount: nextCount,
         locationId,
         customerName: customerName || undefined,
         customerEmail: customerEmail || undefined,
@@ -113,12 +136,17 @@ export default function PointOfSale() {
         paymentStatus,
         companyName: 'Inventory Dashboard',
       })
-      setInvoiceUrl(blobUrl ?? null)
+      localStorage.setItem('pos_invoice_count', String(nextCount))
+      setInvoiceCount(nextCount)
+      setInvoiceNumber(invoice.invoiceNumber)
+      setInvoiceShareText(invoice.shareText)
+      setInvoiceUrl(invoice.blobUrl ?? null)
       setShowInvoiceModal(true)
       setCart([])
       setCustomerName('')
       setCustomerEmail('')
       setCustomerPhone('')
+      setCustomerVerified(false)
       setShippingAddress('')
       setPaymentStatus('Paid')
     } catch {
@@ -126,9 +154,96 @@ export default function PointOfSale() {
     }
   }
 
+  async function verifyCustomer() {
+    if (!/^\d{10}$/.test(customerPhone)) {
+      toast.error('Enter exactly 10 digits to verify the customer.')
+      return
+    }
+
+    setIsVerifyingCustomer(true)
+    try {
+      const customer = await api.get<{
+        full_name: string
+        phone: string
+        email: string | null
+        delivery_address: string | null
+      } | null>(`/customers?phone=${customerPhone}`)
+
+      if (!customer) {
+        setCustomerVerified(false)
+        toast.info('New customer. Enter their name, then complete the purchase to register them.')
+        return
+      }
+
+      setCustomerName(customer.full_name)
+      setCustomerEmail(customer.email ?? '')
+      setShippingAddress(customer.delivery_address ?? '')
+      setCustomerVerified(true)
+      toast.success(`Customer verified: ${customer.full_name}`)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Customer verification failed'
+      toast.error(message)
+    } finally {
+      setIsVerifyingCustomer(false)
+    }
+  }
+
   function handlePrint() {
     if (iframeRef.current) {
       iframeRef.current.contentWindow?.print()
+    }
+  }
+
+  function downloadInvoicePdf() {
+    if (!invoiceUrl) return
+    const link = document.createElement('a')
+    link.href = invoiceUrl
+    link.download = `invoice-${invoiceNumber}.pdf`
+    link.click()
+  }
+
+  function shareTo(channel: 'whatsapp' | 'email' | 'telegram') {
+    downloadInvoicePdf()
+    const urls = {
+      whatsapp: 'whatsapp://send',
+      email: `mailto:?subject=${encodeURIComponent(`Invoice ${invoiceNumber} PDF`)}`,
+      telegram: 'https://web.telegram.org/',
+    }
+    window.open(urls[channel], '_blank', 'noopener,noreferrer')
+    toast.info(`Invoice ${invoiceNumber} PDF downloaded. Attach it in ${channel}.`)
+  }
+
+  async function handleWhatsAppShare() {
+    if (navigator.share && invoiceUrl) {
+      try {
+        const pdfBlob = await fetch(invoiceUrl).then((response) => response.blob())
+        const pdfFile = new File([pdfBlob], `invoice-${invoiceNumber}.pdf`, { type: 'application/pdf' })
+        if (navigator.canShare?.({ files: [pdfFile] })) {
+          await navigator.share({ title: `Invoice ${invoiceNumber}`, files: [pdfFile] })
+          return
+        }
+      } catch {
+        // Fall back to download and the installed WhatsApp app below.
+      }
+    }
+
+    shareTo('whatsapp')
+  }
+
+  async function handleNativeShare() {
+    if (!navigator.share) {
+      toast.info('Native sharing is not supported in this browser.')
+      return
+    }
+    try {
+      const pdfBlob = invoiceUrl ? await fetch(invoiceUrl).then((response) => response.blob()) : null
+      const pdfFile = pdfBlob ? new File([pdfBlob], `invoice-${invoiceNumber}.pdf`, { type: 'application/pdf' }) : null
+      const shareData = pdfFile && navigator.canShare?.({ files: [pdfFile] })
+        ? { title: `Invoice ${invoiceNumber}`, text: invoiceShareText, files: [pdfFile] }
+        : { title: `Invoice ${invoiceNumber}`, text: invoiceShareText }
+      await navigator.share(shareData)
+    } catch {
+      // The share sheet may be closed without completing the share.
     }
   }
 
@@ -141,6 +256,13 @@ export default function PointOfSale() {
 
   return (
     <PageLayout title="Point of Sale">
+      <div className="mb-4 flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Invoices issued</p>
+          <p className="text-2xl font-bold text-slate-900">{invoiceCount}</p>
+        </div>
+        <p className="text-xs text-slate-500">Next invoice: {invoiceCount + 1}</p>
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Left: search + item results (3/4 width) */}
         <div className="lg:col-span-3 space-y-4">
@@ -319,19 +441,33 @@ export default function PointOfSale() {
               value={customerEmail}
               onChange={(e) => setCustomerEmail(e.target.value)}
               placeholder="john@example.com"
+              autoComplete="email"
             />
           </div>
 
           {/* Contact Phone */}
           <div>
             <Label htmlFor="customer-phone" className="mb-1 block">Contact Phone</Label>
-            <Input
-              id="customer-phone"
-              type="tel"
-              value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
-              placeholder="+233 55 123 4567"
-            />
+            <div className="flex gap-2">
+              <Input
+                id="customer-phone"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]{10}"
+                maxLength={10}
+                value={customerPhone}
+                onChange={(e) => {
+                  setCustomerPhone(e.target.value.replace(/\D/g, '').slice(0, 10))
+                  setCustomerVerified(false)
+                }}
+                placeholder="0241234567"
+              />
+              <Button type="button" variant="outline" onClick={verifyCustomer} disabled={isVerifyingCustomer || customerPhone.length !== 10}>
+                {isVerifyingCustomer ? 'Checking...' : 'Verify'}
+              </Button>
+            </div>
+            <p className="mt-1 text-xs text-slate-500">Enter 10 digits only.</p>
+            {customerVerified && <p className="mt-1 text-xs font-medium text-emerald-600">Customer details verified.</p>}
           </div>
 
           {/* Delivery Address */}
@@ -399,6 +535,10 @@ export default function PointOfSale() {
       {showInvoiceModal && invoiceUrl && (
         <Modal title="Invoice Preview" onClose={() => { setShowInvoiceModal(false) }}>
           <div className="space-y-4">
+            <div className="rounded-lg border border-indigo-100 bg-indigo-50 p-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-indigo-600">Invoice {invoiceNumber}</p>
+              <p className="mt-1 text-sm text-indigo-900">Invoice {invoiceCount} of your issued invoices</p>
+            </div>
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <iframe
                 ref={iframeRef}
@@ -406,6 +546,20 @@ export default function PointOfSale() {
                 className="w-full h-[500px]"
                 title="Invoice Preview"
               />
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <Button variant="outline" onClick={handleWhatsAppShare} title="Share invoice PDF to WhatsApp">
+                <MessageCircle size={16} className="mr-2 text-emerald-600" /> WhatsApp
+              </Button>
+              <Button variant="outline" onClick={() => shareTo('email')} title="Share by email">
+                <Mail size={16} className="mr-2 text-blue-600" /> Email
+              </Button>
+              <Button variant="outline" onClick={() => shareTo('telegram')} title="Share on Telegram">
+                <Send size={16} className="mr-2 text-sky-600" /> Telegram
+              </Button>
+              <Button variant="outline" onClick={handleNativeShare} title="Share invoice">
+                <Share2 size={16} className="mr-2" /> Share
+              </Button>
             </div>
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={() => { setShowInvoiceModal(false) }}>

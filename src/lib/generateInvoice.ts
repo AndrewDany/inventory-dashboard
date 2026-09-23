@@ -11,6 +11,7 @@ export interface InvoiceLineItem {
 
 export interface InvoiceData {
   invoiceNumber: string
+  invoiceCount?: number
   soNumber: string
   customerName?: string
   customerEmail?: string
@@ -34,21 +35,38 @@ export function generateInvoiceBlob(data: InvoiceData): string {
 
   doc.setFontSize(10)
   doc.setFont('helvetica', 'normal')
-  doc.setTextColor(120)
-  doc.text('INVOICE', 190, 20, { align: 'right' })
-  doc.text(`Invoice #: ${data.invoiceNumber}`, 190, 26, { align: 'right' })
-  doc.text(`Order #: ${data.soNumber}`, 190, 31, { align: 'right' })
-  doc.text(`Date: ${new Date().toLocaleDateString()}`, 190, 36, { align: 'right' })
+  doc.setTextColor(90)
+  doc.text('INVOICE', 196, 20, { align: 'right' })
+  doc.text(`Invoice #: ${data.invoiceNumber}`, 196, 26, { align: 'right' })
+  const issuedAt = new Date()
+  if (data.invoiceCount != null) {
+    doc.setFillColor(30, 41, 59)
+    doc.roundedRect(14, 28, 42, 28, 3, 3, 'F')
+    doc.setTextColor(255)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(24)
+    doc.text(String(data.invoiceCount), 35, 45, { align: 'center' })
+    doc.setFontSize(7)
+    doc.text('INVOICE COUNT', 35, 51, { align: 'center' })
+    doc.setTextColor(90)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    doc.text(`Order #: ${data.soNumber}`, 196, 36, { align: 'right' })
+    doc.text(`Date & Time: ${issuedAt.toLocaleString()}`, 196, 42, { align: 'right' })
+  } else {
+    doc.text(`Order #: ${data.soNumber}`, 196, 32, { align: 'right' })
+    doc.text(`Date & Time: ${issuedAt.toLocaleString()}`, 196, 38, { align: 'right' })
+  }
 
   // Customer Details Section
   doc.setTextColor(0)
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(11)
-  doc.text('Customer Bill', 14, 48)
+  doc.text('Customer Bill', 14, 66)
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(10)
 
-  let yPos = 56
+  let yPos = 74
   if (data.customerName) {
     doc.text(`Customer Name: ${data.customerName}`, 14, yPos)
     yPos += 6
@@ -67,11 +85,11 @@ export function generateInvoiceBlob(data: InvoiceData): string {
   }
 
   doc.setFont('helvetica', 'bold')
-  doc.text(`Payment Status: ${data.paymentStatus}`, 120, 48)
+  doc.text(`Payment Status: ${data.paymentStatus}`, 124, 66)
   doc.setFont('helvetica', 'normal')
 
   if (data.processedBy) {
-    doc.text(`Processed by: ${data.processedBy}`, 120, 54)
+    doc.text(`Processed by: ${data.processedBy}`, 124, 72)
   }
 
   const tableStartY = yPos + 8
@@ -86,12 +104,17 @@ export function generateInvoiceBlob(data: InvoiceData): string {
       `${item.quantity}${item.unitLabel ? ` ${item.unitLabel}` : ''}`,
       `GHS ${(item.quantity * item.unitPrice).toFixed(2)}`,
     ]),
-    headStyles: { fillColor: [79, 70, 229] },
-    styles: { fontSize: 9 },
+    headStyles: { fillColor: [79, 70, 229], halign: 'center' },
+    styles: { fontSize: 9, cellPadding: 3, valign: 'middle' },
     columnStyles: {
-      1: { halign: 'right' },
-      2: { halign: 'right' },
-      3: { halign: 'right' },
+      0: { cellWidth: 72, halign: 'left' },
+      1: { cellWidth: 38, halign: 'center' },
+      2: { cellWidth: 28, halign: 'center' },
+      3: { cellWidth: 44, halign: 'right' },
+    },
+    didParseCell: (hookData) => {
+      if (hookData.section === 'head' && hookData.column.index === 0) hookData.cell.styles.halign = 'left'
+      if (hookData.section === 'head' && hookData.column.index === 3) hookData.cell.styles.halign = 'right'
     },
   })
 

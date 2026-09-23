@@ -40,6 +40,7 @@ export function invoiceUnitLabel(line: CartLine): string {
 
 interface CheckoutInput {
   cart: CartLine[]
+  invoiceCount: number
   locationId: string
   customerName?: string
   customerEmail?: string
@@ -55,6 +56,7 @@ export function usePointOfSaleCheckout() {
   return useMutation({
     mutationFn: async ({
       cart,
+      invoiceCount,
       locationId,
       customerName,
       customerEmail,
@@ -62,11 +64,14 @@ export function usePointOfSaleCheckout() {
       shippingAddress,
       paymentStatus,
       companyName,
-    }: CheckoutInput): Promise<string> => {
+    }: CheckoutInput): Promise<{ blobUrl: string; invoiceNumber: string; shareText: string }> => {
       const user = getStoredUser<AuthUser>()
 
       const checkoutPayload = {
         customer_name: customerName,
+        customer_phone: customerPhone,
+        customer_email: customerEmail,
+        shipping_address: shippingAddress,
         payment_method: paymentStatus,
         location_id: locationId,
         items: cart.map((line) => ({
@@ -83,6 +88,7 @@ export function usePointOfSaleCheckout() {
 
       const blobUrl = generateInvoiceBlob({
         invoiceNumber: soNumber,
+        invoiceCount,
         soNumber,
         customerName,
         customerEmail,
@@ -100,7 +106,11 @@ export function usePointOfSaleCheckout() {
         })),
       })
 
-      return blobUrl
+      return {
+        blobUrl,
+        invoiceNumber: soNumber,
+        shareText: `Invoice ${soNumber} from ${companyName}. Total: GHS ${cart.reduce((sum, line) => sum + lineSubtotal(line), 0).toFixed(2)}.`,
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory_items'] })

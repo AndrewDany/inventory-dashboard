@@ -288,10 +288,16 @@ function handlePosCheckout(PDO $pdo, string $method): void
     $input = getJsonInput();
     $items = $input['items'] ?? []; // [{ id, sku, name, quantity, unit_price }]
     $customerName = $input['customer_name'] ?? 'Walk-in Customer';
+    $customerPhone = preg_replace('/\D+/', '', (string)($input['customer_phone'] ?? ''));
+    $customerEmail = trim((string)($input['customer_email'] ?? '')) ?: null;
+    $shippingAddress = trim((string)($input['shipping_address'] ?? '')) ?: null;
     $paymentMethod = $input['payment_method'] ?? 'cash';
     $notes = $input['notes'] ?? 'POS Sale';
 
     if (count($items) === 0) jsonError('Cart is empty', 400);
+    if ($customerPhone !== '' && !preg_match('/^\d{10}$/', $customerPhone)) jsonError('Phone number must contain exactly 10 digits', 400);
+    if ($customerEmail !== null && !filter_var($customerEmail, FILTER_VALIDATE_EMAIL)) jsonError('A valid email address is required', 400);
+    if ($customerPhone !== '' && trim($customerName) === '') jsonError('Customer name is required when a phone number is provided', 400);
 
     $soNumber = 'POS-' . strtoupper(substr(uniqid(), -6));
     $soId = generateUuid();
@@ -307,6 +313,11 @@ function handlePosCheckout(PDO $pdo, string $method): void
 
     $pdo->beginTransaction();
     try {
+        if ($customerPhone !== '') {
+            $customerStmt = $pdo->prepare('INSERT INTO customers (id, full_name, phone, email, delivery_address, first_purchase_at, last_purchase_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW()) ON DUPLICATE KEY UPDATE full_name = VALUES(full_name), email = VALUES(email), delivery_address = VALUES(delivery_address), last_purchase_at = NOW()');
+            $customerStmt->execute([generateUuid(), $customerName, $customerPhone, $customerEmail, $shippingAddress]);
+        }
+
         // 1. Create completed sales order
         $stmt = $pdo->prepare('INSERT INTO sales_orders (id, so_number, status, notes, customer_name, amount_paid, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)');
         $stmt->execute([$soId, $soNumber, 'shipped', "POS ($paymentMethod): $notes", $customerName, $totalSale, $auth['email'] ?? 'system']);
