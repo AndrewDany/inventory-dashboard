@@ -22,10 +22,17 @@ import CategoryDonut from '../components/dashboard/CategoryDonut'
 import RecentActivityFeed from '../components/dashboard/RecentActivityFeed'
 import UsagePanel from '../components/dashboard/UsagePanel'
 import { useLanguage } from '@/contexts/LanguageContext'
+import StaffDashboard from './StaffDashboard'
+import LocationForm from '../components/admin/LocationForm'
 
 export default function Dashboard() {
   const { t } = useLanguage()
   const { data: profile } = useProfile()
+
+  if (profile?.role === 'staff') {
+    return <StaffDashboard />
+  }
+
   const { data: items, isLoading, error } = useInventory()
   const { data: monthlyFinancials } = useMonthlyFinancials()
   const deleteItem = useDeleteInventoryItem()
@@ -37,6 +44,7 @@ export default function Dashboard() {
   const [showImportModal, setShowImportModal] = useState(false)
   const [showLabelPrinter, setShowLabelPrinter] = useState(false)
   const [showBulkAddModal, setShowBulkAddModal] = useState(false)
+  const [showAddLocationModal, setShowAddLocationModal] = useState(false)
 
   const isAdmin = profile?.role === 'admin'
   const isDemo = profile?.role === 'demo'
@@ -62,12 +70,13 @@ export default function Dashboard() {
 
   return (
     <PageLayout
-      title="Sam Dam Ventures"
+      title="Dashboard"
       onAddItem={isDemo ? undefined : () => setShowAddModal(true)}
       onBulkAddProducts={isDemo ? undefined : () => setShowBulkAddModal(true)}
       onSellItem={isDemo ? undefined : () => navigate('/pos')}
       onChangePassword={isDemo ? undefined : () => setShowPasswordForm(true)}
       onUpdateBudget={isAdmin && !isDemo ? handleUpdateBudget : undefined}
+      onAddLocation={isAdmin && !isDemo ? () => setShowAddLocationModal(true) : undefined}
     >
       {/* Zenith Welcome Banner */}
       <div className="mb-6">
@@ -185,6 +194,12 @@ export default function Dashboard() {
       {showLabelPrinter && (
         <Modal title="Print Barcode Labels" onClose={() => setShowLabelPrinter(false)}>
           <BarcodeLabelPrinter onClose={() => setShowLabelPrinter(false)} />
+        </Modal>
+      )}
+
+      {showAddLocationModal && (
+        <Modal title="Add Location" onClose={() => setShowAddLocationModal(false)}>
+          <LocationForm onClose={() => setShowAddLocationModal(false)} />
         </Modal>
       )}
     </PageLayout>

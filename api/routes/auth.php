@@ -45,6 +45,42 @@ function handleAuthRoutes(PDO $pdo, string $method, array $uriParts): void
 
             $token = JWT::encode($tokenPayload, $config['jwt_secret'], $config['jwt_expiry_seconds']);
 
+            // Record login in activity_logs and audit_events
+            try {
+                $clientIp = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
+                $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+                $logStmt = $pdo->prepare('INSERT INTO activity_logs (id, user_id, user_email, action, item_name, entity_type, entity_id, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+                $logStmt->execute([
+                    generateUuid(),
+                    $user['id'],
+                    $user['email'],
+                    'login',
+                    $user['full_name'] ? "{$user['full_name']} ({$user['role']})" : "User Login ({$user['role']})",
+                    'auth',
+                    $user['id'],
+                    json_encode([
+                        'ip' => $clientIp,
+                        'user_agent' => substr($userAgent, 0, 255),
+                        'role' => $user['role'],
+                    ]),
+                ]);
+
+                $auditStmt = $pdo->prepare('INSERT INTO audit_events (id, event_type, entity_type, entity_id, sku, quantity_delta, unit_cost, actor_user_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+                $auditStmt->execute([
+                    generateUuid(),
+                    'user_login',
+                    'session',
+                    $user['id'],
+                    null,
+                    0,
+                    0.00,
+                    $user['email'],
+                ]);
+            } catch (Throwable $e) {
+                // Non-fatal: do not block login if logging fails
+                error_log("Failed to log login activity: " . $e->getMessage());
+            }
+
             jsonSuccess([
                 'token' => $token,
                 'user' => [

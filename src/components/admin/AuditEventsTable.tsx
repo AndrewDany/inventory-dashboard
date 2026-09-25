@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Search, PackageCheck, Truck, SlidersHorizontal, Activity } from 'lucide-react'
+import { Search, PackageCheck, Truck, SlidersHorizontal, Activity, LogIn } from 'lucide-react'
 import { useAuditEvents } from '../../hooks/useAuditEvents'
 import { relativeTime } from '../../lib/relativeTime'
 import { Input } from '@/components/ui/input'
@@ -16,6 +16,7 @@ const EVENT_TYPE_META: Record<string, { label: string; icon: typeof Activity; bg
   purchase_order_received: { label: 'PO Received', icon: PackageCheck, bg: 'bg-indigo-50', text: 'text-indigo-700' },
   sales_order_shipped: { label: 'SO Shipped', icon: Truck, bg: 'bg-blue-50', text: 'text-blue-700' },
   inventory_adjustment: { label: 'Adjustment', icon: SlidersHorizontal, bg: 'bg-amber-50', text: 'text-amber-700' },
+  user_login: { label: 'User Login', icon: LogIn, bg: 'bg-teal-50', text: 'text-teal-700' },
 }
 
 const DEFAULT_META = { icon: Activity, bg: 'bg-slate-100', text: 'text-slate-600' }

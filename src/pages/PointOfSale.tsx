@@ -493,9 +493,7 @@ export default function PointOfSale() {
             <Label className="mb-1 block">Location</Label>
             <Select value={locationId} onValueChange={(v) => setLocationId(v ?? '')}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a location">
-                  {(value: string) => locations?.find((loc) => loc.id === value)?.name}
-                </SelectValue>
+                <SelectValue placeholder="Select a location" />
               </SelectTrigger>
               <SelectContent>
                 {locations?.map((loc) => (

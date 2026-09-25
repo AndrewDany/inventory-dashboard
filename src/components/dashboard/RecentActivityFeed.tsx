@@ -4,6 +4,7 @@ import type { StockMovement } from '../../hooks/useStockMovements'
 
 interface RecentActivityFeedProps {
   movements: StockMovement[]
+  hideViewAll?: boolean
 }
 
 function timeAgo(dateString: string) {
@@ -19,7 +20,7 @@ function timeAgo(dateString: string) {
   return new Date(dateString).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
-export default function RecentActivityFeed({ movements }: RecentActivityFeedProps) {
+export default function RecentActivityFeed({ movements, hideViewAll }: RecentActivityFeedProps) {
   const recent = movements.slice(0, 15)
 
   return (
@@ -27,12 +28,14 @@ export default function RecentActivityFeed({ movements }: RecentActivityFeedProp
       <div>
         <div className="flex items-center justify-between mb-1">
           <h4 className="text-sm font-semibold text-slate-900">Recent Stock Activity</h4>
-          <Link
-            to="/admin/movements"
-            className="text-xs font-medium text-indigo-600 hover:text-indigo-700 hover:underline"
-          >
-            View all →
-          </Link>
+          {!hideViewAll && (
+            <Link
+              to="/admin/movements"
+              className="text-xs font-medium text-indigo-600 hover:text-indigo-700 hover:underline"
+            >
+              View all →
+            </Link>
+          )}
         </div>
         <p className="text-xs text-slate-500 mb-4">Latest inbound, sales, and movement audit events</p>
 
