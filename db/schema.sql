@@ -161,7 +161,7 @@ CREATE TABLE IF NOT EXISTS `purchase_order_items` (
   `quantity_ordered` INT NOT NULL,
   `quantity_received` INT NOT NULL DEFAULT 0,
   `unit_cost` DECIMAL(12, 2) NULL DEFAULT 0.00,
-  `currency` VARCHAR(10) NOT NULL DEFAULT 'GHS',
+  `currency` VARCHAR(10) NOT NULL DEFAULT 'GHC',
   PRIMARY KEY (`id`),
   KEY `idx_poi_po_id` (`po_id`),
   CONSTRAINT `fk_poi_po` FOREIGN KEY (`po_id`) REFERENCES `purchase_orders` (`id`) ON DELETE CASCADE
@@ -199,7 +199,7 @@ CREATE TABLE IF NOT EXISTS `sales_order_items` (
   `quantity_shipped` INT NOT NULL DEFAULT 0,
   `unit_price` DECIMAL(12, 2) NULL DEFAULT 0.00,
   `unit_cost` DECIMAL(12, 2) NULL,
-  `currency` VARCHAR(10) NOT NULL DEFAULT 'GHS',
+  `currency` VARCHAR(10) NOT NULL DEFAULT 'GHC',
   PRIMARY KEY (`id`),
   KEY `idx_soi_so_id` (`so_id`),
   CONSTRAINT `fk_soi_so` FOREIGN KEY (`so_id`) REFERENCES `sales_orders` (`id`) ON DELETE CASCADE

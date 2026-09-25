@@ -62,7 +62,7 @@ export default function Dashboard() {
 
   return (
     <PageLayout
-      title="Inventory Dashboard"
+      title="Sam Dam Ventures"
       onAddItem={isDemo ? undefined : () => setShowAddModal(true)}
       onBulkAddProducts={isDemo ? undefined : () => setShowBulkAddModal(true)}
       onSellItem={isDemo ? undefined : () => navigate('/pos')}

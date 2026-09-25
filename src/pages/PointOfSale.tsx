@@ -39,11 +39,15 @@ export default function PointOfSale() {
   const [customerVerified, setCustomerVerified] = useState(false)
   const [isVerifyingCustomer, setIsVerifyingCustomer] = useState(false)
   const [shippingAddress, setShippingAddress] = useState('')
-  const [paymentStatus, setPaymentStatus] = useState('Paid')
+  const [paymentStatus, setPaymentStatus] = useState('Cash')
   const [invoiceUrl, setInvoiceUrl] = useState<string | null>(null)
   const [invoiceNumber, setInvoiceNumber] = useState('')
   const [invoiceShareText, setInvoiceShareText] = useState('')
-  const [invoiceCount, setInvoiceCount] = useState(() => Number(localStorage.getItem('pos_invoice_count') || 0))
+  const [invoiceCount, setInvoiceCount] = useState(() => {
+    const today = new Date().toISOString().slice(0, 10)
+    const stored = JSON.parse(localStorage.getItem('pos_invoice_daily_count') || 'null') as { date?: string; count?: number } | null
+    return stored?.date === today ? Number(stored.count || 0) : 0
+  })
   const [showInvoiceModal, setShowInvoiceModal] = useState(false)
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
@@ -134,9 +138,12 @@ export default function PointOfSale() {
         customerPhone: customerPhone || undefined,
         shippingAddress: shippingAddress || undefined,
         paymentStatus,
-        companyName: 'Inventory Dashboard',
+        companyName: 'samdamventures.com',
       })
-      localStorage.setItem('pos_invoice_count', String(nextCount))
+      localStorage.setItem('pos_invoice_daily_count', JSON.stringify({
+        date: new Date().toISOString().slice(0, 10),
+        count: nextCount,
+      }))
       setInvoiceCount(nextCount)
       setInvoiceNumber(invoice.invoiceNumber)
       setInvoiceShareText(invoice.shareText)
@@ -148,7 +155,7 @@ export default function PointOfSale() {
       setCustomerPhone('')
       setCustomerVerified(false)
       setShippingAddress('')
-      setPaymentStatus('Paid')
+      setPaymentStatus('Cash')
     } catch {
       // Error handled by mutation's onError toast
     }
@@ -308,7 +315,7 @@ export default function PointOfSale() {
                         {item.sku} · {item.quantity} {getUnitLabel(item)} in stock
                       </p>
                     </div>
-                    <span className="text-sm font-medium">GHS {(item.unit_price ?? 0).toFixed(2)}</span>
+                    <span className="text-sm font-medium">GHC {(item.unit_price ?? 0).toFixed(2)}</span>
                   </button>
                 ))}
               </div>
@@ -345,7 +352,7 @@ export default function PointOfSale() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        GHS {(line.item.unit_price ?? 0).toFixed(2)}
+                        GHC {(line.item.unit_price ?? 0).toFixed(2)}
                         {line.item.unit_of_measure && (
                           <span className="text-xs text-gray-400 ml-1">/{line.item.unit_of_measure}</span>
                         )}
@@ -386,7 +393,7 @@ export default function PointOfSale() {
                         )}
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        GHS {(line.quantity * (line.item.unit_price ?? 0)).toFixed(2)}
+                        GHC {(line.quantity * (line.item.unit_price ?? 0)).toFixed(2)}
                       </TableCell>
                       <TableCell className="text-right">
                         <button
@@ -406,11 +413,11 @@ export default function PointOfSale() {
               <div className="mt-4 space-y-1 border-t border-gray-100 pt-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Basket Subtotal:</span>
-                  <span className="font-medium">GHS {subtotal.toFixed(2)}</span>
+                  <span className="font-medium">GHC {subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm font-bold">
                   <span className="text-gray-900">Grand Total Paid:</span>
-                  <span className="text-lg">GHS {grandTotal.toFixed(2)}</span>
+                  <span className="text-lg">GHC {grandTotal.toFixed(2)}</span>
                 </div>
               </div>
             )}
@@ -500,24 +507,23 @@ export default function PointOfSale() {
             </Select>
           </div>
 
-          {/* Payment Status */}
+          {/* Payment Method */}
           <div>
-            <Label className="mb-1 block">Payment Status</Label>
-            <Select value={paymentStatus} onValueChange={(v) => setPaymentStatus(v ?? 'Paid')}>
+            <Label className="mb-1 block">Payment Method</Label>
+            <Select value={paymentStatus} onValueChange={(v) => setPaymentStatus(v ?? 'Cash')}>
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Paid">Paid</SelectItem>
-                <SelectItem value="Pending">Pending</SelectItem>
-                <SelectItem value="Canceled">Canceled</SelectItem>
+                <SelectItem value="Cash">Cash</SelectItem>
+                <SelectItem value="Mobile Money">Mobile Money</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="border-t border-gray-100 pt-3 flex justify-between text-sm font-semibold">
             <span>Total</span>
-            <span>GHS {grandTotal.toFixed(2)}</span>
+            <span>GHC {grandTotal.toFixed(2)}</span>
           </div>
 
           <Button
@@ -543,21 +549,21 @@ export default function PointOfSale() {
               <iframe
                 ref={iframeRef}
                 src={invoiceUrl}
-                className="w-full h-[500px]"
+                className="w-full h-125"
                 title="Invoice Preview"
               />
             </div>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <Button variant="outline" onClick={handleWhatsAppShare} title="Share invoice PDF to WhatsApp">
+            <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
+              <Button className="min-w-35 flex-1" variant="outline" onClick={handleWhatsAppShare} title="Share invoice PDF to WhatsApp">
                 <MessageCircle size={16} className="mr-2 text-emerald-600" /> WhatsApp
               </Button>
-              <Button variant="outline" onClick={() => shareTo('email')} title="Share by email">
+              <Button className="min-w-30 flex-1" variant="outline" onClick={() => shareTo('email')} title="Share by email">
                 <Mail size={16} className="mr-2 text-blue-600" /> Email
               </Button>
-              <Button variant="outline" onClick={() => shareTo('telegram')} title="Share on Telegram">
+              <Button className="min-w-30 flex-1" variant="outline" onClick={() => shareTo('telegram')} title="Share on Telegram">
                 <Send size={16} className="mr-2 text-sky-600" /> Telegram
               </Button>
-              <Button variant="outline" onClick={handleNativeShare} title="Share invoice">
+              <Button className="min-w-30 flex-1" variant="outline" onClick={handleNativeShare} title="Share invoice">
                 <Share2 size={16} className="mr-2" /> Share
               </Button>
             </div>

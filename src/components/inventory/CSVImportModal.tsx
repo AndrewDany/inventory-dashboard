@@ -95,8 +95,8 @@ export default function CSVImportModal({ onClose }: { onClose: () => void }) {
                   <td className="px-3 py-2">{row.name}</td>
                   <td className="px-3 py-2 text-gray-500">{row.sku}</td>
                   <td className="px-3 py-2 text-right">{row.quantity}</td>
-                  <td className="px-3 py-2 text-right">GHS {row.unit_cost?.toFixed(2) ?? '—'}</td>
-                  <td className="px-3 py-2 text-right">GHS {row.unit_price?.toFixed(2) ?? '—'}</td>
+                  <td className="px-3 py-2 text-right">GHC {row.unit_cost?.toFixed(2) ?? '—'}</td>
+                  <td className="px-3 py-2 text-right">GHC {row.unit_price?.toFixed(2) ?? '—'}</td>
                 </tr>
               ))}
               {rows.length > 50 && (

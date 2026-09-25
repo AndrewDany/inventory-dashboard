@@ -220,7 +220,7 @@ function handlePurchaseOrderRoutes(PDO $pdo, string $method, array $uriParts): v
                     $invItemId,
                     (int)($line['quantity_ordered'] ?? 1),
                     (float)($line['unit_cost'] ?? 0.00),
-                    $line['currency'] ?? 'GHS'
+                    $line['currency'] ?? 'GHC'
                 ]);
             }
 

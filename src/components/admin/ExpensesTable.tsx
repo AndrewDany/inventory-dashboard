@@ -58,7 +58,7 @@ export default function ExpensesTable() {
                 <TableCell className="text-gray-500">
                   {new Date(expense.expense_date).toLocaleDateString()}
                 </TableCell>
-                <TableCell className="font-medium">GHS {expense.amount.toFixed(2)}</TableCell>
+                <TableCell className="font-medium">GHC {expense.amount.toFixed(2)}</TableCell>
                 <TableCell>
                   <Button
                     variant="ghost"

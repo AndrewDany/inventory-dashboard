@@ -25,7 +25,7 @@ export function exportToCSV(items: InventoryItem[]) {
   URL.revokeObjectURL(url)
 }
 
-export async function exportToPDF(items: InventoryItem[], companyName = 'Inventory Dashboard') {
+export async function exportToPDF(items: InventoryItem[], companyName = 'samdamventures.com') {
   // Loaded on demand — jsPDF + autotable are large and only needed when a user actually exports a PDF.
   const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
     import('jspdf'),
@@ -46,7 +46,7 @@ export async function exportToPDF(items: InventoryItem[], companyName = 'Invento
   doc.setTextColor(0)
   doc.setFontSize(10)
   doc.text(`Total Items: ${items.length}`, 14, 34)
-  doc.text(`Total Value: GHS ${totalValue.toFixed(2)}`, 70, 34)
+  doc.text(`Total Value: GHC ${totalValue.toFixed(2)}`, 70, 34)
   doc.text(`Low Stock Items: ${lowStockCount}`, 150, 34)
 
   autoTable(doc, {
@@ -58,7 +58,7 @@ export async function exportToPDF(items: InventoryItem[], companyName = 'Invento
       item.category ?? '—',
       item.quantity,
       item.reorder_level,
-      item.unit_price != null ? `GHS ${item.unit_price.toFixed(2)}` : '—',
+      item.unit_price != null ? `GHC ${item.unit_price.toFixed(2)}` : '—',
       item.supplier ?? '—',
     ]),
     headStyles: { fillColor: [79, 70, 229] },

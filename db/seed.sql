@@ -35,7 +35,7 @@ ON DUPLICATE KEY UPDATE `monthly_budget` = VALUES(`monthly_budget`);
 
 -- 5. System Settings
 INSERT INTO `system_settings` (`key`, `value`) VALUES
-('currency_symbol', 'GHS'),
+('currency_symbol', 'GHC'),
 ('currency_name', 'Ghana Cedi'),
 ('low_stock_threshold', '5'),
 ('app_name', 'Inventory Suite')

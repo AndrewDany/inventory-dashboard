@@ -145,7 +145,7 @@ export default function ReturnsTable() {
                     {r.resolution === 'refund' ? (
                       r.refund_amount != null ? (
                         <span className="inline-flex items-center gap-1.5">
-                          GHS {r.refund_amount.toFixed(2)}
+                          GHC {r.refund_amount.toFixed(2)}
                           {r.refund_amount_estimated && (
                             <Badge variant="outline" className="text-[10px]">Est.</Badge>
                           )}

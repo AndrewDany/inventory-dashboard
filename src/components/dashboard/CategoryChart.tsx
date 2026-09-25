@@ -147,7 +147,7 @@ export default function CategoryChart({ items, monthlyFinancials }: OverviewChar
                         <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-md">
                           <p className="text-xs font-semibold text-slate-900">{label}</p>
                           <p className="mt-1 text-sm font-bold text-indigo-600">
-                            GHS {Number(data.value).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            GHC {Number(data.value).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                           </p>
                           <p className="text-[11px] text-slate-500">{data.units} units on hand</p>
                         </div>
@@ -194,11 +194,11 @@ export default function CategoryChart({ items, monthlyFinancials }: OverviewChar
                           <p className="text-xs font-semibold text-slate-900">{label}</p>
                           <div className="flex items-center justify-between gap-4 text-xs">
                             <span className="text-emerald-600 font-medium">Sales:</span>
-                            <span className="font-bold">GHS {Number(data.revenue).toFixed(2)}</span>
+                            <span className="font-bold">GHC {Number(data.revenue).toFixed(2)}</span>
                           </div>
                           <div className="flex items-center justify-between gap-4 text-xs">
                             <span className="text-amber-600 font-medium">COGS:</span>
-                            <span className="font-bold">GHS {Number(data.cogs).toFixed(2)}</span>
+                            <span className="font-bold">GHC {Number(data.cogs).toFixed(2)}</span>
                           </div>
                         </div>
                       )
@@ -270,4 +270,4 @@ export default function CategoryChart({ items, monthlyFinancials }: OverviewChar
       </div>
     </div>
   )
-}
+}

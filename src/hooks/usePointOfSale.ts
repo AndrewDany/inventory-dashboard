@@ -109,7 +109,7 @@ export function usePointOfSaleCheckout() {
       return {
         blobUrl,
         invoiceNumber: soNumber,
-        shareText: `Invoice ${soNumber} from ${companyName}. Total: GHS ${cart.reduce((sum, line) => sum + lineSubtotal(line), 0).toFixed(2)}.`,
+        shareText: `Invoice ${soNumber} from ${companyName}. Total: GHC ${cart.reduce((sum, line) => sum + lineSubtotal(line), 0).toFixed(2)}.`,
       }
     },
     onSuccess: () => {

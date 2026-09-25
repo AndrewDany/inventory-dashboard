@@ -76,7 +76,7 @@ export default function PurchaseOrderForm({ onClose }: PurchaseOrderFormProps) {
           inventory_item_id: item.inventory_item_id,
           quantity_ordered: item.quantity_ordered,
           unit_cost: item.unit_cost,
-          currency: 'GHS',
+          currency: 'GHC',
         })),
       })
       toast.success(`PO #${values.po_number} created`)
@@ -214,7 +214,7 @@ export default function PurchaseOrderForm({ onClose }: PurchaseOrderFormProps) {
 
       <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-3">
         <p className="text-[10px] uppercase tracking-[0.2em] text-indigo-600">Estimated total</p>
-        <p className="mt-1 text-lg font-semibold text-slate-900">GHS {total.toFixed(2)}</p>
+        <p className="mt-1 text-lg font-semibold text-slate-900">GHC {total.toFixed(2)}</p>
       </div>
 
       <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700" disabled={isSubmitting}>

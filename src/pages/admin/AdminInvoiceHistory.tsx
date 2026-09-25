@@ -66,7 +66,7 @@ export default function AdminInvoiceHistory() {
       customerName: order.customer_name ?? undefined,
       customerPhone: order.customer_phone ?? undefined,
       paymentStatus: 'Paid',
-      companyName: 'Inventory Dashboard',
+      companyName: 'samdamventures.com',
       items: order.sales_order_items.map((item) => ({
         sku: item.sku,
         name: item.item_name ?? item.sku,
@@ -88,7 +88,7 @@ export default function AdminInvoiceHistory() {
       order.status,
     ])
     const csv = [
-      ['Invoice Count', 'Invoice Number', 'Date', 'Customer', 'Phone', 'Total (GHS)', 'Status'],
+      ['Invoice Count', 'Invoice Number', 'Date', 'Customer', 'Phone', 'Total (GHC)', 'Status'],
       ...rows,
     ].map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(',')).join('\n')
     downloadUrl(URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })), 'invoice-history.csv')
@@ -136,7 +136,7 @@ export default function AdminInvoiceHistory() {
                   <td className="px-4 py-3 font-medium text-slate-900">{order.so_number}</td>
                   <td className="px-4 py-3 text-slate-500">{new Date(order.created_at).toLocaleString()}</td>
                   <td className="px-4 py-3">{order.customer_name || 'Walk-in Customer'}</td>
-                  <td className="px-4 py-3 text-right font-semibold">GHS {orderTotal(order).toFixed(2)}</td>
+                  <td className="px-4 py-3 text-right font-semibold">GHC {orderTotal(order).toFixed(2)}</td>
                   <td className="px-4 py-3 text-right">
                     <Button variant="ghost" size="sm" onClick={() => downloadInvoice(order, invoiceCount)}>
                       <FileText size={15} className="mr-1" /> Download PDF

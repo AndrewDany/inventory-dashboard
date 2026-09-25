@@ -4,6 +4,10 @@ import { Package, ShieldCheck, BarChart3, Users, Search, Bell } from 'lucide-rea
 import InventoryShowcase from '../components/landing/InventoryShowcase'
 import { useAuth } from '../hooks/useAuth'
 import profilePhoto from '../assets/landing/profile.jpg'
+import productMockup from '../assets/landing/mockup.png'
+import dashboardScreen from '../assets/landing/Screen.png'
+import executiveScreen from '../assets/landing/Screenshot 2.png'
+import samdamLogo from '../assets/landing/samdamlogo.png'
 
 const features = [
   {
@@ -62,11 +66,12 @@ export default function Landing() {
     <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-100 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-            <Package size={16} className="text-white" />
-          </div>
-          <h1 className="text-lg font-bold text-gray-900">Inventory Dashboard</h1>
+        <div className="flex min-w-0 items-center">
+          <img
+            src={samdamLogo}
+            alt="Samdam Ventures"
+            className="h-10 w-auto max-w-47.5 object-contain object-left sm:h-12 sm:max-w-57.5"
+          />
         </div>
         <nav className="hidden md:flex items-center gap-6">
           <a href="#home" className="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors">Home</a>
@@ -84,8 +89,13 @@ export default function Landing() {
       </header>
 
       {/* Hero */}
-      <section id="home" className="relative overflow-hidden bg-gradient-to-b from-indigo-50 via-white to-white">
+      <section id="home" className="relative overflow-hidden bg-linear-to-b from-indigo-50 via-white to-white">
         <div className="max-w-5xl mx-auto text-center px-6 pt-20 pb-16">
+          {/* Real-photo showcase */}
+          <div className="mb-16 max-w-4xl mx-auto">
+            <InventoryShowcase />
+          </div>
+
           <span className="inline-block text-xs font-semibold text-indigo-700 bg-indigo-100 px-3 py-1 rounded-full mb-6">
             Built for small & mid-sized businesses
           </span>
@@ -100,7 +110,7 @@ export default function Landing() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <a
-              href="mailto:andrewsdanyo93@gmail.com?subject=Inventory Dashboard Inquiry"
+              href="#contact"
               className="inline-block bg-indigo-600 text-white px-7 py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
             >
               Get Started
@@ -116,65 +126,12 @@ export default function Landing() {
             )}
           </div>
 
-          {/* Real-photo showcase */}
-          <div className="mt-16 max-w-4xl mx-auto">
-            <InventoryShowcase />
-          </div>
-
-          {/* Demo visual — stylized dashboard mockup */}
-          <div className="mt-8 max-w-4xl mx-auto">
-            <div className="rounded-xl border border-gray-200 shadow-2xl shadow-gray-200/60 overflow-hidden bg-white">
-              <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-red-400" />
-                <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                <div className="w-3 h-3 rounded-full bg-green-400" />
-              </div>
-
-              <div className="p-6 text-left bg-gray-50">
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  <div className="bg-white rounded-lg shadow-sm p-4">
-                    <p className="text-xs text-gray-400 mb-1">Total Items</p>
-                    <p className="text-xl font-bold text-gray-900">248</p>
-                  </div>
-                  <div className="bg-white rounded-lg shadow-sm p-4">
-                    <p className="text-xs text-gray-400 mb-1">Inventory Value</p>
-                    <p className="text-xl font-bold text-gray-900">GHS 41,200</p>
-                  </div>
-                  <div className="bg-white rounded-lg shadow-sm p-4">
-                    <p className="text-xs text-gray-400 mb-1">Low Stock</p>
-                    <p className="text-xl font-bold text-red-500">6</p>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
-                  <div className="flex items-end gap-2 h-20">
-                    {[40, 65, 30, 80, 55, 70, 45].map((h, i) => (
-                      <div
-                        key={i}
-                        className="flex-1 bg-indigo-500 rounded-t"
-                        style={{ height: `${h}%` }}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-lg shadow-sm p-4 space-y-2">
-                  {['Blue Pen (PEN-001)', 'A4 Paper Ream (PPR-014)', 'USB-C Cable (USB-208)'].map(
-                    (item) => (
-                      <div
-                        key={item}
-                        className="flex justify-between items-center text-sm text-gray-600 border-b border-gray-100 last:border-0 pb-2 last:pb-0"
-                      >
-                        <span>{item}</span>
-                        <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-                          In Stock
-                        </span>
-                      </div>
-                    )
-                  )}
-                </div>
-              </div>
-            </div>
+          <div className="mt-8 max-w-5xl mx-auto overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-indigo-100/60">
+            <img
+              src={productMockup}
+              alt="Inventory Suite running on a laptop, tablet, and phone"
+              className="block h-auto w-full"
+            />
           </div>
         </div>
       </section>
@@ -203,6 +160,50 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Product Screens */}
+      <section className="border-y border-slate-200 bg-slate-50/80">
+        <div className="mx-auto max-w-6xl px-6 py-20">
+          <div className="mb-12 max-w-2xl">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600">
+              Built for the workday
+            </p>
+            <h3 className="mb-4 text-2xl font-bold text-slate-950 sm:text-3xl">
+              One clear view from stockroom to leadership.
+            </h3>
+            <p className="text-slate-600">
+              Keep daily inventory work focused, then move into financial and operational detail
+              when you need the bigger picture.
+            </p>
+          </div>
+
+          <div className="grid gap-8 lg:grid-cols-[1.35fr_1fr] lg:items-start">
+            <figure className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70">
+              <img
+                src={dashboardScreen}
+                alt="Inventory Suite dashboard showing valuation, products, stock attention, and turnover"
+                className="block h-auto w-full"
+                loading="lazy"
+              />
+              <figcaption className="border-t border-slate-100 px-5 py-4 text-sm text-slate-600">
+                Monitor valuation, product counts, reorder attention, and turnover at a glance.
+              </figcaption>
+            </figure>
+
+            <figure className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70">
+              <img
+                src={executiveScreen}
+                alt="Inventory Suite executive overview with sales, profit, budget, and financial performance"
+                className="block h-auto w-full"
+                loading="lazy"
+              />
+              <figcaption className="border-t border-slate-100 px-5 py-4 text-sm text-slate-600">
+                See sales, profit, purchasing budget, and financial performance together.
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
       {/* Pricing */}
       <section id="pricing" className="max-w-5xl mx-auto px-6 py-20 border-t border-gray-100">
         <div className="text-center mb-14">
@@ -216,14 +217,14 @@ export default function Landing() {
           {[
             {
               name: 'Starter',
-              price: 'GHS 1,500',
+              price: 'GHC 1,500',
               desc: 'For a single shop or small business',
               features: ['Inventory CRUD & search', 'Basic dashboard & stats', '1 admin account', 'Hosted & deployed'],
               highlight: false,
             },
             {
               name: 'Business',
-              price: 'GHS 3,500',
+              price: 'GHC 3,500',
               desc: 'For a growing team',
               features: ['Everything in Starter', 'Role-based access', 'Activity logs & stock tracking', 'Custom branding'],
               highlight: true,
@@ -261,7 +262,7 @@ export default function Landing() {
                 ))}
               </ul>
               <a
-                href="mailto:andrewsdanyo93@gmail.com?subject=Inventory Dashboard Inquiry"
+                href="#contact"
                 className={`block text-center text-sm font-medium py-2.5 rounded-lg transition-colors ${
                   tier.highlight
                     ? 'bg-indigo-600 text-white hover:bg-indigo-700'
@@ -396,7 +397,7 @@ export default function Landing() {
             Get in touch and I'll set up a version tailored to your business.
           </p>
           <a
-            href="mailto:andrewsdanyo93@gmail.com?subject=Inventory Dashboard Inquiry"
+            href="mailto:andrewsdanyo93@gmail.com?subject=samdamventures.com Inquiry"
             className="inline-block bg-white text-indigo-700 px-7 py-3 rounded-lg font-medium hover:bg-indigo-50 transition-colors"
           >
             Contact Me
@@ -420,7 +421,7 @@ export default function Landing() {
             LinkedIn
           </a>
         </div>
-        <p>© {new Date().getFullYear()} Inventory Dashboard. Built by Andrews Danyo.</p>
+        <p>© {new Date().getFullYear()} samdamventures.com. Built by Andrews Danyo.</p>
       </footer>
     </div>
   )

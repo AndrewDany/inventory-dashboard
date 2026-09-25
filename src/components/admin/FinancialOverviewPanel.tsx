@@ -34,9 +34,9 @@ export default function FinancialOverviewPanel() {
         <FinancialStatCard
           label="Monthly Revenue"
           colorScheme="emerald"
-          value={`GHS ${pl.netRevenue.toFixed(2)}`}
+          value={`GHC ${pl.netRevenue.toFixed(2)}`}
           subtitle={
-            <>Gross sales: GHS {pl.revenue.toFixed(2)} &middot; Refunds: GHS {pl.refunds.toFixed(2)} &middot; COGS: GHS {pl.cogs.toFixed(2)}</>
+            <>Gross sales: GHC {pl.revenue.toFixed(2)} &middot; Refunds: GHC {pl.refunds.toFixed(2)} &middot; COGS: GHC {pl.cogs.toFixed(2)}</>
           }
           sparklineData={monthly ? sparklineFor(monthly, 'netSales') : undefined}
           deltaPct={monthOverMonthDelta(pl.netRevenue, previous?.netSales)}
@@ -45,7 +45,7 @@ export default function FinancialOverviewPanel() {
         <FinancialStatCard
           label="Gross Profit"
           colorScheme="indigo"
-          value={`GHS ${pl.grossProfit.toFixed(2)}`}
+          value={`GHC ${pl.grossProfit.toFixed(2)}`}
           subtitle={<>Margin: {pl.grossMargin.toFixed(1)}%</>}
           sparklineData={monthly ? sparklineFor(monthly, 'grossProfit') : undefined}
           deltaPct={monthOverMonthDelta(pl.grossProfit, previous?.grossProfit)}
@@ -54,15 +54,15 @@ export default function FinancialOverviewPanel() {
         <FinancialStatCard
           label="Net Profit"
           colorScheme={pl.netProfit >= 0 ? 'blue' : 'red'}
-          value={`GHS ${pl.netProfit.toFixed(2)}`}
-          subtitle={<>Expenses: GHS {pl.totalExpenses.toFixed(2)} &middot; Margin: {pl.netMargin.toFixed(1)}%</>}
+          value={`GHC ${pl.netProfit.toFixed(2)}`}
+          subtitle={<>Expenses: GHC {pl.totalExpenses.toFixed(2)} &middot; Margin: {pl.netMargin.toFixed(1)}%</>}
           sparklineData={monthly ? sparklineFor(monthly, 'netProfit') : undefined}
           deltaPct={monthOverMonthDelta(pl.netProfit, previous?.netProfit)}
         />
 
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
           <p className="text-[10px] uppercase tracking-[0.2em] text-amber-600">Budget Remaining</p>
-          <p className="mt-2 text-2xl font-bold text-amber-700">GHS {budget.remaining.toFixed(2)}</p>
+          <p className="mt-2 text-2xl font-bold text-amber-700">GHC {budget.remaining.toFixed(2)}</p>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-amber-200/60">
             <div
               className={`h-full rounded-full ${budgetPct > 100 ? 'bg-red-500' : 'bg-amber-500'}`}
@@ -70,7 +70,7 @@ export default function FinancialOverviewPanel() {
             />
           </div>
           <p className="mt-1 text-xs text-amber-600">
-            Spent restocking: GHS {budget.spentThisMonth.toFixed(2)} of GHS {budget.monthlyBudget.toFixed(2)} ({budgetPct.toFixed(0)}%)
+            Spent restocking: GHC {budget.spentThisMonth.toFixed(2)} of GHC {budget.monthlyBudget.toFixed(2)} ({budgetPct.toFixed(0)}%)
           </p>
         </div>
       </div>
@@ -80,7 +80,7 @@ export default function FinancialOverviewPanel() {
         <p className="text-sm font-semibold text-slate-900 mb-3">Set Monthly Purchasing Budget</p>
         <div className="flex items-end gap-3">
           <div className="flex-1">
-            <Label htmlFor="budget" className="mb-1 block">Budget (GHS)</Label>
+            <Label htmlFor="budget" className="mb-1 block">Budget (GHC)</Label>
             <Input
               id="budget"
               type="number"
@@ -130,11 +130,11 @@ export default function FinancialOverviewPanel() {
                     <td className="py-2 pr-4 text-slate-700">
                       {new Date(m.month + '-01').toLocaleDateString(undefined, { year: 'numeric', month: 'short' })}
                     </td>
-                    <td className="text-right py-2 pr-4 font-medium text-emerald-700">GHS {m.grossSales.toFixed(2)}</td>
-                    <td className="text-right py-2 pr-4 font-medium text-rose-500">GHS {m.refunds.toFixed(2)}</td>
-                    <td className="text-right py-2 pr-4 font-medium text-indigo-700">GHS {m.grossProfit.toFixed(2)}</td>
+                    <td className="text-right py-2 pr-4 font-medium text-emerald-700">GHC {m.grossSales.toFixed(2)}</td>
+                    <td className="text-right py-2 pr-4 font-medium text-rose-500">GHC {m.refunds.toFixed(2)}</td>
+                    <td className="text-right py-2 pr-4 font-medium text-indigo-700">GHC {m.grossProfit.toFixed(2)}</td>
                     <td className={`text-right py-2 font-medium ${m.netProfit >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
-                      GHS {m.netProfit.toFixed(2)}
+                      GHC {m.netProfit.toFixed(2)}
                     </td>
                   </tr>
                 ))}

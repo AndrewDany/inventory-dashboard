@@ -56,7 +56,7 @@ function handleSalesOrderRoutes(PDO $pdo, string $method, array $uriParts): void
 
             if ((float)$so['amount_paid'] < $orderTotal - 0.01) {
                 $balance = round($orderTotal - (float)$so['amount_paid'], 2);
-                jsonError("This pre-order still has a balance of GHS {$balance} outstanding. Record the remaining payment before fulfilling.", 400);
+                jsonError("This pre-order still has a balance of GHC {$balance} outstanding. Record the remaining payment before fulfilling.", 400);
             }
         }
 
@@ -264,7 +264,7 @@ function handleSalesOrderRoutes(PDO $pdo, string $method, array $uriParts): void
                     $invItemId,
                     (int)($line['quantity_ordered'] ?? 1),
                     (float)($line['unit_price'] ?? 0.00),
-                    $line['currency'] ?? 'GHS'
+                    $line['currency'] ?? 'GHC'
                 ]);
             }
 

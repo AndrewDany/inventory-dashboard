@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Inventory Dashboard <onboarding@resend.dev>',
+        from: 'samdamventures.com <onboarding@resend.dev>',
         to: [toEmail],
         subject: `Low Stock Alert: ${itemName}`,
         html: `
@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
             <h2 style="color: #dc2626;">Low Stock Alert</h2>
             <p><strong>${itemName}</strong> has dropped to <strong>${quantity}</strong> units, at or below its reorder level of <strong>${reorderLevel}</strong>.</p>
             <p>Consider restocking soon to avoid running out.</p>
-            <p style="color: #6b7280; font-size: 12px; margin-top: 24px;">Sent automatically by your Inventory Dashboard.</p>
+            <p style="color: #6b7280; font-size: 12px; margin-top: 24px;">Sent automatically by samdamventures.com.</p>
           </div>
         `,
       }),

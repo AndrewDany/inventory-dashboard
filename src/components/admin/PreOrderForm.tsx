@@ -86,7 +86,7 @@ export default function PreOrderForm({ onClose }: PreOrderFormProps) {
           inventory_item_id: item.inventory_item_id,
           quantity_ordered: item.quantity_ordered,
           unit_price: item.unit_price,
-          currency: 'GHS',
+          currency: 'GHC',
         })),
       })
       toast.success(`Pre-order #${values.so_number} saved`)
@@ -236,15 +236,15 @@ export default function PreOrderForm({ onClose }: PreOrderFormProps) {
       <div className="rounded-2xl border border-amber-100 bg-amber-50 p-3 space-y-1">
         <div className="flex justify-between text-sm">
           <span className="text-amber-700">Order total</span>
-          <span className="font-semibold text-slate-900">GHS {total.toFixed(2)}</span>
+          <span className="font-semibold text-slate-900">GHC {total.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-amber-700">Deposit collected</span>
-          <span className="text-slate-700">GHS {(Number(depositAmount) || 0).toFixed(2)}</span>
+          <span className="text-slate-700">GHC {(Number(depositAmount) || 0).toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-sm border-t border-amber-200 pt-1 mt-1">
           <span className="font-medium text-amber-800">Balance due</span>
-          <span className="font-semibold text-slate-900">GHS {balanceDue.toFixed(2)}</span>
+          <span className="font-semibold text-slate-900">GHC {balanceDue.toFixed(2)}</span>
         </div>
       </div>
 

@@ -81,7 +81,7 @@ export default function AdvancedReportsPanel() {
                       {new Date(t.month + '-01').toLocaleDateString(undefined, { year: 'numeric', month: 'short' })}
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      GHS {t.totalValue.toFixed(2)}
+                      GHC {t.totalValue.toFixed(2)}
                     </TableCell>
                     <TableCell className="text-right">{t.totalUnits.toLocaleString()}</TableCell>
                   </TableRow>
@@ -119,7 +119,7 @@ export default function AdvancedReportsPanel() {
                     </TableCell>
                     <TableCell className="text-right">{m.totalSold}</TableCell>
                     <TableCell className="text-right font-medium">
-                      GHS {m.totalRevenue.toFixed(2)}
+                      GHC {m.totalRevenue.toFixed(2)}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -215,7 +215,7 @@ function MonthlySalesReport({
   function exportTransactionCsv() {
     const transactions = monthlyTransactions(orders, selectedMonth)
     if (transactions.length === 0) return
-    const headers = ['Date', 'Transaction', 'Customer', 'SKU', 'Quantity', 'Unit Price (GHS)', 'Total (GHS)', 'Status']
+    const headers = ['Date', 'Transaction', 'Customer', 'SKU', 'Quantity', 'Unit Price (GHC)', 'Total (GHC)', 'Status']
     const csv = [headers, ...transactions.map((transaction) => [
       transaction.date,
       transaction.transaction,
@@ -266,11 +266,11 @@ function MonthlySalesReport({
           {monthly.slice().reverse().map((row) => (
             <TableRow key={row.month} className={row.month === selected.month ? 'bg-indigo-50' : undefined}>
               <TableCell>{new Date(`${row.month}-01`).toLocaleDateString(undefined, { year: 'numeric', month: 'long' })}</TableCell>
-              <TableCell className="text-right">GHS {row.grossSales.toFixed(2)}</TableCell>
-              <TableCell className="text-right">GHS {row.cogs.toFixed(2)}</TableCell>
-              <TableCell className="text-right">GHS {row.expenses.toFixed(2)}</TableCell>
-              <TableCell className="text-right">GHS {row.netSales.toFixed(2)}</TableCell>
-              <TableCell className="text-right font-semibold">GHS {row.netProfit.toFixed(2)}</TableCell>
+              <TableCell className="text-right">GHC {row.grossSales.toFixed(2)}</TableCell>
+              <TableCell className="text-right">GHC {row.cogs.toFixed(2)}</TableCell>
+              <TableCell className="text-right">GHC {row.expenses.toFixed(2)}</TableCell>
+              <TableCell className="text-right">GHC {row.netSales.toFixed(2)}</TableCell>
+              <TableCell className="text-right font-semibold">GHC {row.netProfit.toFixed(2)}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -321,5 +321,5 @@ function monthlyTransactions(orders: Array<{
 }
 
 function ReportMetric({ label, value }: { label: string; value: number }) {
-  return <div className="rounded-lg border border-slate-200 bg-white p-4"><p className="text-xs uppercase tracking-wide text-slate-500">{label}</p><p className="mt-2 text-xl font-bold text-slate-900">GHS {value.toFixed(2)}</p></div>
+  return <div className="rounded-lg border border-slate-200 bg-white p-4"><p className="text-xs uppercase tracking-wide text-slate-500">{label}</p><p className="mt-2 text-xl font-bold text-slate-900">GHC {value.toFixed(2)}</p></div>
 }

@@ -9,7 +9,7 @@ export interface LabelItem {
 export function generateBarcodeLabelsPDF(
   items: LabelItem[],
   copiesPerItem = 1,
-  companyName = 'Inventory Dashboard'
+  companyName = 'samdamventures.com'
 ): string {
   const doc = new jsPDF('p', 'mm', 'a4')
   const pageWidth = 210
@@ -55,7 +55,7 @@ export function generateBarcodeLabelsPDF(
     if (item.unitPrice != null) {
       doc.setFontSize(8)
       doc.setTextColor(0)
-      doc.text(`GHS ${item.unitPrice.toFixed(2)}`, x + 3, y + 26)
+      doc.text(`GHC ${item.unitPrice.toFixed(2)}`, x + 3, y + 26)
     }
 
     // Barcode pattern
@@ -127,7 +127,7 @@ function generateBarcodePattern(sku: string): string {
 export function printBarcodeLabels(
   items: LabelItem[],
   copiesPerItem = 1,
-  companyName = 'Inventory Dashboard'
+  companyName = 'samdamventures.com'
 ) {
   const url = generateBarcodeLabelsPDF(items, copiesPerItem, companyName)
   const win = window.open(url)

@@ -129,7 +129,7 @@ export default function PreOrdersTable() {
             const total = orderTotal(so)
             const paid = Number(so.amount_paid) || 0
             const balance = Math.max(0, total - paid)
-            const currency = so.sales_order_items[0]?.currency ?? 'GHS'
+            const currency = so.sales_order_items[0]?.currency ?? 'GHC'
 
             return (
               <React.Fragment key={so.id}>
@@ -198,7 +198,7 @@ export default function PreOrdersTable() {
                             <span>{item.sku}</span>
                             <span>
                               {item.quantity_shipped} / {item.quantity_ordered} fulfilled
-                              {item.unit_price != null && ` · GHS ${item.unit_price.toFixed(2)} ea`}
+                              {item.unit_price != null && ` · GHC ${item.unit_price.toFixed(2)} ea`}
                             </span>
                           </div>
                         ))}
@@ -216,7 +216,7 @@ export default function PreOrdersTable() {
         <Modal title="Record Payment" onClose={() => { setPayingSO(null); setPaymentAmount('') }}>
           <div className="space-y-4">
             <p className="text-sm text-gray-600">
-              Balance due: <strong>GHS {payingSO.balance.toFixed(2)}</strong>
+              Balance due: <strong>GHC {payingSO.balance.toFixed(2)}</strong>
             </p>
             <div>
               <Label htmlFor="payment-amount" className="mb-1 block">Amount received</Label>
@@ -251,7 +251,7 @@ export default function PreOrdersTable() {
           <div className="space-y-4">
             {selectedOrder && Number(selectedOrder.amount_paid) < orderTotal(selectedOrder) && (
               <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                <strong>Fulfillment is blocked:</strong> this order still has a balance of GHS{' '}
+                <strong>Fulfillment is blocked:</strong> this order still has a balance of GHC{' '}
                 {(orderTotal(selectedOrder) - Number(selectedOrder.amount_paid)).toFixed(2)} outstanding.
                 Record the remaining payment first, then come back to fulfill.
               </div>

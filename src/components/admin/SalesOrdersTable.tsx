@@ -137,7 +137,7 @@ export default function SalesOrdersTable() {
                   {new Date(so.created_at).toLocaleDateString()}
                 </TableCell>
                 <TableCell className="text-right font-semibold text-slate-900">
-                  {so.sales_order_items[0]?.currency ?? 'GHS'} {orderTotal(so).toFixed(2)}
+                  {so.sales_order_items[0]?.currency ?? 'GHC'} {orderTotal(so).toFixed(2)}
                 </TableCell>
                 <TableCell className="space-x-2">
                   <Button
@@ -167,7 +167,7 @@ export default function SalesOrdersTable() {
                           <span>{item.sku}</span>
                           <span>
                             {item.quantity_shipped} / {item.quantity_ordered} fulfilled
-                            {item.unit_price != null && ` · GHS ${item.unit_price.toFixed(2)} ea`}
+                            {item.unit_price != null && ` · GHC ${item.unit_price.toFixed(2)} ea`}
                           </span>
                         </div>
                       ))}

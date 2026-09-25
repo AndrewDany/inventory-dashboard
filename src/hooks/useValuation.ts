@@ -14,7 +14,7 @@ export function useValuationRuns() {
           costing_method: 'FIFO / Average Cost',
           started_at: data.calculated_at || new Date().toISOString(),
           finished_at: data.calculated_at || new Date().toISOString(),
-          notes: `Retail Val: GHS ${(data.retail_valuation || 0).toLocaleString()} • Cost Val: GHS ${(data.cost_valuation || 0).toLocaleString()}`,
+          notes: `Retail Val: GHC ${(data.retail_valuation || 0).toLocaleString()} • Cost Val: GHC ${(data.cost_valuation || 0).toLocaleString()}`,
         },
       ]
     },
@@ -45,7 +45,7 @@ export function useRecomputeValuation() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['valuation_runs'] })
-      toast.success(`Valuation recomputed: ${data.total_units} units, total value GHS ${data.total_value.toFixed(2)}`)
+      toast.success(`Valuation recomputed: ${data.total_units} units, total value GHC ${data.total_value.toFixed(2)}`)
     },
     onError: (error: Error) => {
       toast.error(`Failed to recompute valuation: ${error.message}`)
