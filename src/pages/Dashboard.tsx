@@ -50,6 +50,10 @@ export default function Dashboard() {
 
   const userName = profile?.email ? profile.email.split('@')[0] : 'Admin'
 
+  function handleUpdateBudget() {
+    navigate('/admin/financials')
+  }
+
   async function handleDelete() {
     if (!deletingItem) return
     await deleteItem.mutateAsync({ id: deletingItem.id, name: deletingItem.name })
@@ -58,11 +62,12 @@ export default function Dashboard() {
 
   return (
     <PageLayout
-      title="Inventory Dashboard"
+      title="Sam Dam Ventures"
       onAddItem={isDemo ? undefined : () => setShowAddModal(true)}
       onBulkAddProducts={isDemo ? undefined : () => setShowBulkAddModal(true)}
       onSellItem={isDemo ? undefined : () => navigate('/pos')}
       onChangePassword={isDemo ? undefined : () => setShowPasswordForm(true)}
+      onUpdateBudget={isAdmin && !isDemo ? handleUpdateBudget : undefined}
     >
       {/* Zenith Welcome Banner */}
       <div className="mb-6">

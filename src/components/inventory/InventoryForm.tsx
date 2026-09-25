@@ -63,6 +63,7 @@ export default function InventoryForm({
           quantity: 0,
           reorder_level: 0,
           unit_price: undefined,
+          unit_cost: undefined,
           supplier: '',
           location_id: undefined,
           unit_type: 'unit',
@@ -260,13 +261,25 @@ export default function InventoryForm({
         </div>
       </div>
 
-      <div>
-        <Label htmlFor="unit_price" className="mb-1 block">
-          Unit Price {isWeight && unitOfMeasureValue ? `(per ${unitOfMeasureValue})` : unitTypeValue === 'box' ? '(per box)' : ''}
-        </Label>
-        <Input id="unit_price" type="number" step="0.01" {...register('unit_price')} />
-        {errors.unit_price && <p className="text-red-600 text-sm mt-1">{errors.unit_price.message}</p>}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="unit_cost" className="mb-1 block">
+            Unit Cost {isWeight && unitOfMeasureValue ? `(per ${unitOfMeasureValue})` : unitTypeValue === 'box' ? '(per box)' : ''}
+          </Label>
+          <Input id="unit_cost" type="number" step="0.01" {...register('unit_cost')} placeholder="What you paid" />
+          {errors.unit_cost && <p className="text-red-600 text-sm mt-1">{errors.unit_cost.message}</p>}
+        </div>
+        <div>
+          <Label htmlFor="unit_price" className="mb-1 block">
+            Unit Price {isWeight && unitOfMeasureValue ? `(per ${unitOfMeasureValue})` : unitTypeValue === 'box' ? '(per box)' : ''}
+          </Label>
+          <Input id="unit_price" type="number" step="0.01" {...register('unit_price')} placeholder="What you sell for" />
+          {errors.unit_price && <p className="text-red-600 text-sm mt-1">{errors.unit_price.message}</p>}
+        </div>
       </div>
+      <p className="text-xs text-gray-500 -mt-2">
+        Unit Cost feeds Profit &amp; Loss margin calculations for this item's initial stock. Leave blank if you're only setting up the catalog with no stock yet.
+      </p>
 
       <div>
         <Label className="mb-1 block">Supplier</Label>

@@ -75,10 +75,10 @@ export default function InventoryBatchesTable() {
                     <Badge variant="default">{row.on_hand_quantity}</Badge>
                   </TableCell>
                   <TableCell className="text-gray-600">
-                    {row.avg_unit_cost != null ? `GHS ${row.avg_unit_cost.toFixed(2)}` : '—'}
+                    {row.avg_unit_cost != null ? `GHC ${row.avg_unit_cost.toFixed(2)}` : '—'}
                   </TableCell>
                   <TableCell className="font-medium">
-                    GHS {totalValue.toFixed(2)}
+                    GHC {totalValue.toFixed(2)}
                   </TableCell>
                   <TableCell className="text-gray-500 text-sm">
                     {batch.expiry_date ? new Date(batch.expiry_date).toLocaleDateString() : '—'}

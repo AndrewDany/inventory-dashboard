@@ -88,14 +88,14 @@ export default function AdminOverview() {
           </div>
           <div className="mt-3">
             <span className="text-2xl font-bold tracking-tight text-slate-900">
-              GHS {lastMonthData ? lastMonthData.grossSales.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+              GHC {lastMonthData ? lastMonthData.grossSales.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
             </span>
           </div>
           <div className="mt-2 flex items-center justify-between text-xs">
             <span className="inline-flex items-center gap-1 font-medium text-emerald-600">
               <TrendingUp size={13} /> Active Invoicing
             </span>
-            <span className="text-slate-600 font-medium">COGS: GHS {pl ? pl.cogs.toFixed(2) : '0.00'}</span>
+            <span className="text-slate-600 font-medium">COGS: GHC {pl ? pl.cogs.toFixed(2) : '0.00'}</span>
           </div>
           <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
             <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 w-4/5" />
@@ -114,7 +114,7 @@ export default function AdminOverview() {
           </div>
           <div className="mt-3">
             <span className="text-2xl font-bold tracking-tight text-slate-900">
-              GHS {pl ? pl.grossProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+              GHC {pl ? pl.grossProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
             </span>
           </div>
           <div className="mt-2 flex items-center justify-between text-xs">
@@ -144,7 +144,7 @@ export default function AdminOverview() {
             <span className={`text-2xl font-bold tracking-tight ${
               pl && pl.netProfit >= 0 ? 'text-blue-700' : 'text-rose-600'
             }`}>
-              GHS {pl ? pl.netProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+              GHC {pl ? pl.netProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
             </span>
           </div>
           <div className="mt-2 flex items-center justify-between text-xs">
@@ -153,7 +153,7 @@ export default function AdminOverview() {
             }`}>
               Net Margin: {pl ? pl.netMargin.toFixed(1) : 0}%
             </span>
-            <span className="text-slate-600 font-medium">Exp: GHS {pl ? pl.totalExpenses.toFixed(0) : '0'}</span>
+            <span className="text-slate-600 font-medium">Exp: GHC {pl ? pl.totalExpenses.toFixed(0) : '0'}</span>
           </div>
           <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
             <div className={`h-full rounded-full ${
@@ -176,14 +176,14 @@ export default function AdminOverview() {
           </div>
           <div className="mt-3">
             <span className="text-2xl font-bold tracking-tight text-slate-900">
-              GHS {budget ? budget.remaining.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+              GHC {budget ? budget.remaining.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
             </span>
           </div>
           <div className="mt-2 flex items-center justify-between text-xs">
             <span className="inline-flex items-center gap-1 font-medium text-amber-600">
-              Spent: GHS {budget ? budget.spentThisMonth.toFixed(0) : '0'}
+              Spent: GHC {budget ? budget.spentThisMonth.toFixed(0) : '0'}
             </span>
-            <span className="text-slate-600 font-medium">Limit: GHS {budget ? budget.monthlyBudget.toFixed(0) : '0'}</span>
+            <span className="text-slate-600 font-medium">Limit: GHC {budget ? budget.monthlyBudget.toFixed(0) : '0'}</span>
           </div>
           <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
             <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 w-1/2" />
@@ -267,15 +267,15 @@ export default function AdminOverview() {
                               <p className="text-xs font-semibold text-slate-900">{label}</p>
                               <div className="flex items-center justify-between gap-4 text-xs">
                                 <span className="text-emerald-600 font-medium">Sales:</span>
-                                <span className="font-bold">GHS {Number(data.sales).toFixed(2)}</span>
+                                <span className="font-bold">GHC {Number(data.sales).toFixed(2)}</span>
                               </div>
                               <div className="flex items-center justify-between gap-4 text-xs">
                                 <span className="text-amber-600 font-medium">COGS:</span>
-                                <span className="font-bold">GHS {Number(data.cogs).toFixed(2)}</span>
+                                <span className="font-bold">GHC {Number(data.cogs).toFixed(2)}</span>
                               </div>
                               <div className="flex items-center justify-between gap-4 text-xs pt-1 border-t border-slate-100">
                                 <span className="text-indigo-600 font-medium">Profit:</span>
-                                <span className="font-bold">GHS {Number(data.profit).toFixed(2)}</span>
+                                <span className="font-bold">GHC {Number(data.profit).toFixed(2)}</span>
                               </div>
                             </div>
                           )
@@ -324,7 +324,7 @@ export default function AdminOverview() {
                             <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-md">
                               <p className="text-xs font-semibold text-slate-900">{label}</p>
                               <p className="mt-1 text-sm font-bold text-blue-600">
-                                Net Profit: GHS {Number(data.net).toFixed(2)}
+                                Net Profit: GHC {Number(data.net).toFixed(2)}
                               </p>
                             </div>
                           )
@@ -381,7 +381,7 @@ export default function AdminOverview() {
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                     <span className="text-[10px] uppercase text-slate-400 font-semibold">Total</span>
                     <span className="text-xs font-bold text-slate-900">
-                      GHS {totalExpenseSum >= 1000 ? `${(totalExpenseSum / 1000).toFixed(1)}k` : totalExpenseSum.toFixed(0)}
+                      GHC {totalExpenseSum >= 1000 ? `${(totalExpenseSum / 1000).toFixed(1)}k` : totalExpenseSum.toFixed(0)}
                     </span>
                   </div>
                 </div>
@@ -409,7 +409,7 @@ export default function AdminOverview() {
 
           <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
             <span>Period: Current Month</span>
-            <span className="font-medium text-indigo-600">GHS {totalExpenseSum.toFixed(2)} Total</span>
+            <span className="font-medium text-indigo-600">GHC {totalExpenseSum.toFixed(2)} Total</span>
           </div>
         </div>
       </div>

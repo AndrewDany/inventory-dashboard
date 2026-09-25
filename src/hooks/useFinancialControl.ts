@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '../lib/supabaseClient'
+import { api } from '../lib/apiClient'
 
 export interface PurchaseRecord {
   id: string
@@ -17,32 +17,24 @@ export interface FinancialData {
 }
 
 async function getSetting(key: string): Promise<string | null> {
-  const { data, error } = await supabase
-    .from('settings')
-    .select('value')
-    .eq('key', key)
-    .single()
-  if (error && error.code !== 'PGRST116') throw new Error(error.message)
-  return data?.value ?? null
+  const data = await api.get<Record<string, string>>('/settings')
+  return data?.[key] ?? null
 }
 
 async function upsertSetting(key: string, value: string): Promise<void> {
-  const { error } = await supabase.from('settings').upsert(
-    { key, value, updated_at: new Date().toISOString() },
-    { onConflict: 'key' }
-  )
-  if (error) throw new Error(error.message)
+  await api.post('/settings', { [key]: value })
 }
 
 export function useFinancialControl() {
   return useQuery({
     queryKey: ['financial_control'],
     queryFn: async (): Promise<FinancialData> => {
-      const [budgetRaw, spentRaw, purchasesRaw] = await Promise.all([
-        getSetting('financial_budget'),
-        getSetting('financial_spent'),
-        getSetting('financial_purchases'),
-      ])
+      const data = await api.get<Record<string, string>>('/settings')
+      const settings = data || {}
+
+      const budgetRaw = settings['financial_budget']
+      const spentRaw = settings['financial_spent']
+      const purchasesRaw = settings['financial_purchases']
 
       const budget = Number(budgetRaw ?? 100000)
       const spent = Number(spentRaw ?? 0)
@@ -121,7 +113,7 @@ export function useAddPurchase() {
 
       purchases = [newPurchase, ...purchases].slice(0, 5)
 
-      // Save both in parallel
+      // Save both
       await Promise.all([
         upsertSetting('financial_spent', String(newSpent)),
         upsertSetting('financial_purchases', JSON.stringify(purchases)),
@@ -132,4 +124,3 @@ export function useAddPurchase() {
     },
   })
 }
-

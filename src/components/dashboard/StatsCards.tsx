@@ -48,7 +48,7 @@ export default function StatsCards({ items, monthlyRevenue }: StatsCardsProps) {
 
         <div className="mt-3 flex items-baseline gap-2">
           <span className="text-2xl font-bold tracking-tight text-slate-900">
-            GHS {stats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            GHC {stats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
         </div>
 
@@ -149,7 +149,7 @@ export default function StatsCards({ items, monthlyRevenue }: StatsCardsProps) {
         <div className="mt-3 flex items-baseline gap-2">
           <span className="text-2xl font-bold tracking-tight text-slate-900">
             {monthlyRevenue !== undefined
-              ? `GHS ${monthlyRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              ? `GHC ${monthlyRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
               : `${stats.categoriesCount} Catalog Depts`}
           </span>
         </div>
@@ -167,4 +167,4 @@ export default function StatsCards({ items, monthlyRevenue }: StatsCardsProps) {
       </div>
     </div>
   )
-}
+}

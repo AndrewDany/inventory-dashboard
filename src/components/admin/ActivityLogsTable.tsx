@@ -1,4 +1,4 @@
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { Activity, Plus, Pencil, Trash2 } from 'lucide-react'
 import { useActivityLogs } from '../../hooks/useActivityLogs'
 import { relativeTime } from '../../lib/relativeTime'
 
@@ -7,6 +7,8 @@ const ACTION_META = {
   updated: { icon: Pencil, bg: 'bg-indigo-50', text: 'text-indigo-600' },
   deleted: { icon: Trash2, bg: 'bg-rose-50', text: 'text-rose-600' },
 } as const
+
+const DEFAULT_ACTION_META = { icon: Activity, bg: 'bg-slate-100', text: 'text-slate-600' }
 
 export default function ActivityLogsTable() {
   const { data: logs, isLoading, error } = useActivityLogs()
@@ -18,7 +20,7 @@ export default function ActivityLogsTable() {
   return (
     <div className="divide-y divide-slate-100 rounded-lg border border-slate-100 bg-white">
       {logs.map((log) => {
-        const meta = ACTION_META[log.action]
+        const meta = ACTION_META[log.action as keyof typeof ACTION_META] ?? DEFAULT_ACTION_META
         const Icon = meta.icon
         return (
           <div key={log.id} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">

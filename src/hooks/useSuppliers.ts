@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { supabase } from '../lib/supabaseClient'
+import { api } from '../lib/apiClient'
 import type { Supplier } from '../types/supplier'
 import type { SupplierFormValues } from '../lib/supplierSchema'
 
@@ -8,13 +8,8 @@ export function useSuppliers() {
   return useQuery({
     queryKey: ['suppliers'],
     queryFn: async (): Promise<Supplier[]> => {
-      const { data, error } = await supabase
-        .from('suppliers')
-        .select('*')
-        .order('name', { ascending: true })
-
-      if (error) throw new Error(error.message)
-      return data as Supplier[]
+      const data = await api.get<Supplier[]>('/suppliers')
+      return data || []
     },
   })
 }
@@ -24,14 +19,13 @@ export function useAddSupplier() {
 
   return useMutation({
     mutationFn: async (values: SupplierFormValues) => {
-      const { error } = await supabase.from('suppliers').insert([values])
-      if (error) throw new Error(error.message)
+      await api.post<Supplier>('/suppliers', values)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] })
       toast.success('Supplier added')
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error(`Failed to add supplier: ${error.message}`)
     },
   })
@@ -42,14 +36,13 @@ export function useUpdateSupplier() {
 
   return useMutation({
     mutationFn: async ({ id, values }: { id: string; values: SupplierFormValues }) => {
-      const { error } = await supabase.from('suppliers').update(values).eq('id', id)
-      if (error) throw new Error(error.message)
+      await api.put<Supplier>(`/suppliers/${id}`, values)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] })
       toast.success('Supplier updated')
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error(`Failed to update supplier: ${error.message}`)
     },
   })
@@ -60,14 +53,13 @@ export function useDeleteSupplier() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('suppliers').delete().eq('id', id)
-      if (error) throw new Error(error.message)
+      await api.delete(`/suppliers/${id}`)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] })
       toast.success('Supplier deleted')
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error(`Failed to delete supplier: ${error.message}`)
     },
   })

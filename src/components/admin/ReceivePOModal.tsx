@@ -29,7 +29,11 @@ export default function ReceivePOModal({
 
     const items = po.purchase_order_items
       .filter((item) => quantities[item.id] > 0)
-      .map((item) => ({ item_id: item.id, quantity: quantities[item.id] }))
+      .map((item) => ({
+        sku: item.sku,
+        quantity_received: quantities[item.id],
+        unit_cost: item.unit_cost ?? 0,
+      }))
 
     await receivePO.mutateAsync({ po_id: po.id, location_id: locationId, items })
     onClose()

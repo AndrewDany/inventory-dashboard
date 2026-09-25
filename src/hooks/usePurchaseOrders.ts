@@ -1,8 +1,6 @@
-// src/hooks/usePurchaseOrders.ts
-// ------------------------------------------------------------
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { supabase } from '../lib/supabaseClient'
+import { api } from '../lib/apiClient'
 import type { PurchaseOrder, PurchaseOrderItem } from '../types/procurement'
 
 export interface PurchaseOrderWithItems extends PurchaseOrder {
@@ -13,13 +11,11 @@ export function usePurchaseOrders() {
   return useQuery({
     queryKey: ['purchase_orders'],
     queryFn: async (): Promise<PurchaseOrderWithItems[]> => {
-      const { data, error } = await supabase
-        .from('purchase_orders')
-        .select('*, purchase_order_items(*)')
-        .order('created_at', { ascending: false })
-
-      if (error) throw new Error(error.message)
-      return data as PurchaseOrderWithItems[]
+      const data = await api.get<any[]>('/purchase-orders')
+      return (data || []).map((po) => ({
+        ...po,
+        purchase_order_items: po.items || po.purchase_order_items || [],
+      }))
     },
   })
 }
@@ -28,7 +24,7 @@ interface CreatePOInput {
   po_number: string
   supplier_id?: string
   notes?: string
-  items: { sku: string; inventory_item_id?: number; quantity_ordered: number; unit_cost?: number; currency?: string }[]
+  items: { sku: string; inventory_item_id?: string; quantity_ordered: number; unit_cost?: number; currency?: string }[]
 }
 
 export function useCreatePurchaseOrder() {
@@ -36,21 +32,11 @@ export function useCreatePurchaseOrder() {
 
   return useMutation({
     mutationFn: async (input: CreatePOInput) => {
-      // Header + line items are inserted atomically server-side via the
-      // create_purchase_order RPC, so a bad line item can't leave an
-      // orphaned PO header behind (see supabase/create-purchase-order.sql).
-      const { data, error } = await supabase.rpc('create_purchase_order', {
-        p_po_number: input.po_number,
-        p_supplier_id: input.supplier_id ?? null,
-        p_notes: input.notes ?? null,
-        p_items: input.items,
-      })
-
-      if (error) throw new Error(error.message)
-      return data
+      return await api.post('/purchase-orders', input)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase_orders'] })
+      queryClient.invalidateQueries({ queryKey: ['budget'] })
       toast.success('Purchase order created')
     },
     onError: (error: Error) => {
@@ -62,7 +48,7 @@ export function useCreatePurchaseOrder() {
 interface ReceivePOInput {
   po_id: string
   location_id: string
-  items?: { item_id: string; quantity: number }[] // omit for full receipt
+  items?: { item_id?: string; sku?: string; quantity_received?: number; quantity?: number; unit_cost?: number; location_id?: string }[]
 }
 
 export function useReceivePurchaseOrder() {
@@ -70,14 +56,13 @@ export function useReceivePurchaseOrder() {
 
   return useMutation({
     mutationFn: async ({ po_id, location_id, items }: ReceivePOInput) => {
-      const { data, error } = await supabase.rpc('receive_purchase_order', {
-        p_po_id: po_id,
-        p_location_id: location_id,
-        p_items: items ?? null,
-      })
-
-      if (error) throw new Error(error.message)
-      return data
+      const formattedItems = (items || []).map((i) => ({
+        sku: i.sku || '',
+        quantity_received: i.quantity_received || i.quantity || 0,
+        unit_cost: i.unit_cost || 0,
+        location_id,
+      }))
+      return await api.post(`/purchase-orders/${po_id}/receive`, { items: formattedItems })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase_orders'] })

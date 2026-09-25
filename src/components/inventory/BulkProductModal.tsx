@@ -497,7 +497,7 @@ export default function BulkProductModal({ onClose }: { onClose: () => void }) {
                       <td className="px-3 py-2 font-medium text-slate-800">{row.name}</td>
                       <td className="px-3 py-2 text-slate-500">{row.sku}</td>
                       <td className="px-3 py-2 text-right">{row.quantity}</td>
-                      <td className="px-3 py-2 text-right">GHS {row.unit_price?.toFixed(2) || '0.00'}</td>
+                      <td className="px-3 py-2 text-right">GHC {row.unit_price?.toFixed(2) || '0.00'}</td>
                     </tr>
                   ))}
                   {parsedRows.length > 50 && (

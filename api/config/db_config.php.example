@@ -1,0 +1,10 @@
+<?php
+// Copy this file to db_config.php and fill in your real local database
+// credentials. db_config.php itself is gitignored and never committed --
+// this .example file is the only one that should ever be in version control.
+return [
+    'host'     => '127.0.0.1',
+    'database' => 'inventory_db',
+    'username' => 'root',
+    'password' => '',
+];

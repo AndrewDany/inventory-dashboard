@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 export const poLineItemSchema = z.object({
   sku: z.string().min(1, 'SKU is required'),
-  inventory_item_id: z.coerce.number().optional(),
+  inventory_item_id: z.string().optional(),
   quantity_ordered: z.coerce.number().int().min(1, 'Quantity must be at least 1'),
   unit_cost: z.coerce.number().min(0).optional(),
 })
@@ -20,7 +20,7 @@ export type POLineItem = z.infer<typeof poLineItemSchema>
 
 export const soLineItemSchema = z.object({
   sku: z.string().min(1, 'SKU is required'),
-  inventory_item_id: z.coerce.number().optional(),
+  inventory_item_id: z.string().optional(),
   quantity_ordered: z.coerce.number().int().min(1, 'Quantity must be at least 1'),
   unit_price: z.coerce.number().min(0).optional(),
 })
@@ -36,7 +36,7 @@ export type SalesOrderFormInput = z.input<typeof salesOrderSchema>
 
 export const adjustmentSchema = z.object({
   sku: z.string().min(1, 'SKU is required'),
-  inventory_item_id: z.coerce.number().optional(),
+  inventory_item_id: z.string().optional(),
   location_id: z.string().min(1, 'Location is required'),
   quantity_delta: z.coerce.number().int().refine((v) => v !== 0, 'Quantity change cannot be zero'),
   reason: z.enum(['manual_add', 'manual_remove', 'cycle_count', 'write_off', 'other']),
@@ -44,3 +44,22 @@ export const adjustmentSchema = z.object({
 })
 
 export type AdjustmentFormValues = z.infer<typeof adjustmentSchema>
+
+export const preOrderSchema = z
+  .object({
+    so_number: z.string().min(1, 'Order number is required'),
+    customer_name: z.string().min(1, "Client's name is required"),
+    customer_phone: z.string().min(1, 'Phone number is required'),
+    fulfillment_method: z.enum(['pickup', 'delivery']),
+    delivery_address: z.string().optional(),
+    deposit_amount: z.coerce.number().min(0, 'Deposit cannot be negative').optional(),
+    notes: z.string().optional(),
+    items: z.array(soLineItemSchema).min(1, 'Add at least one line item'),
+  })
+  .refine(
+    (data) => data.fulfillment_method !== 'delivery' || !!data.delivery_address?.trim(),
+    { message: 'Delivery address is required when fulfillment is by delivery', path: ['delivery_address'] }
+  )
+
+export type PreOrderFormValues = z.output<typeof preOrderSchema>
+export type PreOrderFormInput = z.input<typeof preOrderSchema>

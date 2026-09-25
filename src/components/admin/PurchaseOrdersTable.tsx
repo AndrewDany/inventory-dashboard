@@ -56,7 +56,7 @@ export default function PurchaseOrdersTable() {
                   {new Date(po.created_at).toLocaleDateString()}
                 </TableCell>
                 <TableCell className="text-right font-semibold text-slate-900">
-                  {po.purchase_order_items[0]?.currency ?? 'GHS'} {orderTotal(po).toFixed(2)}
+                  {po.purchase_order_items[0]?.currency ?? 'GHC'} {orderTotal(po).toFixed(2)}
                 </TableCell>
                 <TableCell className="space-x-2">
                   <Button
@@ -82,7 +82,7 @@ export default function PurchaseOrdersTable() {
                           <span>{item.sku}</span>
                           <span>
                             {item.quantity_received} / {item.quantity_ordered} received
-                            {item.unit_cost != null && ` · GHS ${item.unit_cost.toFixed(2)} ea`}
+                            {item.unit_cost != null && ` · GHC ${item.unit_cost.toFixed(2)} ea`}
                           </span>
                         </div>
                       ))}

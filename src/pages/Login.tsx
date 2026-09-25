@@ -1,11 +1,11 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Package } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import loginPhoto from '../assets/landing/tablet-check.jpg'
+import samdamLogo from '../assets/landing/samdamlogo.png'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -41,14 +41,15 @@ export default function Login() {
             alt="Warehouse worker checking stock on a tablet"
             className="absolute inset-0 w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/85 via-indigo-900/50 to-indigo-900/20" />
+          <div className="absolute inset-0 bg-linear-to-br from-indigo-900/85 via-indigo-900/50 to-indigo-900/20" />
 
           <div className="relative h-full flex flex-col justify-between p-4 lg:p-10 text-white">
             <Link to="/" className="flex items-center gap-2 w-fit">
-              <div className="w-8 h-8 rounded-lg bg-white/15 backdrop-blur flex items-center justify-center">
-                <Package size={16} className="text-white" />
-              </div>
-              <span className="font-bold">Inventory Dashboard</span>
+              <img
+                src={samdamLogo}
+                alt="Samdam Ventures"
+                className="h-10 w-auto max-w-47.5 object-contain object-left sm:h-12 sm:max-w-57.5"
+              />
             </Link>
 
             <div className="max-w-sm">

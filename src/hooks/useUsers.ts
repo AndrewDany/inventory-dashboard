@@ -1,19 +1,23 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { supabase } from '../lib/supabaseClient'
+import { api } from '../lib/apiClient'
 import type { Profile } from '../types/profile'
 
 export function useUsers() {
   return useQuery({
     queryKey: ['users'],
     queryFn: async (): Promise<Profile[]> => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (error) throw new Error(error.message)
-      return data as Profile[]
+      const data = await api.get<any[]>('/users')
+      return (data || []).map((u) => ({
+        id: u.id,
+        email: u.email,
+        role: u.role,
+        full_name: u.full_name,
+        avatar_url: u.avatar_url,
+        created_at: u.created_at,
+        location_id: u.location_id ?? null,
+        status: u.status === 'suspended' ? 'suspended' : 'active',
+      }))
     },
   })
 }
@@ -23,11 +27,7 @@ export function useUpdateUserStatus() {
 
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: 'active' | 'suspended' }) => {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ status })
-        .eq('id', id)
-      if (error) throw new Error(error.message)
+      await api.patch(`/users/${id}`, { status })
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
@@ -35,7 +35,7 @@ export function useUpdateUserStatus() {
         variables.status === 'suspended' ? 'User suspended' : 'User reactivated'
       )
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error(`Failed to update user: ${error.message}`)
     },
   })
@@ -46,17 +46,13 @@ export function useUpdateUserLocation() {
 
   return useMutation({
     mutationFn: async ({ id, locationId }: { id: string; locationId: string | null }) => {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ location_id: locationId })
-        .eq('id', id)
-      if (error) throw new Error(error.message)
+      await api.patch(`/users/${id}`, { location_id: locationId })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
       toast.success('User location updated')
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error(`Failed to update location: ${error.message}`)
     },
   })

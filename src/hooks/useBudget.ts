@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { supabase } from '../lib/supabaseClient'
+import { api } from '../lib/apiClient'
 
 export interface BudgetSummary {
   monthlyBudget: number
@@ -8,44 +8,15 @@ export interface BudgetSummary {
   remaining: number
 }
 
-function currentMonthRange() {
-  const now = new Date()
-  const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
-  return start
-}
-
 export function useBudget() {
   return useQuery({
     queryKey: ['budget_summary'],
     queryFn: async (): Promise<BudgetSummary> => {
-      const { data: setting } = await supabase
-        .from('settings')
-        .select('value')
-        .eq('key', 'monthly_budget')
-        .single()
-
-      const monthlyBudget = Number(setting?.value ?? 0)
-      const start = currentMonthRange()
-
-      // Spend this month = cost of everything actually received into stock
-      const { data: movements, error } = await supabase
-        .from('stock_movements')
-        .select('change_amount, unit_cost, created_at')
-        .gt('change_amount', 0)
-        .gte('created_at', start)
-
-      if (error) throw new Error(error.message)
-
-      const movementRows = (movements ?? []) as Array<{ change_amount: number; unit_cost: number }>
-      const spentThisMonth = movementRows.reduce<number>(
-        (sum, m) => sum + Number(m.change_amount ?? 0) * Number(m.unit_cost ?? 0),
-        0
-      )
-
+      const data = await api.get<any>('/financials/budget')
       return {
-        monthlyBudget,
-        spentThisMonth,
-        remaining: Math.max(monthlyBudget - spentThisMonth, 0),
+        monthlyBudget: Number(data.monthlyBudget || 0),
+        spentThisMonth: Number(data.spentThisMonth || 0),
+        remaining: Number(data.remaining || 0),
       }
     },
   })
@@ -56,10 +27,7 @@ export function useUpdateBudget() {
 
   return useMutation({
     mutationFn: async (value: number) => {
-      const { error } = await supabase
-        .from('settings')
-        .upsert({ key: 'monthly_budget', value: String(value) }, { onConflict: 'key' })
-      if (error) throw new Error(error.message)
+      await api.put('/financials/budget', { monthly_budget: value })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['budget_summary'] })

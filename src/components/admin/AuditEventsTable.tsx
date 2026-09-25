@@ -134,7 +134,7 @@ export default function AuditEventsTable() {
                       </span>
                     </TableCell>
                     <TableCell className="text-slate-600 text-sm">
-                      {ev.unit_cost != null ? `GHS ${ev.unit_cost.toFixed(2)}` : '—'}
+                      {ev.unit_cost != null ? `GHC ${ev.unit_cost.toFixed(2)}` : '—'}
                     </TableCell>
                     <TableCell className="text-slate-600 text-sm">
                       {ev.actor_user_email || '—'}

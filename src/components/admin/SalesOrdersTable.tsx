@@ -137,7 +137,7 @@ export default function SalesOrdersTable() {
                   {new Date(so.created_at).toLocaleDateString()}
                 </TableCell>
                 <TableCell className="text-right font-semibold text-slate-900">
-                  {so.sales_order_items[0]?.currency ?? 'GHS'} {orderTotal(so).toFixed(2)}
+                  {so.sales_order_items[0]?.currency ?? 'GHC'} {orderTotal(so).toFixed(2)}
                 </TableCell>
                 <TableCell className="space-x-2">
                   <Button
@@ -153,7 +153,7 @@ export default function SalesOrdersTable() {
                       size="sm"
                       onClick={() => setShippingSO({ id: so.id, locationId: '' })}
                     >
-                      Ship
+                      Fulfill
                     </Button>
                   )}
                 </TableCell>
@@ -166,8 +166,8 @@ export default function SalesOrdersTable() {
                         <div key={item.id} className="flex justify-between text-gray-600">
                           <span>{item.sku}</span>
                           <span>
-                            {item.quantity_shipped} / {item.quantity_ordered} shipped
-                            {item.unit_price != null && ` · GHS ${item.unit_price.toFixed(2)} ea`}
+                            {item.quantity_shipped} / {item.quantity_ordered} fulfilled
+                            {item.unit_price != null && ` · GHC ${item.unit_price.toFixed(2)} ea`}
                           </span>
                         </div>
                       ))}
@@ -181,10 +181,10 @@ export default function SalesOrdersTable() {
       </Table>
 
       {shippingSO && (
-        <Modal title="Ship Sales Order" onClose={() => { setShippingSO(null); setShipLocationId('') }}>
+        <Modal title="Fulfill Sales Order" onClose={() => { setShippingSO(null); setShipLocationId('') }}>
           <div className="space-y-4">
             <div>
-              <Label className="mb-1 block">Ship from Location</Label>
+              <Label className="mb-1 block">Fulfill from Location</Label>
               <Select
                 value={shipLocationId}
                 onValueChange={(v) => setShipLocationId(v ?? '')}
@@ -204,7 +204,7 @@ export default function SalesOrdersTable() {
               </Select>
             </div>
             <p className="text-sm text-gray-500">
-              This will ship <strong>all remaining items</strong> on this order. Use POS for partial shipments.
+              This will fulfill <strong>all remaining items</strong> on this order. Use POS for partial fulfillment.
             </p>
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
               <p className="font-semibold">Available stock at {selectedLocationName ?? 'selected location'}:</p>
@@ -236,7 +236,7 @@ export default function SalesOrdersTable() {
                 onClick={handleShip}
                 disabled={!shipLocationId || shipOrder.isPending || hasShortage}
               >
-                {shipOrder.isPending ? 'Shipping...' : 'Confirm Shipment'}
+                {shipOrder.isPending ? 'Fulfilling...' : 'Confirm Fulfillment'}
               </Button>
             </div>
           </div>

@@ -45,8 +45,8 @@ export default function UsagePanel({ items = [] }: { items?: InventoryItem[] }) 
               />
             </div>
             <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
-              <span>GHS {spent.toLocaleString()} spent</span>
-              <span>Target: GHS {budget.toLocaleString()}</span>
+              <span>GHC {spent.toLocaleString()} spent</span>
+              <span>Target: GHC {budget.toLocaleString()}</span>
             </div>
           </div>
 

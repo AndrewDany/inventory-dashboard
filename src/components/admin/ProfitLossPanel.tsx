@@ -16,15 +16,15 @@ export default function ProfitLossPanel() {
       <div className="grid gap-3 md:grid-cols-3">
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
           <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-600">Revenue</p>
-          <p className="mt-2 text-2xl font-bold text-emerald-700">GHS {data.netRevenue.toFixed(2)}</p>
+          <p className="mt-2 text-2xl font-bold text-emerald-700">GHC {data.netRevenue.toFixed(2)}</p>
           <p className="mt-1 text-xs text-emerald-600">
-            Gross sales: GHS {data.revenue.toFixed(2)} &middot; Refunds: GHS {data.refunds.toFixed(2)} &middot; COGS: GHS {data.cogs.toFixed(2)}
+            Gross sales: GHC {data.revenue.toFixed(2)} &middot; Refunds: GHC {data.refunds.toFixed(2)} &middot; COGS: GHC {data.cogs.toFixed(2)}
           </p>
         </div>
 
         <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
           <p className="text-[10px] uppercase tracking-[0.2em] text-indigo-600">Gross Profit</p>
-          <p className="mt-2 text-2xl font-bold text-indigo-700">GHS {data.grossProfit.toFixed(2)}</p>
+          <p className="mt-2 text-2xl font-bold text-indigo-700">GHC {data.grossProfit.toFixed(2)}</p>
           <p className="mt-1 text-xs text-indigo-600">Margin: {data.grossMargin.toFixed(1)}%</p>
         </div>
 
@@ -33,11 +33,26 @@ export default function ProfitLossPanel() {
             Net Profit
           </p>
           <p className={'mt-2 text-2xl font-bold ' + (data.netProfit >= 0 ? 'text-blue-700' : 'text-red-700')}>
-            GHS {data.netProfit.toFixed(2)}
+            GHC {data.netProfit.toFixed(2)}
           </p>
           <p className={'mt-1 text-xs ' + (data.netProfit >= 0 ? 'text-blue-600' : 'text-red-600')}>
-            Margin: {data.netMargin.toFixed(1)}% &middot; Expenses: GHS {data.totalExpenses.toFixed(2)}
+            Margin: {data.netMargin.toFixed(1)}% &middot; Expenses: GHC {data.totalExpenses.toFixed(2)}
           </p>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <p className="text-sm font-semibold text-slate-900">Profit reconciliation</p>
+        <div className="mt-3 space-y-2 text-sm">
+          <div className="flex justify-between"><span>Gross sales</span><span className="font-medium">GHC {data.revenue.toFixed(2)}</span></div>
+          <div className="flex justify-between text-slate-600"><span>Refunds</span><span>(GHC {data.refunds.toFixed(2)})</span></div>
+          <div className="flex justify-between text-slate-600"><span>Cost of goods sold</span><span>(GHC {data.cogs.toFixed(2)})</span></div>
+          <div className="flex justify-between border-t border-slate-100 pt-2 font-medium"><span>Gross profit</span><span>GHC {data.grossProfit.toFixed(2)}</span></div>
+          <div className="flex justify-between text-slate-600"><span>Operating expenses</span><span>(GHC {data.totalExpenses.toFixed(2)})</span></div>
+          <div className={`flex justify-between border-t border-slate-200 pt-2 font-bold ${data.netProfit >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
+            <span>{data.netProfit >= 0 ? 'Net profit' : 'Net loss'}</span>
+            <span>GHC {data.netProfit.toFixed(2)}</span>
+          </div>
         </div>
       </div>
 
@@ -48,7 +63,7 @@ export default function ProfitLossPanel() {
             {data.expensesByCategory.map((c) => (
               <div key={c.category} className="flex justify-between text-sm">
                 <span className="text-slate-600">{categoryLabel(c.category)}</span>
-                <span className="font-medium text-slate-900">GHS {c.total.toFixed(2)}</span>
+                <span className="font-medium text-slate-900">GHC {c.total.toFixed(2)}</span>
               </div>
             ))}
           </div>

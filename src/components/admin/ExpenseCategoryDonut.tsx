@@ -46,7 +46,7 @@ export default function ExpenseCategoryDonut({ data, categoryLabel }: ExpenseCat
            <Tooltip
   formatter={(value, name) => {
     const num = typeof value === 'number' ? value : Number(value ?? 0)
-    return [`GHS ${num.toFixed(2)}`, String(name)]
+    return [`GHC ${num.toFixed(2)}`, String(name)]
   }}
   contentStyle={{ fontSize: 12, borderRadius: 6 }}
 />
@@ -62,7 +62,7 @@ export default function ExpenseCategoryDonut({ data, categoryLabel }: ExpenseCat
               {s.name}
             </span>
             <span className="font-medium text-slate-900">
-              GHS {s.value.toFixed(2)}
+              GHC {s.value.toFixed(2)}
               <span className="ml-1 text-xs font-normal text-slate-400">
                 ({total > 0 ? ((s.value / total) * 100).toFixed(0) : 0}%)
               </span>

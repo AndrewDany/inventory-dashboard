@@ -17,6 +17,7 @@ import {
   Users,
   Package,
   ShoppingCart,
+  Phone,
   AlertTriangle,
   ArrowLeftRight,
   Layers,
@@ -46,6 +47,7 @@ interface SidebarProps {
   onAddSupplier?: () => void
   onAddLocation?: () => void
   onAddPurchaseOrder?: () => void
+  onUpdateBudget?: () => void
 }
 
 interface NavItem {
@@ -86,6 +88,7 @@ const navSections: NavSection[] = [
     items: [
       { path: '/admin/orders', label: 'Purchase Orders', icon: <Package size={17} />, adminOnly: true },
       { path: '/admin/sales-orders', label: 'Sales Orders', icon: <ShoppingCart size={17} />, adminOnly: true },
+      { path: '/admin/pre-orders', label: 'Pre-Orders', icon: <Phone size={17} />, adminOnly: true },
       { path: '/admin/suppliers', label: 'Suppliers', icon: <Truck size={17} />, adminOnly: true },
       { path: '/admin/returns', label: 'Returns & Replacements', icon: <RotateCcw size={17} />, adminOnly: true },
     ],
@@ -94,6 +97,7 @@ const navSections: NavSection[] = [
     title: 'Finance & Governance',
     items: [
       { path: '/admin/financials', label: 'P&L Financials', icon: <DollarSign size={17} />, adminOnly: true },
+      { path: '/admin/invoice-history', label: 'Invoice History', icon: <Receipt size={17} />, adminOnly: true },
       { path: '/admin/valuation', label: 'Valuation', icon: <Scale size={17} />, adminOnly: true },
       { path: '/admin/reports', label: 'Reports & Analytics', icon: <BarChart3 size={17} />, adminOnly: true },
       { path: '/admin/users', label: 'Users & Roles', icon: <Users size={17} />, adminOnly: true },
@@ -118,6 +122,7 @@ export default function Sidebar({
   onAddSupplier,
   onAddLocation,
   onAddPurchaseOrder,
+  onUpdateBudget,
 }: SidebarProps) {
   const location = useLocation()
   const { data: profile } = useProfile()
@@ -236,7 +241,7 @@ export default function Sidebar({
           </nav>
 
           {/* Quick Operations Button List */}
-          {(onAddItem || onSellItem || onBulkAddProducts || onAddPurchaseOrder || onAddSupplier || onAddLocation || onInviteUser || onChangePassword || onSettings) && (
+          {(onAddItem || onSellItem || onBulkAddProducts || onAddPurchaseOrder || onAddSupplier || onAddLocation || onInviteUser || onChangePassword || onSettings || onUpdateBudget) && (
             <div className="mt-5 pt-4 border-t border-slate-100 space-y-1.5">
               {!isCollapsed && (
                 <p className="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
@@ -304,6 +309,13 @@ export default function Sidebar({
                 <button onClick={onSettings} className={actionBtnClass} title="Settings">
                   <Settings size={15} className="text-slate-600" />
                   {!isCollapsed && <span>Settings</span>}
+                </button>
+              )}
+
+              {onUpdateBudget && (
+                <button onClick={onUpdateBudget} className={actionBtnClass} title="Update Purchasing Budget">
+                  <DollarSign size={15} className="text-amber-600" />
+                  {!isCollapsed && <span>Update Budget</span>}
                 </button>
               )}
             </div>

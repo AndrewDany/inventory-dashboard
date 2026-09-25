@@ -1,5 +1,4 @@
 import jsPDF from 'jspdf'
-import autoTable from 'jspdf-autotable'
 
 export interface InvoiceLineItem {
   sku: string
@@ -11,6 +10,7 @@ export interface InvoiceLineItem {
 
 export interface InvoiceData {
   invoiceNumber: string
+  invoiceCount?: number
   soNumber: string
   customerName?: string
   customerEmail?: string
@@ -23,97 +23,144 @@ export interface InvoiceData {
 }
 
 export function generateInvoiceBlob(data: InvoiceData): string {
-  const doc = new jsPDF()
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' })
+  const pageWidth = doc.internal.pageSize.getWidth()
+  const pageHeight = doc.internal.pageSize.getHeight()
+  const margin = 42
   const subtotal = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
   const grandTotal = subtotal
-
-  // Header
-  doc.setFontSize(18)
-  doc.setFont('helvetica', 'bold')
-  doc.text(data.companyName, 14, 20)
-
-  doc.setFontSize(10)
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(120)
-  doc.text('INVOICE', 190, 20, { align: 'right' })
-  doc.text(`Invoice #: ${data.invoiceNumber}`, 190, 26, { align: 'right' })
-  doc.text(`Order #: ${data.soNumber}`, 190, 31, { align: 'right' })
-  doc.text(`Date: ${new Date().toLocaleDateString()}`, 190, 36, { align: 'right' })
-
-  // Customer Details Section
-  doc.setTextColor(0)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(11)
-  doc.text('Customer Bill', 14, 48)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(10)
-
-  let yPos = 56
-  if (data.customerName) {
-    doc.text(`Customer Name: ${data.customerName}`, 14, yPos)
-    yPos += 6
-  }
-  if (data.customerEmail) {
-    doc.text(`Invoicing Email: ${data.customerEmail}`, 14, yPos)
-    yPos += 6
-  }
-  if (data.customerPhone) {
-    doc.text(`Contact Phone: ${data.customerPhone}`, 14, yPos)
-    yPos += 6
-  }
-  if (data.shippingAddress) {
-    doc.text(`Shipping Destination Address: ${data.shippingAddress}`, 14, yPos)
-    yPos += 6
-  }
-
-  doc.setFont('helvetica', 'bold')
-  doc.text(`Payment Status: ${data.paymentStatus}`, 120, 48)
-  doc.setFont('helvetica', 'normal')
-
-  if (data.processedBy) {
-    doc.text(`Processed by: ${data.processedBy}`, 120, 54)
-  }
-
-  const tableStartY = yPos + 8
-
-  // Items Table
-  autoTable(doc, {
-    startY: tableStartY,
-    head: [['Catalog Product Line', 'Retail Unit Price', 'Checkout Qty', 'Subtotal']],
-    body: data.items.map((item) => [
-      item.name,
-      `GHS ${item.unitPrice.toFixed(2)}${item.unitLabel ? ` /${item.unitLabel}` : ''}`,
-      `${item.quantity}${item.unitLabel ? ` ${item.unitLabel}` : ''}`,
-      `GHS ${(item.quantity * item.unitPrice).toFixed(2)}`,
-    ]),
-    headStyles: { fillColor: [79, 70, 229] },
-    styles: { fontSize: 9 },
-    columnStyles: {
-      1: { halign: 'right' },
-      2: { halign: 'right' },
-      3: { halign: 'right' },
-    },
+  const issuedAt = new Date()
+  const dateText = `${String(issuedAt.getDate()).padStart(2, '0')} ${issuedAt.toLocaleString('en-US', {
+    month: 'long',
+  })}, ${issuedAt.getFullYear()}`
+  const timeText = issuedAt.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
   })
+  const dailyInvoiceNumber = String(data.invoiceCount ?? 1).padStart(3, '0')
 
-  const finalY = (doc as any).lastAutoTable.finalY + 10
+  doc.setFillColor(246, 246, 246)
+  doc.rect(0, 0, pageWidth, pageHeight, 'F')
 
-  // Basket Summary
-  doc.setFontSize(10)
-  doc.setFont('helvetica', 'normal')
-  doc.text('Basket Subtotal:', 130, finalY)
-  doc.text(`GHS ${subtotal.toFixed(2)}`, 190, finalY, { align: 'right' })
-
+  doc.setTextColor(17, 17, 17)
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(12)
-  doc.text('Grand Total Paid:', 130, finalY + 8)
-  doc.text(`GHS ${grandTotal.toFixed(2)}`, 190, finalY + 8, { align: 'right' })
+  doc.setFontSize(9)
+  doc.text((data.companyName || 'YOUR LOGO').toUpperCase(), margin, 48)
 
   doc.setFontSize(8)
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(150)
-  doc.text('Thank you for your business.', 14, 285)
+  doc.setTextColor(72, 72, 72)
+  doc.text('NO.', pageWidth - margin - 54, 48, { align: 'right' })
+  doc.text(data.invoiceNumber || '000001', pageWidth - margin, 48, { align: 'right' })
 
-  // Return blob URL instead of auto-downloading
+  doc.setTextColor(17, 17, 17)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(58)
+  doc.text(`INVOICE #${dailyInvoiceNumber}`, margin, 122)
+
+  doc.setFontSize(11)
+  doc.text(`Date: ${dateText}`, margin, 156)
+  doc.setFont('helvetica', 'normal')
+  doc.text(`Time: ${timeText}`, margin, 173)
+
+  const leftX = margin
+  const rightX = pageWidth / 2 + 28
+  const contactY = 188
+
+  doc.setFont('helvetica', 'bold')
+  doc.text('Bill to', leftX, contactY)
+  const billRows = [
+    ['Customer name:', data.customerName || '-'],
+    ['Delivery Address:', data.shippingAddress || '-'],
+    ['Email:', data.customerEmail || '-'],
+    ['Contact:', data.customerPhone || '-'],
+  ]
+  let billY = contactY + 18
+  billRows.forEach(([label, value]) => {
+    doc.setFont('helvetica', 'bold')
+    doc.text(label, leftX, billY)
+    doc.setFont('helvetica', 'normal')
+    doc.text(value, leftX + 112, billY)
+    billY += 18
+  })
+
+  doc.setFont('helvetica', 'bold')
+  doc.text('From:', rightX, contactY)
+  doc.setFont('helvetica', 'normal')
+  const from = [
+    data.companyName || 'Olivia Wilson',
+    'Foster Home Junction, Dodowa Highway',
+    'opposite Jehovah Witness Hall',
+    'GPS Address: GM-122-9443',
+  ]
+  let fromY = contactY + 18
+  from.forEach((line) => {
+    doc.text(line, rightX, fromY)
+    fromY += 18
+  })
+
+  const tableTop = 286
+  const rowHeight = 28
+  const colWidths = [220, 78, 78, 78]
+  const colStarts = [
+    margin,
+    margin + colWidths[0],
+    margin + colWidths[0] + colWidths[1],
+    margin + colWidths[0] + colWidths[1] + colWidths[2],
+  ]
+
+  doc.setFillColor(228, 228, 228)
+  doc.rect(margin, tableTop, pageWidth - margin * 2, rowHeight, 'F')
+  doc.setTextColor(17, 17, 17)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(10)
+  const headers = ['Item', 'Quantity', 'Price', 'Amount']
+  headers.forEach((header, index) => {
+    const x = index === 0 ? colStarts[index] + 10 : colStarts[index] + colWidths[index] / 2
+    doc.text(header, x, tableTop + 18, index === 0 ? undefined : { align: 'center' })
+  })
+
+  const itemRows = data.items.length > 0 ? data.items : [
+    { name: 'Logo', quantity: 1, unitPrice: 500 },
+    { name: 'Banner (2x6m)', quantity: 2, unitPrice: 45 },
+    { name: 'Poster (1x2m)', quantity: 3, unitPrice: 55 },
+  ]
+
+  let currentY = tableTop + rowHeight
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(10)
+  itemRows.forEach((item) => {
+    const lineSubtotal = item.quantity * item.unitPrice
+    doc.setDrawColor(202, 202, 202)
+    doc.line(margin, currentY, pageWidth - margin, currentY)
+
+    doc.text(item.name, colStarts[0] + 10, currentY + 18)
+    doc.text(String(item.quantity), colStarts[1] + colWidths[1] / 2, currentY + 18, { align: 'center' })
+    doc.text(`GHC ${item.unitPrice.toFixed(2)}`, colStarts[2] + colWidths[2] / 2, currentY + 18, { align: 'center' })
+    doc.text(`GHC ${lineSubtotal.toFixed(2)}`, colStarts[3] + colWidths[3] / 2, currentY + 18, { align: 'center' })
+
+    currentY += rowHeight
+  })
+
+  const totalsY = currentY + 16
+  doc.setDrawColor(160, 160, 160)
+  doc.line(margin, totalsY - 6, pageWidth - margin, totalsY - 6)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(11)
+  doc.text('Total', pageWidth - 128, totalsY + 6)
+  doc.text(`GHC ${grandTotal.toFixed(2)}`, pageWidth - margin, totalsY + 6, { align: 'right' })
+
+  const paymentY = totalsY + 46
+  doc.setFont('helvetica', 'bold')
+  doc.text('Payment method:', margin, paymentY)
+  doc.setFont('helvetica', 'normal')
+  doc.text(data.paymentStatus || 'Cash', margin + 132, paymentY)
+
+  doc.setFont('helvetica', 'bold')
+  doc.text('Note:', margin, paymentY + 20)
+  doc.setFont('helvetica', 'normal')
+  doc.text('Thank you for choosing us!', margin + 40, paymentY + 20)
+
   const blob = doc.output('blob')
   return URL.createObjectURL(blob)
 }

@@ -135,7 +135,7 @@ export default function ReturnForm({ onClose }: { onClose: () => void }) {
 
       {resolution === 'refund' && (
         <div>
-          <Label htmlFor="refund_amount" className="mb-1 block">Refund Amount (GHS)</Label>
+          <Label htmlFor="refund_amount" className="mb-1 block">Refund Amount (GHC)</Label>
           <Input id="refund_amount" type="number" step="0.01" {...register('refund_amount')} />
           {errors.refund_amount && (
             <p className="text-red-600 text-sm mt-1">{errors.refund_amount.message}</p>

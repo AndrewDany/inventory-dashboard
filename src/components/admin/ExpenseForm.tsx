@@ -62,7 +62,7 @@ export default function ExpenseForm({ onClose }: { onClose: () => void }) {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="amount" className="mb-1 block">Amount (GHS)</Label>
+          <Label htmlFor="amount" className="mb-1 block">Amount (GHC)</Label>
           <Input id="amount" type="number" step="0.01" {...register('amount')} />
           {errors.amount && <p className="text-red-600 text-sm mt-1">{errors.amount.message}</p>}
         </div>
