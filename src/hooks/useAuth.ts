@@ -60,9 +60,15 @@ export function useAuth() {
   }
 
   async function signOut() {
-    clearAuthSession()
-    setSession(null)
-    window.location.href = '/login'
+    try {
+      await api.post('/auth/logout')
+    } catch {
+      // Non-fatal if session token was already invalidated
+    } finally {
+      clearAuthSession()
+      setSession(null)
+      window.location.href = '/login'
+    }
   }
 
   return { session, loading, signIn, signOut }

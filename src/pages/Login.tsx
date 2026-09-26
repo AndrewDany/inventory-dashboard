@@ -43,15 +43,7 @@ export default function Login() {
           />
           <div className="absolute inset-0 bg-linear-to-br from-indigo-900/85 via-indigo-900/50 to-indigo-900/20" />
 
-          <div className="relative h-full flex flex-col justify-between p-4 lg:p-10 text-white">
-            <Link to="/" className="flex items-center gap-2 w-fit">
-              <img
-                src={samdamLogo}
-                alt="Samdam Ventures"
-                className="h-10 w-auto max-w-47.5 object-contain object-left sm:h-12 sm:max-w-57.5"
-              />
-            </Link>
-
+          <div className="relative h-full flex flex-col justify-end p-6 lg:p-10 text-white">
             <div className="max-w-sm">
               <h2 className="text-2xl font-bold mb-3 leading-snug">
                 Know exactly what's on your shelves, every day.
@@ -68,8 +60,18 @@ export default function Login() {
       {/* Right: form panel */}
       <div className="flex items-center justify-center flex-1 bg-gray-50 px-6 py-10 lg:py-16">
         <div className="w-full max-w-sm">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Welcome back</h1>
-          <p className="text-sm text-gray-500 mb-8">Sign in to your account to continue.</p>
+          <div className="flex flex-col items-center text-center mb-6">
+            <Link to="/" className="inline-flex justify-center mb-4 transition-transform hover:scale-105">
+              <img
+                src={samdamLogo}
+                alt="Samdam Ventures"
+                className="h-16 sm:h-20 w-auto max-w-[280px] object-contain"
+              />
+            </Link>
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">Welcome back</h1>
+            <p className="text-sm text-gray-500">Sign in to your account to continue.</p>
+          </div>
+
 
           <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
             {error && (

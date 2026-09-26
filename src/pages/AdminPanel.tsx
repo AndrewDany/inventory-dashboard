@@ -1,14 +1,12 @@
-import { Suspense, useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useInventory } from '../hooks/useInventory'
 import { usePurchaseOrders } from '../hooks/usePurchaseOrders'
 import { useUsers } from '../hooks/useUsers'
 import PageLayout from '../components/layout/PageLayout'
-import Modal from '../components/ui/Modal'
-import LocationForm from '../components/admin/LocationForm'
 
 export default function AdminPanel() {
-  const [showAddLocationModal, setShowAddLocationModal] = useState(false)
+
   const { data: inventoryItems = [], isLoading: inventoryLoading } = useInventory()
   const { data: purchaseOrders = [], isLoading: purchaseOrdersLoading } = usePurchaseOrders()
   const { data: users = [], isLoading: usersLoading } = useUsers()
@@ -64,10 +62,7 @@ export default function AdminPanel() {
   }, [location.pathname])
 
   return (
-    <PageLayout
-      title="Admin Panel"
-      onAddLocation={() => setShowAddLocationModal(true)}
-    >
+    <PageLayout title="Admin Panel">
       <div className="space-y-6">
         <div className="overflow-hidden rounded-[32px] border border-indigo-200 bg-linear-to-br from-indigo-900 via-indigo-800 to-violet-700 p-6 text-white shadow-[0_24px_70px_rgba(79,70,229,0.18)] sm:p-8">
           <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
@@ -142,12 +137,6 @@ export default function AdminPanel() {
           </Suspense>
         </div>
       </div>
-
-      {showAddLocationModal && (
-        <Modal title="Add Location" onClose={() => setShowAddLocationModal(false)}>
-          <LocationForm onClose={() => setShowAddLocationModal(false)} />
-        </Modal>
-      )}
     </PageLayout>
   )
 }

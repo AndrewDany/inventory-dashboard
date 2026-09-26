@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/table'
 import type { Location } from '../../types/location'
 
-export default function LocationsTable({ onAddClick }: { onAddClick?: () => void } = {}) {
+export default function LocationsTable() {
   const { data: locations, isLoading, error } = useLocations()
   const deleteLocation = useDeleteLocation()
   const [editingLocation, setEditingLocation] = useState<Location | null>(null)
@@ -25,12 +25,7 @@ export default function LocationsTable({ onAddClick }: { onAddClick?: () => void
     <div>
       {(!locations || locations.length === 0) && (
         <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center bg-slate-50/50">
-          <p className="text-gray-500 text-sm mb-3">No locations registered yet.</p>
-          {onAddClick && (
-            <Button onClick={onAddClick} variant="outline" size="sm" className="bg-white">
-              Add First Location
-            </Button>
-          )}
+          <p className="text-gray-500 text-sm">No locations registered yet. Click &quot;Add Location&quot; above to create one.</p>
         </div>
       )}
 

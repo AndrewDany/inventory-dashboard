@@ -409,7 +409,9 @@ export default function BulkProductModal({ onClose }: { onClose: () => void }) {
               <Label className="mb-1 block text-xs text-slate-500">Default Location (applied to all products)</Label>
               <Select value={defaultLocationId} onValueChange={(v) => setDefaultLocationId(v ?? '')}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="No location (optional)" />
+                  <SelectValue placeholder="No location (optional)">
+                    {(value: string) => locations?.find((loc) => loc.id === value)?.name ?? value}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {locations.map((loc) => (

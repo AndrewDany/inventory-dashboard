@@ -3,18 +3,22 @@ import { api } from '../lib/apiClient'
 
 export interface Notification {
   id: string
-  user_id: string | null
-  user_email: string
-  action: string
-  item_name: string
+  title: string
+  message: string
+  type: 'info' | 'warning' | 'danger' | 'success'
   created_at: string
   read: boolean
+  action?: string
+  item_name?: string
+  user_email?: string
+  user_id?: string | null
 }
 
 interface RawNotification {
   id: string
   title?: string
   message?: string
+  type?: string
   is_read?: number | boolean
   user_id?: string | null
   user_email?: string
@@ -23,7 +27,7 @@ interface RawNotification {
   created_at: string
 }
 
-export function useNotifications(limit = 20) {
+export function useNotifications(limit = 30) {
   return useQuery({
     queryKey: ['notifications', limit],
     queryFn: async (): Promise<Notification[]> => {
@@ -33,15 +37,18 @@ export function useNotifications(limit = 20) {
 
       return items.map((n: RawNotification) => ({
         id: n.id,
-        user_id: n.user_id ?? null,
-        user_email: n.user_email ?? 'system',
+        title: n.title ?? n.action ?? 'System Alert',
+        message: n.message ?? n.item_name ?? '',
+        type: (n.type as 'info' | 'warning' | 'danger' | 'success') ?? 'info',
         action: n.action ?? n.title ?? 'Alert',
         item_name: n.item_name ?? n.message ?? '',
+        user_email: n.user_email ?? 'System',
+        user_id: n.user_id ?? null,
         created_at: n.created_at,
         read: Boolean(n.is_read) || readIds.has(n.id),
       }))
     },
-    refetchInterval: 30_000, // poll every 30s
+    refetchInterval: 15_000, // poll every 15s for live alerts
   })
 }
 
@@ -89,6 +96,7 @@ export function useMarkAllNotificationsRead() {
       } catch {
         // Fall back gracefully to localStorage
       }
+      localStorage.removeItem('notification_read_ids')
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] })

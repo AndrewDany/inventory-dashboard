@@ -70,8 +70,10 @@ function handleUserRoutes(PDO $pdo, string $method, array $uriParts): void
 
     if ($method === 'GET') {
         $stmt = $pdo->query('
-                 SELECT u.id, u.email, u.role, u.status, u.created_at, p.full_name,
-                     p.avatar_url, p.location_id
+            SELECT u.id, u.email, u.role, u.status, u.created_at, p.full_name,
+                   p.avatar_url, p.location_id,
+                   (SELECT created_at FROM activity_logs WHERE user_id = u.id AND action = "login" ORDER BY created_at DESC LIMIT 1) AS last_login_at,
+                   (SELECT created_at FROM activity_logs WHERE user_id = u.id AND action = "logout" ORDER BY created_at DESC LIMIT 1) AS last_logout_at
             FROM users u
             LEFT JOIN profiles p ON p.user_id = u.id
             ORDER BY u.created_at ASC

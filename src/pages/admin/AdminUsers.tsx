@@ -73,7 +73,11 @@ export default function AdminUsers() {
             <div>
               <Label className="mb-1 block">Location (staff will only see this location)</Label>
               <Select value={locationId ?? ''} onValueChange={(v) => setLocationId(v)}>
-                <SelectTrigger className="w-full"><SelectValue placeholder="All locations (admin default)" /></SelectTrigger>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="All locations (admin default)">
+                    {(value: string) => locations?.find((loc) => loc.id === value)?.name ?? value}
+                  </SelectValue>
+                </SelectTrigger>
                 <SelectContent>
                   {locations?.map((loc) => (
                     <SelectItem key={loc.id} value={loc.id}>{loc.name}</SelectItem>
@@ -90,4 +94,3 @@ export default function AdminUsers() {
     </div>
   )
 }
-

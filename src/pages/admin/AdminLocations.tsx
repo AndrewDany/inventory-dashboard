@@ -24,7 +24,7 @@ export default function AdminLocations() {
         </Button>
       </div>
 
-      <LocationsTable onAddClick={() => setShowAddModal(true)} />
+      <LocationsTable />
 
       {showAddModal && (
         <Modal title="Add Location" onClose={() => setShowAddModal(false)}>

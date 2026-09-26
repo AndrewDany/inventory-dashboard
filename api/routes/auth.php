@@ -94,6 +94,55 @@ function handleAuthRoutes(PDO $pdo, string $method, array $uriParts): void
             ], 200, 'Login successful');
             break;
 
+        case 'logout':
+            if ($method !== 'POST') jsonError('Method not allowed', 405);
+            try {
+                $auth = requireAuth();
+                $clientIp = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
+                $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+
+                // Fetch full name and role
+                $pStmt = $pdo->prepare('SELECT p.full_name, u.role FROM users u LEFT JOIN profiles p ON p.user_id = u.id WHERE u.id = ? LIMIT 1');
+                $pStmt->execute([$auth['sub']]);
+                $pData = $pStmt->fetch();
+                $fullName = $pData['full_name'] ?? '';
+                $role = $pData['role'] ?? ($auth['role'] ?? 'staff');
+                $displayName = $fullName ? "$fullName ($role)" : "User Logout ($role)";
+
+                $logStmt = $pdo->prepare('INSERT INTO activity_logs (id, user_id, user_email, action, item_name, entity_type, entity_id, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+                $logStmt->execute([
+                    generateUuid(),
+                    $auth['sub'],
+                    $auth['email'] ?? '',
+                    'logout',
+                    $displayName,
+                    'auth',
+                    $auth['sub'],
+                    json_encode([
+                        'ip' => $clientIp,
+                        'user_agent' => substr($userAgent, 0, 255),
+                        'role' => $role,
+                    ]),
+                ]);
+
+                $auditStmt = $pdo->prepare('INSERT INTO audit_events (id, event_type, entity_type, entity_id, sku, quantity_delta, unit_cost, actor_user_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+                $auditStmt->execute([
+                    generateUuid(),
+                    'user_logout',
+                    'session',
+                    $auth['sub'],
+                    null,
+                    0,
+                    0.00,
+                    $auth['email'] ?? '',
+                ]);
+            } catch (Throwable $e) {
+                // Non-fatal: do not block logout if session is already expired
+                error_log("Failed to log logout activity: " . $e->getMessage());
+            }
+            jsonSuccess(null, 200, 'Logged out successfully');
+            break;
+
         case 'me':
             if ($method !== 'GET') jsonError('Method not allowed', 405);
             $auth = requireAuth();

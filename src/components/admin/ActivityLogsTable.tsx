@@ -1,4 +1,4 @@
-import { Activity, Plus, Pencil, Trash2, LogIn } from 'lucide-react'
+import { Activity, Plus, Pencil, Trash2, LogIn, LogOut } from 'lucide-react'
 import { useActivityLogs } from '../../hooks/useActivityLogs'
 import { relativeTime } from '../../lib/relativeTime'
 
@@ -7,6 +7,7 @@ const ACTION_META = {
   updated: { icon: Pencil, bg: 'bg-indigo-50', text: 'text-indigo-600' },
   deleted: { icon: Trash2, bg: 'bg-rose-50', text: 'text-rose-600' },
   login: { icon: LogIn, bg: 'bg-blue-50', text: 'text-blue-600' },
+  logout: { icon: LogOut, bg: 'bg-slate-50', text: 'text-slate-500' },
 } as const
 
 const DEFAULT_ACTION_META = { icon: Activity, bg: 'bg-slate-100', text: 'text-slate-600' }
