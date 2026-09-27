@@ -34,6 +34,13 @@ $options = [
 
 try {
     $pdo = new PDO($dsn, $db['username'], $db['password'], $options);
+
+    // Force this session's clock to UTC, which equals Ghana local time
+    // (UTC+0, no daylight saving). Without this, NOW()/CURRENT_TIMESTAMP
+    // defaults use the DB server's own system timezone, which may not
+    // match Accra time and was causing login/logout timestamps (and
+    // every other auto-timestamped record) to be off by several hours.
+    $pdo->exec("SET time_zone = '+00:00'");
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode([
