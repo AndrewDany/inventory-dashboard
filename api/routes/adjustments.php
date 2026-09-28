@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../helpers/notify.php';
 
 function handleMovementRoutes(PDO $pdo, string $method): void
 {
@@ -191,6 +192,19 @@ function handleAdjustmentRoutes(PDO $pdo, string $method): void
             ]);
 
             $pdo->commit();
+
+            // Only reductions notify admins. Additions stay in the Audit Trail,
+            // so loading opening stock doesn't flood the bell.
+            if ($quantityDelta < 0) {
+                createNotification(
+                    $pdo,
+                    "Stock reduced: {$item['name']} ({$sku})",
+                    "{$adjNumber}: " . abs($quantityDelta) . " units removed (reason: {$reason}). New quantity: {$newQty}. By " . ($auth['email'] ?? 'system') . '.',
+                    'warning',
+                    'admin'
+                );
+            }
+
             jsonSuccess(['id' => $adjId, 'adjustment_number' => $adjNumber, 'new_quantity' => $newQty], 201, 'Adjustment recorded');
         } catch (Exception $e) {
             $pdo->rollBack();

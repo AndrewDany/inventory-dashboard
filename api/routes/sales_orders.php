@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../helpers/notify.php';
 
 function handleSalesOrderRoutes(PDO $pdo, string $method, array $uriParts): void
 {
@@ -411,6 +412,19 @@ function handlePosCheckout(PDO $pdo, string $method): void
         }
 
         $pdo->commit();
+
+        // Notify admins of large sales only after the sale is safely committed
+        $largeSaleThreshold = 1000.00; // GHC - change to whatever counts as "large" for the shop
+        if ($totalSale >= $largeSaleThreshold) {
+            createNotification(
+                $pdo,
+                "Large sale: {$soNumber}",
+                'GHC ' . number_format($totalSale, 2) . " to {$customerName} ({$paymentMethod}). Sold by " . ($auth['email'] ?? 'system') . '.',
+                'info',
+                'admin'
+            );
+        }
+
         jsonSuccess([
             'so_number' => $soNumber,
             'so_id' => $soId,

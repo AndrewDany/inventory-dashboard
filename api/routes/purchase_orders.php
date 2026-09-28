@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../helpers/notify.php';
 
 function handlePurchaseOrderRoutes(PDO $pdo, string $method, array $uriParts): void
 {
@@ -27,6 +28,9 @@ function handlePurchaseOrderRoutes(PDO $pdo, string $method, array $uriParts): v
 
         $pdo->beginTransaction();
         try {
+            $unitsReceivedNow = 0;
+            $linesReceivedNow = 0;
+
             foreach ($receivedItems as $recv) {
                 $sku = $recv['sku'];
                 $qtyRecv = (int)($recv['quantity_received'] ?? 0);
@@ -53,6 +57,10 @@ function handlePurchaseOrderRoutes(PDO $pdo, string $method, array $uriParts): v
                 if ($qtyRecv > $remaining) {
                     throw new Exception("Cannot receive {$qtyRecv} of {$sku}: only {$remaining} remaining on this order");
                 }
+
+                // Counted here so the admin notification can summarise this receipt
+                $unitsReceivedNow += $qtyRecv;
+                $linesReceivedNow++;
 
                 // 1. Update purchase_order_items
                 $upPoi = $pdo->prepare('UPDATE purchase_order_items SET quantity_received = quantity_received + ? WHERE po_id = ? AND sku = ?');
@@ -83,7 +91,7 @@ function handlePurchaseOrderRoutes(PDO $pdo, string $method, array $uriParts): v
                         $unitCost
                     ]);
 
-                                        // 4. Log stock movement
+                    // 4. Log stock movement
                     $movStmt = $pdo->prepare('
                         INSERT INTO stock_movements (id, item_id, item_name, change_amount, reason, location_id, user_email)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -126,6 +134,18 @@ function handlePurchaseOrderRoutes(PDO $pdo, string $method, array $uriParts): v
             $upPo->execute([$newStatus, $id]);
 
             $pdo->commit();
+
+            // Notify admins only after the receipt is safely committed
+            if ($unitsReceivedNow > 0) {
+                createNotification(
+                    $pdo,
+                    "Stock received: PO {$po['po_number']}",
+                    "{$unitsReceivedNow} units across {$linesReceivedNow} item(s) received. Order status: {$newStatus}. By " . ($auth['email'] ?? 'system') . '.',
+                    'success',
+                    'admin'
+                );
+            }
+
             jsonSuccess(['status' => $newStatus], 200, 'Items received successfully');
         } catch (Exception $e) {
             $pdo->rollBack();

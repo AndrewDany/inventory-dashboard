@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../helpers/notify.php';
 
 function handleReturnRoutes(PDO $pdo, string $method, array $uriParts): void
 {
@@ -129,6 +130,18 @@ function handleReturnRoutes(PDO $pdo, string $method, array $uriParts): void
             ]);
 
             $pdo->commit();
+
+            $refundNote = $resolution === 'refund'
+                ? ' Refund: GHC ' . number_format((float)$ret['refund_amount'], 2) . '.'
+                : '';
+            createNotification(
+                $pdo,
+                "Return processed: {$ret['return_number']}",
+                "{$qty} x {$sku} - resolution: {$resolution}.{$refundNote} Processed by " . ($auth['email'] ?? 'system') . '.',
+                $resolution === 'refund' ? 'warning' : 'info',
+                'admin'
+            );
+
             jsonSuccess(['status' => 'completed'], 200, 'Return processed successfully');
         } catch (Exception $e) {
             $pdo->rollBack();
