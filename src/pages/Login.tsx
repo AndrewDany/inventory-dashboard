@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import loginPhoto from '../assets/landing/tablet-check.jpg'
 import samdamLogo from '../assets/landing/samdamlogo.png'
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -18,6 +20,12 @@ export default function Login() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError('')
+
+    if (!EMAIL_PATTERN.test(email.trim())) {
+      setError('Please enter a valid email address.')
+      return
+    }
+
     setLoading(true)
 
     const { error } = await signIn(email, password)

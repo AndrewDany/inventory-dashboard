@@ -1,5 +1,5 @@
-import { useState, useMemo, useRef, lazy, Suspense } from 'react'
-import { Plus, Minus, Trash2, ScanLine, Receipt, Printer, Mail, MessageCircle, Send, Share2 } from 'lucide-react'
+import { useState, useMemo, useRef, useEffect, lazy, Suspense } from 'react'
+import { Plus, Minus, Trash2, ScanLine, Receipt, Printer, Mail, MessageCircle, Send, Share2, WifiOff } from 'lucide-react'
 import { toast } from 'sonner'
 import { useInventory } from '../hooks/useInventory'
 import type { InventoryItem } from '../types/inventory'
@@ -50,6 +50,25 @@ export default function PointOfSale() {
   })
   const [showInvoiceModal, setShowInvoiceModal] = useState(false)
   const iframeRef = useRef<HTMLIFrameElement>(null)
+
+  const [isOnline, setIsOnline] = useState(navigator.onLine)
+
+  useEffect(() => {
+    function handleOnline() {
+      setIsOnline(true)
+      toast.success('Back online.')
+    }
+    function handleOffline() {
+      setIsOnline(false)
+      toast.error('No internet connection. Sales cannot be completed while offline.')
+    }
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
 
   const filteredItems = useMemo(() => {
     if (!search) return []
@@ -105,6 +124,11 @@ export default function PointOfSale() {
 
   async function handleCheckout() {
     if (cart.length === 0 || !locationId) return
+
+    if (!navigator.onLine) {
+      toast.error('You are offline. Check your internet connection and try again.')
+      return
+    }
 
     if (customerPhone && !/^\d{10}$/.test(customerPhone)) {
       toast.error('Contact phone must contain exactly 10 digits.')
@@ -296,6 +320,12 @@ export default function PointOfSale() {
 
   return (
     <PageLayout title="Point of Sale">
+      {!isOnline && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+          <WifiOff size={16} />
+          You're offline. Sales cannot be completed until your connection is restored.
+        </div>
+      )}
       <div className="mb-4 flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Invoices issued</p>
@@ -561,11 +591,12 @@ export default function PointOfSale() {
 
           <Button
             className="w-full"
-            disabled={cart.length === 0 || !locationId || checkout.isPending}
+            disabled={cart.length === 0 || !locationId || checkout.isPending || !isOnline}
             onClick={handleCheckout}
+            title={!isOnline ? "You're offline — reconnect to complete this sale" : undefined}
           >
             <Receipt size={16} className="mr-2" />
-            {checkout.isPending ? 'Processing...' : 'Complete Sale'}
+            {!isOnline ? 'Offline' : checkout.isPending ? 'Processing...' : 'Complete Sale'}
           </Button>
         </div>
       </div>

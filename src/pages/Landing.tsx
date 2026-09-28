@@ -312,9 +312,8 @@ export default function Landing() {
             Get in touch and our team will help you find what you need.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            {/* TODO: replace with your real WhatsApp number, e.g. https://wa.me/233XXXXXXXXX */}
             <a
-              href="https://wa.me/233000000000"
+              href="https://wa.me/233244683371"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-white text-indigo-700 px-7 py-3 rounded-lg font-medium hover:bg-indigo-50 transition-colors"
