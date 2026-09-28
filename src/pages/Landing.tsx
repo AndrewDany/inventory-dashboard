@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Truck, Phone } from 'lucide-react'
 import samdamLogo from '../assets/landing/samdamlogo.png'
-import managerPhoto from '../assets/landing/deborah.jpg'
 import sealantsPhoto from '../assets/landing/sam 5.jpeg'
 import wallpaperPhoto from '../assets/landing/sam 6.jpeg'
 import hardwarePhoto from '../assets/landing/sam 7.jpeg'
@@ -15,6 +14,8 @@ import heroSlide5 from '../assets/landing/paint sam.jpg'
 import heroSlide6 from '../assets/landing/panit.jpg'
 import heroSlide7 from '../assets/landing/plywod sam.jpg'
 import heroSlide8 from '../assets/landing/sam nail.jpg'
+import managerPhoto from '../assets/landing/deborah.jpg'
+
 const heroSlides = [
   heroSlide1,
   heroSlide2,
@@ -178,9 +179,7 @@ export default function Landing() {
       {/* Hero */}
       <section id="home" className="relative overflow-hidden bg-linear-to-b from-indigo-50 via-white to-white">
         <div className="max-w-5xl mx-auto text-center px-6 pt-20 pb-16">
-          <HeroSlider images={heroSlides} />
-
-          <span className="inline-block text-xs font-semibold text-indigo-700 bg-indigo-100 px-3 py-1 rounded-full mb-6 mt-16">
+          <span className="inline-block text-xs font-semibold text-indigo-700 bg-indigo-100 px-3 py-1 rounded-full mb-6">
             Based in Accra, Ghana
           </span>
           <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6 leading-tight">
@@ -192,7 +191,7 @@ export default function Landing() {
             construction materials, tools, and hardware, all in one place.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-16">
             <a
               href="#contact"
               className="inline-block bg-indigo-600 text-white px-7 py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
@@ -206,6 +205,8 @@ export default function Landing() {
               See What We Sell
             </a>
           </div>
+
+          <HeroSlider images={heroSlides} />
         </div>
       </section>
 

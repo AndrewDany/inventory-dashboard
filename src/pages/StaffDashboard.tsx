@@ -58,7 +58,7 @@ export default function StaffDashboard() {
       onChangePassword={() => setShowPasswordForm(true)}
     >
       {/* Staff Welcome Banner */}
-      <div className="mb-6 overflow-hidden rounded-2xl border border-slate-200/80 bg-linear-to-r from-slate-900 via-slate-800 to-indigo-950 p-6 text-white shadow-sm">
+      <div className="mb-6 overflow-hidden rounded-2xl border border-indigo-200 bg-linear-to-br from-indigo-900 via-indigo-800 to-violet-700 p-6 text-white shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-emerald-300 mb-2">
@@ -68,7 +68,7 @@ export default function StaffDashboard() {
             <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
               Welcome back, <span className="capitalize">{userName}</span>
             </h2>
-            <p className="text-sm text-slate-300 mt-1 max-w-xl">
+            <p className="text-sm text-indigo-100 mt-1 max-w-xl">
               Ready for service. Access the Point of Sale system to stage and complete sales, or check stock availability below.
             </p>
           </div>

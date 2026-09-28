@@ -209,32 +209,65 @@ export default function PointOfSale() {
     link.click()
   }
 
-  function shareTo(channel: 'whatsapp' | 'email' | 'telegram') {
-    downloadInvoicePdf()
-    const urls = {
-      whatsapp: 'whatsapp://send',
-      email: `mailto:?subject=${encodeURIComponent(`Invoice ${invoiceNumber} PDF`)}`,
-      telegram: 'https://web.telegram.org/',
-    }
-    window.open(urls[channel], '_blank', 'noopener,noreferrer')
-    toast.info(`Invoice ${invoiceNumber} PDF downloaded. Attach it in ${channel}.`)
+  /**
+   * Reserves a blank tab synchronously, in direct response to the click.
+   * Safari and other strict browsers only allow window.open() to bypass
+   * the popup blocker when called synchronously from a user gesture — if
+   * we wait until after an `await` to open it, it gets silently blocked.
+   * Opening blank now and setting .location on it later sidesteps this.
+   */
+  function reserveTab(): Window | null {
+    return window.open('', '_blank', 'noopener,noreferrer')
   }
 
-  async function handleWhatsAppShare() {
+  async function shareInvoice(channel: 'whatsapp' | 'telegram' | 'email') {
+    const popup = channel === 'email' ? null : reserveTab()
+
+    // Try the OS-level share sheet first. This lets the person pick
+    // whichever app they actually have installed (WhatsApp, Telegram,
+    // Mail, etc.) with the PDF attached directly, and it works
+    // consistently across mobile browsers without any window.open
+    // involved at all, so there's nothing for a popup blocker to catch.
     if (navigator.share && invoiceUrl) {
       try {
         const pdfBlob = await fetch(invoiceUrl).then((response) => response.blob())
         const pdfFile = new File([pdfBlob], `invoice-${invoiceNumber}.pdf`, { type: 'application/pdf' })
         if (navigator.canShare?.({ files: [pdfFile] })) {
-          await navigator.share({ title: `Invoice ${invoiceNumber}`, files: [pdfFile] })
+          popup?.close()
+          await navigator.share({ title: `Invoice ${invoiceNumber}`, text: invoiceShareText, files: [pdfFile] })
           return
         }
       } catch {
-        // Fall back to download and the installed WhatsApp app below.
+        // Person cancelled the share sheet, or the browser only claims to
+        // support file sharing — fall through to the link-based approach.
       }
     }
 
-    shareTo('whatsapp')
+    // Fallback: download the PDF locally so it can be attached manually,
+    // and open a pre-filled share link using universal https:// URLs.
+    // Custom schemes like "whatsapp://send" only work on devices that
+    // registered that scheme, and fail silently everywhere else —
+    // wa.me and t.me are real web pages every browser can open, which
+    // then hand off to the installed app if there is one.
+    downloadInvoicePdf()
+    const message = encodeURIComponent(invoiceShareText || `Invoice ${invoiceNumber}`)
+    const targetUrls: Record<'whatsapp' | 'telegram' | 'email', string> = {
+      whatsapp: `https://wa.me/?text=${message}`,
+      telegram: `https://t.me/share/url?url=&text=${message}`,
+      email: `mailto:?subject=${encodeURIComponent(`Invoice ${invoiceNumber}`)}&body=${message}`,
+    }
+
+    if (channel === 'email') {
+      window.location.href = targetUrls.email
+    } else if (popup) {
+      popup.location.href = targetUrls[channel]
+    } else {
+      // Popup was blocked outright (rare — e.g. popups fully disabled) —
+      // last-resort direct navigation in a new tab.
+      window.open(targetUrls[channel], '_blank', 'noopener,noreferrer')
+    }
+
+    toast.info(`Invoice ${invoiceNumber} PDF downloaded. Attach it in ${channel === 'email' ? 'your email' : channel}.`)
   }
 
   async function handleNativeShare() {
@@ -554,13 +587,13 @@ export default function PointOfSale() {
               />
             </div>
             <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
-              <Button className="min-w-35 flex-1" variant="outline" onClick={handleWhatsAppShare} title="Share invoice PDF to WhatsApp">
+              <Button className="min-w-35 flex-1" variant="outline" onClick={() => shareInvoice('whatsapp')} title="Share invoice PDF to WhatsApp">
                 <MessageCircle size={16} className="mr-2 text-emerald-600" /> WhatsApp
               </Button>
-              <Button className="min-w-30 flex-1" variant="outline" onClick={() => shareTo('email')} title="Share by email">
+              <Button className="min-w-30 flex-1" variant="outline" onClick={() => shareInvoice('email')} title="Share by email">
                 <Mail size={16} className="mr-2 text-blue-600" /> Email
               </Button>
-              <Button className="min-w-30 flex-1" variant="outline" onClick={() => shareTo('telegram')} title="Share on Telegram">
+              <Button className="min-w-30 flex-1" variant="outline" onClick={() => shareInvoice('telegram')} title="Share on Telegram">
                 <Send size={16} className="mr-2 text-sky-600" /> Telegram
               </Button>
               <Button className="min-w-30 flex-1" variant="outline" onClick={handleNativeShare} title="Share invoice">
