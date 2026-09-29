@@ -168,7 +168,7 @@ export default function Landing() {
       {/* Header */}
       <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-950/90 backdrop-blur border-b border-gray-100 dark:border-slate-800/80 px-6 py-4 flex items-center justify-between">
         <div className="flex min-w-0 items-center">
-          <div className="bg-white px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-2xs flex items-center justify-center">
+          <div className="bg-white px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-2xs flex items-center justify-center" style={{ backgroundColor: '#ffffff' }}>
             <img
               src={samdamLogo}
               alt="Samdam Ventures"

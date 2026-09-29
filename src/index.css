@@ -166,6 +166,57 @@ html {
   color: #f8fafc;
 }
 
+.dark .bg-gray-50,
+.dark .bg-slate-50 {
+  background-color: #020617;
+}
+
+.dark .bg-white,
+.dark [class*="bg-white/"],
+.dark [class*="bg-slate-50/"] {
+  background-color: #0f172a;
+}
+
+.dark .border-slate-100,
+.dark .border-slate-200,
+.dark .border-slate-300,
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-gray-300,
+.dark [class*="border-slate-200/"] {
+  border-color: #334155;
+}
+
+.dark [class*="divide-slate-"] > :not([hidden]) ~ :not([hidden]),
+.dark [class*="divide-gray-"] > :not([hidden]) ~ :not([hidden]) {
+  border-color: #334155;
+}
+
+.dark .text-slate-950,
+.dark .text-slate-900,
+.dark .text-slate-800,
+.dark .text-gray-900,
+.dark .text-gray-800 {
+  color: #f8fafc;
+}
+
+.dark .text-slate-700,
+.dark .text-slate-600,
+.dark .text-gray-700,
+.dark .text-gray-600 {
+  color: #cbd5e1;
+}
+
+.dark .text-slate-500,
+.dark .text-gray-500 {
+  color: #94a3b8;
+}
+
+.dark .text-slate-400,
+.dark .text-gray-400 {
+  color: #64748b;
+}
+
 .dark .settings-input {
   border-color: #475569;
   background-color: #1e293b;

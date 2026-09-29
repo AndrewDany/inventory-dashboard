@@ -83,7 +83,7 @@ export default function Login() {
         <div className="w-full max-w-sm">
           <div className="flex flex-col items-center text-center mb-6">
             <Link to="/" className="inline-flex justify-center mb-4 transition-transform hover:scale-105">
-              <div className="bg-white px-4 py-2.5 rounded-2xl shadow-sm border border-slate-200/80 flex items-center justify-center">
+              <div className="bg-white px-4 py-2.5 rounded-2xl shadow-sm border border-slate-200/80 flex items-center justify-center" style={{ backgroundColor: '#ffffff' }}>
                 <img
                   src={samdamLogo}
                   alt="Samdam Ventures"

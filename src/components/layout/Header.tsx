@@ -61,7 +61,7 @@ export default function Header({
           <Menu size={18} />
         </button>
         <Link to="/dashboard" className="md:hidden flex items-center shrink-0">
-          <div className="bg-white px-2 py-1 rounded-lg shadow-2xs border border-slate-200/80 flex items-center justify-center">
+          <div className="bg-white px-2 py-1 rounded-lg shadow-2xs border border-slate-200/80 flex items-center justify-center" style={{ backgroundColor: '#ffffff' }}>
             <img
               src={samdamLogo}
               alt="Samdam Logo"

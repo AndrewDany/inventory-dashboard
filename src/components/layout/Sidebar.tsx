@@ -172,7 +172,7 @@ export default function Sidebar({
             }`}
           >
             <Link to="/dashboard" className="flex items-center gap-2.5 min-w-0" onClick={onClose}>
-              <div className="bg-white px-2.5 py-1.5 rounded-xl shadow-2xs border border-slate-200/80 flex items-center justify-center shrink-0">
+              <div className="bg-white px-2.5 py-1.5 rounded-xl shadow-2xs border border-slate-200/80 flex items-center justify-center shrink-0" style={{ backgroundColor: '#ffffff' }}>
                 <img
                   src={samdamLogo}
                   alt="Samdam Logo"
