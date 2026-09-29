@@ -86,7 +86,7 @@ export function usePointOfSaleCheckout() {
       const res = await api.post<{ so_number: string; so_id: string }>('/pos/checkout', checkoutPayload)
       const soNumber = res?.so_number || `SO-${Date.now().toString().slice(-8)}`
 
-      const blobUrl = generateInvoiceBlob({
+      const blobUrl = await generateInvoiceBlob({
         invoiceNumber: soNumber,
         invoiceCount,
         soNumber,

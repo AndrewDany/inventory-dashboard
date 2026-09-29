@@ -205,14 +205,14 @@ export default function AdminOverview() {
               </p>
             </div>
 
-            <div className="inline-flex rounded-xl bg-slate-100 p-1 text-xs font-medium text-slate-600 self-start sm:self-auto">
+            <div className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 text-xs font-medium text-slate-600 dark:text-slate-300 self-start sm:self-auto">
               <button
                 type="button"
                 onClick={() => setChartView('sales_vs_cogs')}
                 className={`rounded-lg px-3 py-1.5 transition-all ${
                   chartView === 'sales_vs_cogs'
-                    ? 'bg-white font-semibold text-slate-900 shadow-xs'
-                    : 'hover:text-slate-900'
+                    ? 'bg-white dark:bg-slate-700 font-semibold text-slate-900 dark:text-white shadow-xs'
+                    : 'hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 Sales vs. COGS
@@ -222,8 +222,8 @@ export default function AdminOverview() {
                 onClick={() => setChartView('net_profit')}
                 className={`rounded-lg px-3 py-1.5 transition-all ${
                   chartView === 'net_profit'
-                    ? 'bg-white font-semibold text-slate-900 shadow-xs'
-                    : 'hover:text-slate-900'
+                    ? 'bg-white dark:bg-slate-700 font-semibold text-slate-900 dark:text-white shadow-xs'
+                    : 'hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 Net Profit

@@ -27,11 +27,15 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
         $pdo->beginTransaction();
         try {
             $stmt = $pdo->prepare('
-                INSERT INTO inventory_items (id, name, sku, category, unit_type, unit_of_measure, units_per_box, quantity, reorder_level, unit_price, supplier, location_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO inventory_items (id, name, sku, category, type, brand, color, size, unit_type, unit_of_measure, units_per_box, quantity, reorder_level, unit_price, supplier, location_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
                     name = VALUES(name),
                     category = VALUES(category),
+                    type = VALUES(type),
+                    brand = VALUES(brand),
+                    color = VALUES(color),
+                    size = VALUES(size),
                     quantity = VALUES(quantity),
                     unit_price = VALUES(unit_price),
                     supplier = VALUES(supplier),
@@ -64,6 +68,10 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
                     $itemName,
                     $sku,
                     $item['category'] ?? null,
+                    $item['type'] ?? null,
+                    $item['brand'] ?? null,
+                    $item['color'] ?? null,
+                    $item['size'] ?? null,
                     $item['unit_type'] ?? 'unit',
                     $item['unit_of_measure'] ?? null,
                     isset($item['units_per_box']) ? (int)$item['units_per_box'] : null,
@@ -171,6 +179,10 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
                         name = ?,
                         sku = ?,
                         category = ?,
+                        type = ?,
+                        brand = ?,
+                        color = ?,
+                        size = ?,
                         unit_type = ?,
                         unit_of_measure = ?,
                         units_per_box = ?,
@@ -189,6 +201,10 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
                     $input['name'] ?? $current['name'],
                     $input['sku'] ?? $current['sku'],
                     $input['category'] ?? $current['category'],
+                    $input['type'] ?? $current['type'] ?? null,
+                    $input['brand'] ?? $current['brand'] ?? null,
+                    $input['color'] ?? $current['color'] ?? null,
+                    $input['size'] ?? $current['size'] ?? null,
                     $input['unit_type'] ?? $current['unit_type'],
                     $input['unit_of_measure'] ?? $current['unit_of_measure'],
                     isset($input['units_per_box']) ? (int)$input['units_per_box'] : $current['units_per_box'],
@@ -269,8 +285,8 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
             $unitCost = isset($input['unit_cost']) ? (float)$input['unit_cost'] : $unitPrice;
 
             $stmt = $pdo->prepare('
-                INSERT INTO inventory_items (id, name, sku, category, unit_type, unit_of_measure, units_per_box, quantity, reorder_level, unit_price, supplier, location_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO inventory_items (id, name, sku, category, type, brand, color, size, unit_type, unit_of_measure, units_per_box, quantity, reorder_level, unit_price, supplier, location_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ');
 
             $stmt->execute([
@@ -278,6 +294,10 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
                 $name,
                 $sku,
                 $input['category'] ?? null,
+                $input['type'] ?? null,
+                $input['brand'] ?? null,
+                $input['color'] ?? null,
+                $input['size'] ?? null,
                 $input['unit_type'] ?? 'unit',
                 $input['unit_of_measure'] ?? null,
                 isset($input['units_per_box']) ? (int)$input['units_per_box'] : null,

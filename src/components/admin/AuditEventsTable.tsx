@@ -13,13 +13,13 @@ import {
 } from '@/components/ui/table'
 
 const EVENT_TYPE_META: Record<string, { label: string; icon: typeof Activity; bg: string; text: string }> = {
-  purchase_order_received: { label: 'PO Received', icon: PackageCheck, bg: 'bg-indigo-50', text: 'text-indigo-700' },
-  sales_order_shipped: { label: 'SO Shipped', icon: Truck, bg: 'bg-blue-50', text: 'text-blue-700' },
-  inventory_adjustment: { label: 'Adjustment', icon: SlidersHorizontal, bg: 'bg-amber-50', text: 'text-amber-700' },
-  user_login: { label: 'User Login', icon: LogIn, bg: 'bg-teal-50', text: 'text-teal-700' },
+  purchase_order_received: { label: 'PO Received', icon: PackageCheck, bg: 'bg-indigo-50 dark:bg-indigo-950/80', text: 'text-indigo-700 dark:text-indigo-300' },
+  sales_order_shipped: { label: 'SO Shipped', icon: Truck, bg: 'bg-blue-50 dark:bg-blue-950/80', text: 'text-blue-700 dark:text-blue-300' },
+  inventory_adjustment: { label: 'Adjustment', icon: SlidersHorizontal, bg: 'bg-amber-50 dark:bg-amber-950/80', text: 'text-amber-700 dark:text-amber-300' },
+  user_login: { label: 'User Login', icon: LogIn, bg: 'bg-teal-50 dark:bg-teal-950/80', text: 'text-teal-700 dark:text-teal-300' },
 }
 
-const DEFAULT_META = { icon: Activity, bg: 'bg-slate-100', text: 'text-slate-600' }
+const DEFAULT_META = { icon: Activity, bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-slate-300' }
 
 function eventMeta(eventType: string) {
   return EVENT_TYPE_META[eventType] ?? { ...DEFAULT_META, label: eventType }
@@ -52,7 +52,7 @@ export default function AuditEventsTable() {
     <div>
       {events && events.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-600 dark:text-slate-300">
             <Activity size={12} /> {events.length} total
           </span>
           {Object.entries(counts).map(([type, count]) => {
@@ -125,10 +125,10 @@ export default function AuditEventsTable() {
                       <span
                         className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                           delta > 0
-                            ? 'bg-emerald-50 text-emerald-700'
+                            ? 'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'
                             : delta < 0
-                              ? 'bg-rose-50 text-rose-700'
-                              : 'bg-slate-100 text-slate-600'
+                              ? 'bg-rose-50 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                         }`}
                       >
                         {delta > 0 ? `+${delta}` : delta}

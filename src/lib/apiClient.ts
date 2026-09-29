@@ -58,11 +58,16 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers,
   })
 
+  const rawText = await response.text()
   let payload: ApiResponse<T>
   try {
-    payload = await response.json()
+    payload = JSON.parse(rawText)
   } catch {
-    throw new Error(`HTTP Error ${response.status}: ${response.statusText}`)
+    throw new Error(
+      rawText.trim()
+        ? `Server error: ${rawText.slice(0, 300)}`
+        : `HTTP Error ${response.status}: ${response.statusText}`
+    )
   }
 
   if (!response.ok || payload.success === false) {

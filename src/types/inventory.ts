@@ -3,6 +3,10 @@ export interface InventoryItem {
   name: string
   sku: string
   category: string | null
+  type?: string | null
+  color?: string | null
+  brand?: string | null
+  size?: string | null
   unit_type: 'unit' | 'box' | 'weight'
   unit_of_measure: 'kg' | null
   // For box items only: how many individual pieces are in one box. When set,

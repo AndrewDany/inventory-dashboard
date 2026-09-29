@@ -58,8 +58,8 @@ export default function AdminInvoiceHistory() {
       .reverse()
   }, [orders, search])
 
-  function downloadInvoice(order: InvoiceOrder, invoiceCount: number) {
-    const url = generateInvoiceBlob({
+  async function downloadInvoice(order: InvoiceOrder, invoiceCount: number) {
+    const url = await generateInvoiceBlob({
       invoiceNumber: order.so_number,
       invoiceCount,
       soNumber: order.so_number,

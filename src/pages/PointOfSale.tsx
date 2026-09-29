@@ -72,10 +72,15 @@ export default function PointOfSale() {
 
   const filteredItems = useMemo(() => {
     if (!search) return []
+    const q = search.toLowerCase()
     return (items ?? []).filter(
       (item) =>
-        item.name.toLowerCase().includes(search.toLowerCase()) ||
-        item.sku.toLowerCase().includes(search.toLowerCase())
+        item.name.toLowerCase().includes(q) ||
+        item.sku.toLowerCase().includes(q) ||
+        (item.type?.toLowerCase().includes(q) ?? false) ||
+        (item.brand?.toLowerCase().includes(q) ?? false) ||
+        (item.color?.toLowerCase().includes(q) ?? false) ||
+        (item.size?.toLowerCase().includes(q) ?? false)
     ).slice(0, 6)
   }, [items, search])
 
@@ -326,19 +331,19 @@ export default function PointOfSale() {
           You're offline. Sales cannot be completed until your connection is restored.
         </div>
       )}
-      <div className="mb-4 flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3">
+      <div className="mb-4 flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Invoices issued</p>
-          <p className="text-2xl font-bold text-slate-900">{invoiceCount}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Invoices issued</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{invoiceCount}</p>
         </div>
-        <p className="text-xs text-slate-500">Next invoice: {invoiceCount + 1}</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">Next invoice: {invoiceCount + 1}</p>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Left: search + item results (3/4 width) */}
         <div className="lg:col-span-3 space-y-4">
           {/* Stage Sale Item */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('Stage Sale Item')}</h3>
+          <div className="bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-800 p-4">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100 mb-3">{t('Stage Sale Item')}</h3>
             <div className="flex gap-3">
               <Input
                 placeholder={t('Select Available Product SKU...')}
@@ -365,20 +370,23 @@ export default function PointOfSale() {
             )}
 
             {filteredItems.length > 0 && (
-              <div className="mt-3 bg-white rounded-lg border border-gray-200 divide-y">
+              <div className="mt-3 bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-800 divide-y dark:divide-slate-800">
                 {filteredItems.map((item) => (
                   <button
                     key={item.id}
                     onClick={() => addToCart(item)}
-                    className="w-full flex justify-between items-center p-3 hover:bg-gray-50 text-left"
+                    className="w-full flex justify-between items-center p-3 hover:bg-gray-50 dark:hover:bg-slate-800 text-left"
                   >
                     <div>
-                      <p className="text-sm font-medium">{item.name}</p>
-                      <p className="text-xs text-gray-500">
-                        {item.sku} · {item.quantity} {getUnitLabel(item)} in stock
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{item.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-slate-400">
+                        {item.sku}
+                        {[item.brand, item.type, item.color, item.size].filter(Boolean).length > 0 &&
+                          ` · ${[item.brand, item.type, item.color, item.size].filter(Boolean).join(' / ')}`}
+                        {` · ${item.quantity} ${getUnitLabel(item)} in stock`}
                       </p>
                     </div>
-                    <span className="text-sm font-medium">GHC {(item.unit_price ?? 0).toFixed(2)}</span>
+                    <span className="text-sm font-medium text-slate-900 dark:text-slate-100">GHC {(item.unit_price ?? 0).toFixed(2)}</span>
                   </button>
                 ))}
               </div>
@@ -386,8 +394,8 @@ export default function PointOfSale() {
           </div>
 
           {/* Staged Items Cart Table */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">Staged Items</h3>
+          <div className="bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-800 p-4">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100 mb-3">Staged Items</h3>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -411,7 +419,14 @@ export default function PointOfSale() {
                       <TableCell>
                         <div className="flex flex-col">
                           <span className="font-medium">{line.item.name}</span>
-                          <span className="text-xs text-gray-500">{line.item.sku}</span>
+                          <div className="flex flex-wrap items-center gap-1 text-xs text-gray-500">
+                            <span>{line.item.sku}</span>
+                            {[line.item.brand, line.item.type, line.item.color, line.item.size].filter(Boolean).length > 0 && (
+                              <span>
+                                · {[line.item.brand, line.item.type, line.item.color, line.item.size].filter(Boolean).join(' / ')}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
@@ -488,8 +503,8 @@ export default function PointOfSale() {
         </div>
 
         {/* Right: checkout panel (1/4 width) */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 h-fit space-y-4">
-          <h3 className="text-sm font-semibold text-gray-900">Customer Details</h3>
+        <div className="bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-800 p-4 h-fit space-y-4">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100">Customer Details</h3>
 
           {/* Customer Name */}
           <div>

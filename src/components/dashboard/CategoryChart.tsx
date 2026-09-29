@@ -83,14 +83,14 @@ export default function CategoryChart({ items, monthlyFinancials }: OverviewChar
           </div>
 
           {/* Tab Controls */}
-          <div className="inline-flex rounded-xl bg-slate-100 p-1 text-xs font-medium text-slate-600 self-start sm:self-auto">
+          <div className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 text-xs font-medium text-slate-600 dark:text-slate-300 self-start sm:self-auto">
             <button
               type="button"
               onClick={() => setActiveTab('stock_value')}
               className={`rounded-lg px-3 py-1.5 transition-all ${
                 activeTab === 'stock_value'
-                  ? 'bg-white font-semibold text-slate-900 shadow-xs'
-                  : 'hover:text-slate-900'
+                  ? 'bg-white dark:bg-slate-700 font-semibold text-slate-900 dark:text-white shadow-xs'
+                  : 'hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               Valuation
@@ -100,8 +100,8 @@ export default function CategoryChart({ items, monthlyFinancials }: OverviewChar
               onClick={() => setActiveTab('revenue')}
               className={`rounded-lg px-3 py-1.5 transition-all ${
                 activeTab === 'revenue'
-                  ? 'bg-white font-semibold text-slate-900 shadow-xs'
-                  : 'hover:text-slate-900'
+                  ? 'bg-white dark:bg-slate-700 font-semibold text-slate-900 dark:text-white shadow-xs'
+                  : 'hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               Revenue
@@ -111,8 +111,8 @@ export default function CategoryChart({ items, monthlyFinancials }: OverviewChar
               onClick={() => setActiveTab('volume')}
               className={`rounded-lg px-3 py-1.5 transition-all ${
                 activeTab === 'volume'
-                  ? 'bg-white font-semibold text-slate-900 shadow-xs'
-                  : 'hover:text-slate-900'
+                  ? 'bg-white dark:bg-slate-700 font-semibold text-slate-900 dark:text-white shadow-xs'
+                  : 'hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               Units
@@ -144,12 +144,12 @@ export default function CategoryChart({ items, monthlyFinancials }: OverviewChar
                     if (active && payload && payload.length) {
                       const data = payload[0].payload
                       return (
-                        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-md">
-                          <p className="text-xs font-semibold text-slate-900">{label}</p>
-                          <p className="mt-1 text-sm font-bold text-indigo-600">
+                        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-md">
+                          <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">{label}</p>
+                          <p className="mt-1 text-sm font-bold text-indigo-600 dark:text-indigo-400">
                             GHC {Number(data.value).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                           </p>
-                          <p className="text-[11px] text-slate-500">{data.units} units on hand</p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">{data.units} units on hand</p>
                         </div>
                       )
                     }

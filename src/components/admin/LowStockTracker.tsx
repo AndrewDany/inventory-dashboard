@@ -23,29 +23,39 @@ export default function LowStockTracker() {
     return <p className="text-gray-500 text-sm">All items are above their reorder level.</p>
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Item</TableHead>
-          <TableHead>SKU</TableHead>
-          <TableHead>Current Qty</TableHead>
-          <TableHead>Reorder Level</TableHead>
-          <TableHead>Supplier</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {lowStockItems.map((item) => (
-          <TableRow key={item.id}>
-            <TableCell>{item.name}</TableCell>
-            <TableCell className="text-gray-500">{item.sku}</TableCell>
-            <TableCell>
-              <Badge variant="destructive">{item.quantity}</Badge>
-            </TableCell>
-            <TableCell className="text-gray-600">{item.reorder_level}</TableCell>
-            <TableCell className="text-gray-600">{item.supplier || '—'}</TableCell>
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="whitespace-nowrap">Item</TableHead>
+            <TableHead className="whitespace-nowrap">SKU</TableHead>
+            <TableHead className="whitespace-nowrap">Type</TableHead>
+            <TableHead className="whitespace-nowrap">Brand</TableHead>
+            <TableHead className="whitespace-nowrap">Color</TableHead>
+            <TableHead className="whitespace-nowrap">Size</TableHead>
+            <TableHead className="whitespace-nowrap">Current Qty</TableHead>
+            <TableHead className="whitespace-nowrap">Reorder Level</TableHead>
+            <TableHead className="whitespace-nowrap">Supplier</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {lowStockItems.map((item) => (
+            <TableRow key={item.id}>
+              <TableCell className="font-medium whitespace-nowrap">{item.name}</TableCell>
+              <TableCell className="text-gray-500 font-mono text-xs whitespace-nowrap">{item.sku}</TableCell>
+              <TableCell className="text-gray-600 whitespace-nowrap">{item.type || '—'}</TableCell>
+              <TableCell className="text-gray-600 whitespace-nowrap">{item.brand || '—'}</TableCell>
+              <TableCell className="text-gray-600 whitespace-nowrap">{item.color || '—'}</TableCell>
+              <TableCell className="text-gray-600 whitespace-nowrap">{item.size || '—'}</TableCell>
+              <TableCell>
+                <Badge variant="destructive">{item.quantity}</Badge>
+              </TableCell>
+              <TableCell className="text-gray-600">{item.reorder_level}</TableCell>
+              <TableCell className="text-gray-600 whitespace-nowrap">{item.supplier || '—'}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   )
 }

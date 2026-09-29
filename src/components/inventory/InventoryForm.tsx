@@ -43,6 +43,10 @@ export default function InventoryForm({
           name: item.name,
           sku: item.sku,
           category: item.category ?? '',
+          type: item.type ?? '',
+          brand: item.brand ?? '',
+          color: item.color ?? '',
+          size: item.size ?? '',
           // Legacy rows may still carry the old 'measured' type or 'm'
           // (meters) unit before the box/weight/unit split — normalize
           // them so the form doesn't render an unknown option.
@@ -60,6 +64,10 @@ export default function InventoryForm({
           name: '',
           sku: '',
           category: '',
+          type: '',
+          brand: '',
+          color: '',
+          size: '',
           quantity: 0,
           reorder_level: 0,
           unit_price: undefined,
@@ -154,6 +162,28 @@ export default function InventoryForm({
       <div>
         <Label htmlFor="category" className="mb-1 block">Category</Label>
         <Input id="category" {...register('category')} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="brand" className="mb-1 block">Brand</Label>
+          <Input id="brand" {...register('brand')} placeholder="e.g. Dulux, Bosch" />
+        </div>
+        <div>
+          <Label htmlFor="type" className="mb-1 block">Type</Label>
+          <Input id="type" {...register('type')} placeholder="e.g. Enamel, Gloss" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="color" className="mb-1 block">Color</Label>
+          <Input id="color" {...register('color')} placeholder="e.g. White, Blue" />
+        </div>
+        <div>
+          <Label htmlFor="size" className="mb-1 block">Size</Label>
+          <Input id="size" {...register('size')} placeholder="e.g. 5L, XL, 10mm" />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

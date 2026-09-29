@@ -55,9 +55,14 @@ export default function InventoryTable({
 
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
+      const q = search.toLowerCase()
       const matchesSearch =
-        item.name.toLowerCase().includes(search.toLowerCase()) ||
-        item.sku.toLowerCase().includes(search.toLowerCase())
+        item.name.toLowerCase().includes(q) ||
+        item.sku.toLowerCase().includes(q) ||
+        (item.type?.toLowerCase().includes(q) ?? false) ||
+        (item.brand?.toLowerCase().includes(q) ?? false) ||
+        (item.color?.toLowerCase().includes(q) ?? false) ||
+        (item.size?.toLowerCase().includes(q) ?? false)
       const matchesCategory = categoryFilter && categoryFilter !== 'all' ? item.category === categoryFilter : true
       return matchesSearch && matchesCategory
     })
@@ -67,11 +72,39 @@ export default function InventoryTable({
     () => [
       columnHelper.accessor('name', { header: 'Name' }),
       columnHelper.accessor('sku', { header: 'SKU' }),
-      columnHelper.accessor('category', { header: 'Category' }),
+      columnHelper.accessor('category', {
+        header: 'Category',
+        cell: (info) => info.getValue() || '—',
+      }),
+      columnHelper.accessor('type', {
+        header: 'Type',
+        cell: (info) => info.getValue() || '—',
+      }),
+      columnHelper.accessor('brand', {
+        header: 'Brand',
+        cell: (info) => info.getValue() || '—',
+      }),
+      columnHelper.accessor('color', {
+        header: 'Color',
+        cell: (info) => info.getValue() || '—',
+      }),
+      columnHelper.accessor('size', {
+        header: 'Size',
+        cell: (info) => info.getValue() || '—',
+      }),
       columnHelper.accessor('quantity', { header: 'Quantity' }),
       columnHelper.accessor('reorder_level', { header: 'Reorder Level' }),
-      columnHelper.accessor('unit_price', { header: 'Unit Price' }),
-      columnHelper.accessor('supplier', { header: 'Supplier' }),
+      columnHelper.accessor('unit_price', {
+        header: 'Unit Price',
+        cell: (info) => {
+          const val = info.getValue()
+          return val != null ? `GHC ${Number(val).toFixed(2)}` : '—'
+        },
+      }),
+      columnHelper.accessor('supplier', {
+        header: 'Supplier',
+        cell: (info) => info.getValue() || '—',
+      }),
       columnHelper.display({
         id: 'location',
         header: 'Location',
@@ -117,11 +150,11 @@ export default function InventoryTable({
   })
 
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 pb-4 border-b border-slate-100">
+    <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 pb-4 border-b border-slate-100 dark:border-slate-800">
         <div className="flex items-center gap-2.5">
-          <h3 className="text-base font-semibold text-slate-900">Inventory Catalog</h3>
-          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+          <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Inventory Catalog</h3>
+          <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
             {filteredItems.length} {filteredItems.length === 1 ? 'item' : 'items'}
           </span>
         </div>
@@ -179,7 +212,7 @@ export default function InventoryTable({
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className="cursor-pointer select-none text-xs font-semibold text-slate-700 bg-slate-50 py-3"
+                    className="cursor-pointer select-none text-xs font-semibold text-slate-700 bg-slate-50 py-3 whitespace-nowrap"
                     onClick={header.column.getToggleSortingHandler()}
                   >
                     {flexRender(header.column.columnDef.header, header.getContext())}
@@ -193,7 +226,7 @@ export default function InventoryTable({
             {table.getRowModel().rows.map((row) => (
               <TableRow key={row.id} className="hover:bg-slate-50/80 transition-colors">
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className="py-2.5 text-xs">
+                  <TableCell key={cell.id} className="py-2.5 text-xs whitespace-nowrap">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
