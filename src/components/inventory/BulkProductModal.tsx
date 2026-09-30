@@ -13,6 +13,10 @@ const HEADER_MAP_OPTIONS = [
   { value: 'name', label: 'Product Name *' },
   { value: 'sku', label: 'SKU *' },
   { value: 'category', label: 'Category' },
+  { value: 'type', label: 'Type' },
+  { value: 'brand', label: 'Brand' },
+  { value: 'color', label: 'Color' },
+  { value: 'size', label: 'Size' },
   { value: 'quantity', label: 'Quantity' },
   { value: 'unit_price', label: 'Unit Price' },
   { value: 'reorder_level', label: 'Reorder Level' },
@@ -172,6 +176,10 @@ export default function BulkProductModal({ onClose }: { onClose: () => void }) {
         name: rowData.name,
         sku: rowData.sku,
         category: rowData.category || '',
+        type: rowData.type || '',
+        brand: rowData.brand || '',
+        color: rowData.color || '',
+        size: rowData.size || '',
         quantity: parseInt(rowData.quantity) || 0,
         unit_price: parseFloat(rowData.unit_price) || undefined,
         reorder_level: parseInt(rowData.reorder_level) || 0,
@@ -488,6 +496,10 @@ export default function BulkProductModal({ onClose }: { onClose: () => void }) {
                     <th className="text-left px-3 py-2 text-slate-500 font-medium">#</th>
                     <th className="text-left px-3 py-2 text-slate-500 font-medium">Name</th>
                     <th className="text-left px-3 py-2 text-slate-500 font-medium">SKU</th>
+                    <th className="text-left px-3 py-2 text-slate-500 font-medium">Type</th>
+                    <th className="text-left px-3 py-2 text-slate-500 font-medium">Brand</th>
+                    <th className="text-left px-3 py-2 text-slate-500 font-medium">Color</th>
+                    <th className="text-left px-3 py-2 text-slate-500 font-medium">Size</th>
                     <th className="text-right px-3 py-2 text-slate-500 font-medium">Qty</th>
                     <th className="text-right px-3 py-2 text-slate-500 font-medium">Price</th>
                   </tr>
@@ -497,14 +509,18 @@ export default function BulkProductModal({ onClose }: { onClose: () => void }) {
                     <tr key={i} className="border-t border-slate-100 hover:bg-slate-50">
                       <td className="px-3 py-2 text-slate-400">{i + 1}</td>
                       <td className="px-3 py-2 font-medium text-slate-800">{row.name}</td>
-                      <td className="px-3 py-2 text-slate-500">{row.sku}</td>
+                      <td className="px-3 py-2 text-slate-500 font-mono">{row.sku}</td>
+                      <td className="px-3 py-2 text-slate-600">{row.type || '—'}</td>
+                      <td className="px-3 py-2 text-slate-600">{row.brand || '—'}</td>
+                      <td className="px-3 py-2 text-slate-600">{row.color || '—'}</td>
+                      <td className="px-3 py-2 text-slate-600">{row.size || '—'}</td>
                       <td className="px-3 py-2 text-right">{row.quantity}</td>
                       <td className="px-3 py-2 text-right">GHC {row.unit_price?.toFixed(2) || '0.00'}</td>
                     </tr>
                   ))}
                   {parsedRows.length > 50 && (
                     <tr>
-                      <td colSpan={5} className="px-3 py-2 text-center text-slate-400">
+                      <td colSpan={9} className="px-3 py-2 text-center text-slate-400">
                         ...and {parsedRows.length - 50} more rows
                       </td>
                     </tr>

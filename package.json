@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "api": "php -S localhost:8000 api/index.php",
+    "secret:generate": "node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"

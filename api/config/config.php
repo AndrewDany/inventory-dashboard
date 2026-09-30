@@ -15,6 +15,26 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS
     exit;
 }
 
+// Load environment variables from .env if present
+$envPath = dirname(__DIR__, 2) . '/.env';
+if (file_exists($envPath)) {
+    $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '' || str_starts_with($line, '#')) {
+            continue;
+        }
+        if (str_contains($line, '=')) {
+            [$name, $value] = explode('=', $line, 2);
+            $name = trim($name);
+            $value = trim($value, " \t\n\r\0\x0B\"'");
+            putenv("{$name}={$value}");
+            $_ENV[$name] = $value;
+            $_SERVER[$name] = $value;
+        }
+    }
+}
+
 // Global CORS & JSON Content Type Headers
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH');
@@ -25,7 +45,7 @@ return [
     'jwt_secret' => getenv('JWT_SECRET') ?: 'inventory-suite-secret-key-change-in-production-2026',
     'jwt_expiry_seconds' => 60 * 60 * 24 * 7, // 7 days
     'db' => [
-        'host'     => getenv('DB_HOST') ?: 'localhost',
+        'host'     => getenv('DB_HOST') ?: '127.0.0.1',
         'port'     => getenv('DB_PORT') ?: '3306',
         'database' => getenv('DB_NAME') ?: 'inventory_db',
         'username' => getenv('DB_USER') ?: 'root',

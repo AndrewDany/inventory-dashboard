@@ -1,11 +1,15 @@
 import type { InventoryItem } from '../types/inventory'
 
 export function exportToCSV(items: InventoryItem[]) {
-  const headers = ['Name', 'SKU', 'Category', 'Quantity', 'Reorder Level', 'Unit Price', 'Supplier']
+  const headers = ['Name', 'SKU', 'Category', 'Type', 'Brand', 'Color', 'Size', 'Quantity', 'Reorder Level', 'Unit Price', 'Supplier']
   const rows = items.map((item) => [
     item.name,
     item.sku,
     item.category ?? '',
+    item.type ?? '',
+    item.brand ?? '',
+    item.color ?? '',
+    item.size ?? '',
     item.quantity,
     item.reorder_level,
     item.unit_price ?? '',
@@ -51,18 +55,22 @@ export async function exportToPDF(items: InventoryItem[], companyName = 'samdamv
 
   autoTable(doc, {
     startY: 40,
-    head: [['Name', 'SKU', 'Category', 'Qty', 'Reorder', 'Unit Price', 'Supplier']],
+    head: [['Name', 'SKU', 'Category', 'Type', 'Brand', 'Color', 'Size', 'Qty', 'Reorder', 'Unit Price', 'Supplier']],
     body: items.map((item) => [
       item.name,
       item.sku,
       item.category ?? '—',
+      item.type ?? '—',
+      item.brand ?? '—',
+      item.color ?? '—',
+      item.size ?? '—',
       item.quantity,
       item.reorder_level,
       item.unit_price != null ? `GHC ${item.unit_price.toFixed(2)}` : '—',
       item.supplier ?? '—',
     ]),
     headStyles: { fillColor: [79, 70, 229] },
-    styles: { fontSize: 8 },
+    styles: { fontSize: 7 },
   })
 
   doc.save(`inventory-report-${new Date().toISOString().slice(0, 10)}.pdf`)

@@ -41,6 +41,21 @@ try {
     // match Accra time and was causing login/logout timestamps (and
     // every other auto-timestamped record) to be off by several hours.
     $pdo->exec("SET time_zone = '+00:00'");
+
+    // Ensure critical tables exist (auto-migration for cPanel/existing DBs)
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS `customers` (
+          `id` VARCHAR(36) NOT NULL,
+          `full_name` VARCHAR(255) NOT NULL,
+          `phone` VARCHAR(50) NOT NULL UNIQUE,
+          `email` VARCHAR(255) NULL,
+          `delivery_address` TEXT NULL,
+          `first_purchase_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          `last_purchase_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id`),
+          KEY `idx_customers_phone` (`phone`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    ");
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode([

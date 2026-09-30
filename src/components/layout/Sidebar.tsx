@@ -32,6 +32,7 @@ import {
 import { useProfile } from '../../hooks/useProfile'
 import { useAuth } from '../../hooks/useAuth'
 import { useLanguage } from '@/contexts/LanguageContext'
+import samdamLogo from '../../assets/landing/samdamlogo.png'
 
 interface SidebarProps {
   isOpen: boolean
@@ -138,12 +139,12 @@ export default function Sidebar({
     const active = location.pathname === path
     return `group flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-medium transition-all ${
       active
-        ? 'bg-slate-900 text-white font-semibold shadow-xs'
-        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+        ? 'bg-slate-900 dark:bg-indigo-600 text-white font-semibold shadow-xs'
+        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
     } ${isCollapsed ? 'justify-center px-2' : ''}`
   }
 
-  const actionBtnClass = `flex w-full items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2 text-xs font-medium text-slate-700 transition-all hover:bg-slate-100 hover:text-slate-900 ${
+  const actionBtnClass = `flex w-full items-center gap-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 transition-all hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white ${
     isCollapsed ? 'justify-center px-2' : ''
   }`
 
@@ -157,7 +158,7 @@ export default function Sidebar({
       )}
 
       <aside
-        className={`fixed left-0 top-0 z-50 flex h-screen flex-col justify-between overflow-hidden border-r border-slate-200/80 bg-white text-slate-900 shadow-sm transition-all duration-200 ${
+        className={`fixed left-0 top-0 z-50 flex h-screen flex-col justify-between overflow-hidden border-r border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm transition-all duration-200 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } ${isCollapsed ? 'w-20' : 'w-64'} md:sticky md:top-0 md:h-screen md:translate-x-0 md:shrink-0 ${
           isCollapsed ? 'md:w-20' : 'md:w-64'
@@ -171,22 +172,21 @@ export default function Sidebar({
             }`}
           >
             <Link to="/dashboard" className="flex items-center gap-2.5 min-w-0" onClick={onClose}>
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-xs font-bold text-white shadow-xs">
-                IS
+              <div className="bg-white px-2.5 py-1.5 rounded-xl shadow-2xs border border-slate-200/80 flex items-center justify-center shrink-0" style={{ backgroundColor: '#ffffff' }}>
+                <img
+                  src={samdamLogo}
+                  alt="Samdam Logo"
+                  className={`w-auto object-contain object-left ${
+                    isCollapsed ? 'h-7 max-w-[40px]' : 'h-8 max-w-[140px]'
+                  }`}
+                />
               </div>
-
-              {!isCollapsed && (
-                <div className="min-w-0 leading-tight">
-                  <p className="truncate text-sm font-bold text-slate-900">Inventory Suite</p>
-                  <p className="truncate text-[11px] text-slate-500 font-medium">Enterprise Portal</p>
-                </div>
-              )}
             </Link>
 
             <div className="flex items-center gap-1">
               <button
                 onClick={onToggleCollapse}
-                className="hidden md:flex rounded-lg border border-slate-200 p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                className="hidden md:flex rounded-lg border border-slate-200 dark:border-slate-800 p-1.5 text-slate-500 dark:text-slate-400 transition hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
                 title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               >
                 {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
@@ -194,7 +194,7 @@ export default function Sidebar({
 
               <button
                 onClick={onClose}
-                className="flex md:hidden rounded-lg border border-slate-200 p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                className="flex md:hidden rounded-lg border border-slate-200 dark:border-slate-800 p-1.5 text-slate-500 dark:text-slate-400 transition hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
                 title="Close sidebar"
               >
                 <X size={14} />
@@ -212,7 +212,7 @@ export default function Sidebar({
               return (
                 <div key={section.title} className="space-y-1">
                   {!isCollapsed && (
-                    <p className="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <p className="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                       {t(section.title)}
                     </p>
                   )}
@@ -242,79 +242,79 @@ export default function Sidebar({
 
           {/* Quick Operations Button List */}
           {(onAddItem || onSellItem || onBulkAddProducts || onAddPurchaseOrder || onAddSupplier || onAddLocation || onInviteUser || onChangePassword || onSettings || onUpdateBudget) && (
-            <div className="mt-5 pt-4 border-t border-slate-100 space-y-1.5">
+            <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
               {!isCollapsed && (
-                <p className="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                <p className="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">
                   Quick Actions
                 </p>
               )}
 
               {onAddItem && (
                 <button onClick={onAddItem} className={actionBtnClass} title="Add Product">
-                  <Plus size={15} className="text-indigo-600" />
+                  <Plus size={15} className="text-indigo-600 dark:text-indigo-400" />
                   {!isCollapsed && <span>Add Product</span>}
                 </button>
               )}
 
               {onSellItem && (
                 <button onClick={onSellItem} className={actionBtnClass} title="Sell Item in POS">
-                  <ShoppingCart size={15} className="text-emerald-600" />
+                  <ShoppingCart size={15} className="text-emerald-600 dark:text-emerald-400" />
                   {!isCollapsed && <span>Sell Item</span>}
                 </button>
               )}
 
               {onBulkAddProducts && (
                 <button onClick={onBulkAddProducts} className={actionBtnClass} title="Bulk Add">
-                  <PackagePlus size={15} className="text-amber-600" />
+                  <PackagePlus size={15} className="text-amber-600 dark:text-amber-400" />
                   {!isCollapsed && <span>Bulk Import</span>}
                 </button>
               )}
 
               {onAddPurchaseOrder && (
                 <button onClick={onAddPurchaseOrder} className={actionBtnClass} title="New Purchase Order">
-                  <ClipboardList size={15} className="text-blue-600" />
+                  <ClipboardList size={15} className="text-blue-600 dark:text-blue-400" />
                   {!isCollapsed && <span>New PO</span>}
                 </button>
               )}
 
               {onAddSupplier && (
                 <button onClick={onAddSupplier} className={actionBtnClass} title="Add Supplier">
-                  <Truck size={15} className="text-purple-600" />
+                  <Truck size={15} className="text-purple-600 dark:text-purple-400" />
                   {!isCollapsed && <span>Add Supplier</span>}
                 </button>
               )}
 
               {onAddLocation && (
                 <button onClick={onAddLocation} className={actionBtnClass} title="Add Location">
-                  <MapPin size={15} className="text-cyan-600" />
+                  <MapPin size={15} className="text-cyan-600 dark:text-cyan-400" />
                   {!isCollapsed && <span>Add Location</span>}
                 </button>
               )}
 
               {onInviteUser && (
                 <button onClick={onInviteUser} className={actionBtnClass} title="Invite User">
-                  <UserPlus size={15} className="text-slate-600" />
+                  <UserPlus size={15} className="text-slate-600 dark:text-slate-400" />
                   {!isCollapsed && <span>Invite User</span>}
                 </button>
               )}
 
               {onChangePassword && (
                 <button onClick={onChangePassword} className={actionBtnClass} title="Change Password">
-                  <KeyRound size={15} className="text-slate-600" />
+                  <KeyRound size={15} className="text-slate-600 dark:text-slate-400" />
                   {!isCollapsed && <span>Change Password</span>}
                 </button>
               )}
 
               {onSettings && (
                 <button onClick={onSettings} className={actionBtnClass} title="Settings">
-                  <Settings size={15} className="text-slate-600" />
+                  <Settings size={15} className="text-slate-600 dark:text-slate-400" />
                   {!isCollapsed && <span>Settings</span>}
                 </button>
               )}
 
               {onUpdateBudget && (
                 <button onClick={onUpdateBudget} className={actionBtnClass} title="Update Purchasing Budget">
-                  <DollarSign size={15} className="text-amber-600" />
+                  <DollarSign size={15} className="text-amber-600 dark:text-amber-400" />
                   {!isCollapsed && <span>Update Budget</span>}
                 </button>
               )}
@@ -323,18 +323,18 @@ export default function Sidebar({
         </div>
 
         {/* Bottom User Card */}
-        <div className="p-3 border-t border-slate-200/80 bg-slate-50/50">
-          <div className="flex items-center justify-between gap-2.5 rounded-xl border border-slate-200/80 bg-white p-2.5 shadow-2xs">
+        <div className="p-3 border-t border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/60">
+          <div className="flex items-center justify-between gap-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-2.5 shadow-2xs">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-xs font-bold text-white">
+              <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 dark:bg-indigo-600 text-xs font-bold text-white">
                 {initials}
-                <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white" />
+                <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900" />
               </div>
 
               {!isCollapsed && (
                 <div className="min-w-0 leading-tight">
-                  <p className="truncate text-xs font-semibold text-slate-900 capitalize">{userName}</p>
-                  <span className="inline-block rounded bg-slate-100 px-1 py-0.2 text-[9px] font-bold uppercase tracking-wider text-slate-600">
+                  <p className="truncate text-xs font-semibold text-slate-900 dark:text-slate-100 capitalize">{userName}</p>
+                  <span className="inline-block rounded bg-slate-100 dark:bg-slate-800 px-1 py-0.2 text-[9px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                     {profile?.role ?? 'Member'}
                   </span>
                 </div>
@@ -344,7 +344,7 @@ export default function Sidebar({
             {!isCollapsed && (
               <button
                 onClick={signOut}
-                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-rose-600"
+                className="rounded-lg p-1.5 text-slate-400 dark:text-slate-400 transition hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-rose-600 dark:hover:text-rose-400"
                 title="Sign out"
               >
                 <LogOut size={15} />

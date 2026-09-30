@@ -125,7 +125,7 @@ export default function AdminPanel() {
             then pops it back to full height once the chunk resolves, and
             that later layout shift is what was leaving the scroll
             position stuck part-way down the page. */}
-        <div ref={contentRef} className="rounded-[24px] border border-slate-200/80 bg-white/95 shadow-[0_16px_45px_rgba(15,23,42,0.06)] p-6">
+        <div ref={contentRef} className="rounded-[24px] border border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 text-slate-900 dark:text-slate-100 shadow-[0_16px_45px_rgba(15,23,42,0.06)] p-6">
           <Suspense
             fallback={
               <div className="flex items-center justify-center py-24">

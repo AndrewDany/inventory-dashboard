@@ -62,6 +62,10 @@ CREATE TABLE IF NOT EXISTS `inventory_items` (
   `name` VARCHAR(255) NOT NULL,
   `sku` VARCHAR(100) NOT NULL UNIQUE,
   `category` VARCHAR(100) NULL,
+  `type` VARCHAR(100) NULL,
+  `brand` VARCHAR(100) NULL,
+  `color` VARCHAR(50) NULL,
+  `size` VARCHAR(50) NULL,
   `unit_type` ENUM('unit', 'box', 'weight') NOT NULL DEFAULT 'unit',
   `unit_of_measure` VARCHAR(50) NULL,
   `units_per_box` INT NULL DEFAULT NULL,
@@ -308,6 +312,21 @@ CREATE TABLE IF NOT EXISTS `system_settings` (
   `value` TEXT NOT NULL,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- 12. Customers Directory
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `customers` (
+  `id` VARCHAR(36) NOT NULL,
+  `full_name` VARCHAR(255) NOT NULL,
+  `phone` VARCHAR(50) NOT NULL UNIQUE,
+  `email` VARCHAR(255) NULL,
+  `delivery_address` TEXT NULL,
+  `first_purchase_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_purchase_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_customers_phone` (`phone`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

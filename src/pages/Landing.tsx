@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Truck, Phone } from 'lucide-react'
+import { Truck, Phone, Sun, Moon } from 'lucide-react'
 import samdamLogo from '../assets/landing/samdamlogo.png'
 import sealantsPhoto from '../assets/landing/sam 5.jpeg'
 import wallpaperPhoto from '../assets/landing/sam 6.jpeg'
@@ -38,7 +38,7 @@ function HeroSlider({ images }: { images: string[] }) {
   }, [images.length])
 
   return (
-    <div className="relative max-w-5xl mx-auto overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-indigo-100/60">
+    <div className="relative max-w-5xl mx-auto overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl shadow-indigo-100/60 dark:shadow-none">
       <div
         className="flex transition-transform duration-700 ease-in-out"
         style={{ transform: `translateX(-${index * 100}%)` }}
@@ -150,43 +150,69 @@ const faqs = [
 ]
 
 export default function Landing() {
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return document.documentElement.classList.contains('dark')
+  })
+
+  const toggleTheme = () => {
+    const nextIsDark = !isDark
+    setIsDark(nextIsDark)
+    document.documentElement.classList.toggle('dark', nextIsDark)
+    document.documentElement.style.colorScheme = nextIsDark ? 'dark' : 'light'
+    localStorage.setItem('theme_mode', nextIsDark ? 'dark' : 'light')
+  }
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-950/90 backdrop-blur border-b border-gray-100 dark:border-slate-800/80 px-6 py-4 flex items-center justify-between">
         <div className="flex min-w-0 items-center">
-          <img
-            src={samdamLogo}
-            alt="Samdam Ventures"
-            className="h-10 w-auto max-w-47.5 object-contain object-left sm:h-12 sm:max-w-57.5"
-          />
+          <div className="bg-white px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-2xs flex items-center justify-center" style={{ backgroundColor: '#ffffff' }}>
+            <img
+              src={samdamLogo}
+              alt="Samdam Ventures"
+              className="h-8 sm:h-10 w-auto max-w-[180px] sm:max-w-[220px] object-contain object-left"
+            />
+          </div>
         </div>
         <nav className="hidden md:flex items-center gap-6">
-          <a href="#home" className="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors">Home</a>
-          <a href="#products" className="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors">Products</a>
-          <a href="#why-us" className="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors">Why Us</a>
-          <a href="#about" className="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors">About</a>
-          <a href="#contact" className="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors">Contact</a>
+          <a href="#home" className="text-sm font-medium text-gray-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Home</a>
+          <a href="#products" className="text-sm font-medium text-gray-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Products</a>
+          <a href="#why-us" className="text-sm font-medium text-gray-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Why Us</a>
+          <a href="#about" className="text-sm font-medium text-gray-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">About</a>
+          <a href="#contact" className="text-sm font-medium text-gray-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Contact</a>
         </nav>
-        <Link
-          to="/login"
-          className="text-sm font-medium text-white bg-indigo-600 px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
-        >
-          Staff Sign In
-        </Link>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label="Toggle dark mode"
+            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            className="p-2 rounded-lg border border-gray-200 dark:border-slate-800 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+          >
+            {isDark ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-gray-600 dark:text-slate-300" />}
+          </button>
+          <Link
+            to="/login"
+            className="text-sm font-medium text-white bg-indigo-600 px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+          >
+            Staff Sign In
+          </Link>
+        </div>
       </header>
 
       {/* Hero */}
-      <section id="home" className="relative overflow-hidden bg-linear-to-b from-indigo-50 via-white to-white">
+      <section id="home" className="relative overflow-hidden bg-linear-to-b from-indigo-50/80 via-white to-white dark:from-slate-900 dark:via-slate-950 dark:to-slate-950">
         <div className="max-w-5xl mx-auto text-center px-6 pt-20 pb-16">
-          <span className="inline-block text-xs font-semibold text-indigo-700 bg-indigo-100 px-3 py-1 rounded-full mb-6">
+          <span className="inline-block text-xs font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-100/80 dark:bg-indigo-950/80 border border-indigo-200/60 dark:border-indigo-800/60 px-3 py-1 rounded-full mb-6">
             Based in Accra, Ghana
           </span>
-          <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6 leading-tight">
+          <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
             Your one-stop shop for{' '}
-            <span className="text-indigo-600">building materials.</span>
+            <span className="text-indigo-600 dark:text-indigo-400">building materials.</span>
           </h2>
-          <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-600 dark:text-slate-300 mb-8 max-w-2xl mx-auto">
             Samdam Ventures supplies contractors, builders, and homeowners with quality
             construction materials, tools, and hardware, all in one place.
           </p>
@@ -194,13 +220,13 @@ export default function Landing() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-16">
             <a
               href="#contact"
-              className="inline-block bg-indigo-600 text-white px-7 py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
+              className="inline-block bg-indigo-600 text-white px-7 py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 dark:shadow-none"
             >
               Contact Us
             </a>
             <a
               href="#products"
-              className="inline-block bg-white text-indigo-700 border border-indigo-200 px-7 py-3 rounded-lg font-medium hover:bg-indigo-50 transition-colors"
+              className="inline-block bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-slate-800 px-7 py-3 rounded-lg font-medium hover:bg-indigo-50 dark:hover:bg-slate-800 transition-colors"
             >
               See What We Sell
             </a>
@@ -213,16 +239,16 @@ export default function Landing() {
       {/* Products */}
       <section id="products" className="max-w-5xl mx-auto px-6 py-20">
         <div className="text-center mb-12">
-          <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
+          <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3">
             What we supply
           </h3>
-          <p className="text-gray-500">Quality materials for every stage of your build.</p>
+          <p className="text-gray-500 dark:text-slate-400">Quality materials for every stage of your build.</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {categories.map((category) => (
             <div
               key={category.title}
-              className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
+              className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm"
             >
               <img
                 src={category.image}
@@ -230,8 +256,8 @@ export default function Landing() {
                 className="block h-44 w-full object-cover"
               />
               <div className="p-5">
-                <h4 className="font-semibold text-gray-900 mb-1">{category.title}</h4>
-                <p className="text-sm text-gray-600">{category.description}</p>
+                <h4 className="font-semibold text-gray-900 dark:text-white mb-1">{category.title}</h4>
+                <p className="text-sm text-gray-600 dark:text-slate-400">{category.description}</p>
               </div>
             </div>
           ))}
@@ -239,18 +265,18 @@ export default function Landing() {
       </section>
 
       {/* Why Us */}
-      <section id="why-us" className="border-y border-slate-200 bg-slate-50/80">
+      <section id="why-us" className="border-y border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/40">
         <div className="mx-auto max-w-5xl px-6 py-20">
           <div className="mb-12 max-w-2xl">
-            <h3 className="mb-4 text-2xl font-bold text-slate-950 sm:text-3xl">
+            <h3 className="mb-4 text-2xl font-bold text-slate-950 dark:text-white sm:text-3xl">
               Why builders choose Samdam Ventures
             </h3>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
             {whyUs.map((item) => (
-              <div key={item.title} className="rounded-xl border border-slate-200 bg-white p-6">
-                <h4 className="font-semibold text-gray-900 mb-2">{item.title}</h4>
-                <p className="text-sm text-slate-600">{item.description}</p>
+              <div key={item.title} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6">
+                <h4 className="font-semibold text-gray-900 dark:text-white mb-2">{item.title}</h4>
+                <p className="text-sm text-slate-600 dark:text-slate-400">{item.description}</p>
               </div>
             ))}
           </div>
@@ -258,13 +284,12 @@ export default function Landing() {
       </section>
 
       {/* About */}
-      <section id="about" className="max-w-4xl mx-auto px-6 py-20 border-t border-gray-100">
+      <section id="about" className="max-w-4xl mx-auto px-6 py-20 border-t border-gray-100 dark:border-slate-800">
         <div className="text-center mb-12">
-          <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">
+          <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4">
             About Samdam Ventures
           </h3>
-          <p className="text-gray-600 text-sm max-w-2xl mx-auto">
-            {/* TODO: replace with your real company story */}
+          <p className="text-gray-600 dark:text-slate-300 text-sm max-w-2xl mx-auto">
             Samdam Ventures supplies construction materials, tools, and hardware to
             contractors, builders, and homeowners across the region. We're focused on
             keeping the right stock on hand and making it easy to get what you need,
@@ -272,38 +297,38 @@ export default function Landing() {
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-5 rounded-2xl border border-slate-200 bg-slate-50/60 p-6 max-w-md mx-auto">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60 p-6 max-w-md mx-auto">
           <img
             src={managerPhoto}
             alt="Deborah Peprah"
             className="h-20 w-20 rounded-full object-cover shrink-0"
           />
           <div className="text-center sm:text-left">
-            <p className="font-semibold text-gray-900">Deborah Peprah</p>
-            <p className="text-sm text-gray-600">Manager, Samdam Ventures</p>
+            <p className="font-semibold text-gray-900 dark:text-white">Deborah Peprah</p>
+            <p className="text-sm text-gray-600 dark:text-slate-400">Manager, Samdam Ventures</p>
           </div>
         </div>
       </section>
 
       {/* FAQ */}
-      <section className="max-w-3xl mx-auto px-6 py-20 border-t border-gray-100">
+      <section className="max-w-3xl mx-auto px-6 py-20 border-t border-gray-100 dark:border-slate-800">
         <div className="text-center mb-12">
-          <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
+          <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3">
             Frequently asked questions
           </h3>
         </div>
         <div className="space-y-6">
           {faqs.map((item) => (
-            <div key={item.q} className="border-b border-gray-100 pb-6">
-              <h4 className="font-semibold text-gray-900 mb-2">{item.q}</h4>
-              <p className="text-sm text-gray-600">{item.a}</p>
+            <div key={item.q} className="border-b border-gray-100 dark:border-slate-800 pb-6">
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-2">{item.q}</h4>
+              <p className="text-sm text-gray-600 dark:text-slate-400">{item.a}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* CTA / Contact */}
-      <section id="contact" className="bg-indigo-600">
+      <section id="contact" className="bg-indigo-600 dark:bg-indigo-700">
         <div className="max-w-3xl mx-auto text-center px-6 py-16">
           <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4">
             Need materials for your next project?
@@ -316,7 +341,7 @@ export default function Landing() {
               href="https://wa.me/233244683371"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-white text-indigo-700 px-7 py-3 rounded-lg font-medium hover:bg-indigo-50 transition-colors"
+              className="inline-flex items-center gap-2 bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 border border-transparent dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-slate-800 px-7 py-3 rounded-lg font-medium transition-colors"
             >
               <Phone size={16} />
               Chat on WhatsApp
@@ -326,16 +351,16 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-gray-100 px-6 py-10 text-center text-sm text-gray-400">
+      <footer className="border-t border-gray-100 dark:border-slate-800 px-6 py-10 text-center text-sm text-gray-400 dark:text-slate-500">
         <p className="mb-2 flex items-center justify-center gap-1.5">
           <Truck size={14} /> Based in Accra, Ghana
         </p>
         <p className="mb-4">© {new Date().getFullYear()} Samdam Ventures.</p>
-        <p className="text-xs text-gray-300">
+        <p className="text-xs text-gray-300 dark:text-slate-600">
           Inventory system built by{' '}
           <a
             href="mailto:andrewsdanyo93@gmail.com?subject=Inventory system inquiry"
-            className="hover:text-gray-500 transition-colors underline"
+            className="hover:text-gray-500 dark:hover:text-slate-400 transition-colors underline"
           >
             Andrews Danyo
           </a>
