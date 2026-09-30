@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../middleware/auth.php';
-require_once __DIR__ . '/../helpers/notify.php';
+require_once __DIR__ . '/../config/notify.php';
 
 function handleReturnRoutes(PDO $pdo, string $method, array $uriParts): void
 {
