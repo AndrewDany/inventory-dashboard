@@ -116,12 +116,12 @@ const categories = [
   {
     image: chemicalsPhoto,
     title: 'Furniture & Kitchen Accessories',
-    description: 'PVC edges, PVC veneer, kick boards, kitchen legs, wardrobe bars, assorted sliding wardrobe bars, and aluminium glass profiles.',
+    description: 'PVC edges, kick boards, kitchen legs, wardrobe bars, assorted sliding wardrobe bars, and aluminium glass profiles.',
   },
   {
     image: wallpaperPhoto,
     title: 'Hardware & Fittings',
-    description: 'Door locks, cabinet handles, assorted cabinet hinges, screws, and cabinet accessories.',
+    description: 'PVC Veneer, door locks, cabinet handles, assorted cabinet hinges, screws, and cabinet accessories.',
   },
   {
     image: sealantsPhoto,
@@ -341,11 +341,11 @@ export default function Landing() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60 p-6 max-w-md mx-auto">
           <img
             src={managerPhoto}
-            alt="Deborah Peprah"
+            alt="Mrs Deborah Amoh-Mensah"
             className="h-20 w-20 rounded-full object-cover shrink-0"
           />
           <div className="text-center sm:text-left">
-            <p className="font-semibold text-gray-900 dark:text-white">Deborah Peprah</p>
+            <p className="font-semibold text-gray-900 dark:text-white">(Mrs) Deborah Amoh-Mensah</p>
             <p className="text-sm text-gray-600 dark:text-slate-400">Manager, Sam-Dam Ventures</p>
           </div>
         </div>
