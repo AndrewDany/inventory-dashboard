@@ -15,8 +15,17 @@ import heroSlide6 from '../assets/landing/panit.jpg'
 import heroSlide7 from '../assets/landing/plywod sam.jpg'
 import heroSlide8 from '../assets/landing/sam nail.jpg'
 import managerPhoto from '../assets/landing/deborah.jpg'
+import shopPhoto from '../assets/landing/the shop.jpeg'
+import homeCharmPaint from '../assets/landing/Home charm paint.jpeg'
+import homeCharmPaint1 from '../assets/landing/Home charm paint 1.jpeg'
+import homeCharmPaint2 from '../assets/landing/Home charm paint 2.jpeg'
+import flamingoPaint from '../assets/landing/Flammingo paint .jpeg'
+import fineNestPaint from '../assets/landing/fine nest paint.jpeg'
+import laylandPaint from '../assets/landing/layland paint.jpeg'
+import laylandPaintRange from '../assets/landing/lay land paint.jpeg'
 
 const heroSlides = [
+  shopPhoto,
   heroSlide1,
   heroSlide2,
   heroSlide3,
@@ -25,6 +34,16 @@ const heroSlides = [
   heroSlide6,
   heroSlide7,
   heroSlide8,
+]
+
+const paintProducts = [
+  { image: homeCharmPaint, name: 'Home Charm Emulsion' },
+  { image: homeCharmPaint1, name: 'Home Charm Paint' },
+  { image: homeCharmPaint2, name: 'Home Charm Paint Range' },
+  { image: flamingoPaint, name: 'Flamingo Paint' },
+  { image: fineNestPaint, name: 'Fine Nest Paint' },
+  { image: laylandPaint, name: 'Layland Paint' },
+  { image: laylandPaintRange, name: 'Layland Paint Range' },
 ]
 
 function HeroSlider({ images }: { images: string[] }) {
@@ -47,8 +66,9 @@ function HeroSlider({ images }: { images: string[] }) {
           <img
             key={i}
             src={src}
-            alt={`Samdam Ventures store photo ${i + 1}`}
+            alt={`Sam-Dam Ventures store photo ${i + 1}`}
             className="block h-64 sm:h-96 w-full shrink-0 object-cover"
+            style={{ objectPosition: src === shopPhoto ? 'center top' : 'center' }}
           />
         ))}
       </div>
@@ -87,46 +107,45 @@ function HeroSlider({ images }: { images: string[] }) {
   )
 }
 
-// TODO: confirm these category names/descriptions match what you actually stock
 const categories = [
   {
     image: hardwarePhoto,
-    title: 'Hardware & Fittings',
-    description: 'Locks, hinges, bolts, and fittings, sold by box, weight, or unit.',
+    title: 'Building Materials',
+    description: 'Wheelbarrows, wire mesh, roofing sheets, nails, plywood, laminate plywood, wall panels, and Formica sheets.',
   },
   {
     image: chemicalsPhoto,
-    title: 'Adhesives & Chemicals',
-    description: 'Wood glue, thinners, sealants, and specialty chemicals.',
+    title: 'Furniture & Kitchen Accessories',
+    description: 'PVC edges, PVC veneer, kick boards, kitchen legs, wardrobe bars, assorted sliding wardrobe bars, and aluminium glass profiles.',
   },
   {
     image: wallpaperPhoto,
-    title: 'Wallpaper & Finishes',
-    description: 'A wide range of wallpaper designs and finishing materials.',
+    title: 'Hardware & Fittings',
+    description: 'Door locks, cabinet handles, assorted cabinet hinges, screws, and cabinet accessories.',
   },
   {
     image: sealantsPhoto,
-    title: 'Sealants & Tools',
-    description: 'Spray paint, foam sealants, tape, and everyday tools.',
+    title: 'Tools & Adhesives',
+    description: 'Professional tools and assorted glues, including Top Bond.',
   },
 ]
 
 const whyUs = [
   {
-    title: 'One-stop shop',
-    description: 'From cement to fittings, find everything your project needs under one roof.',
+    title: 'Quality Guaranteed',
+    description: 'We sell strong, durable products you can rely on.',
   },
   {
-    title: 'Stock you can count on',
-    description: "We track inventory in real time, so what's in stock is what's actually available.",
+    title: 'Affordable Prices',
+    description: 'Get quality materials at prices that work for your project.',
   },
   {
-    title: 'Built for contractors',
-    description: 'Bulk quantities, trade pricing, and fast turnaround for job sites big and small.',
+    title: 'One-Stop Shop',
+    description: 'Find everything for building and furniture work in one place.',
   },
   {
-    title: 'Straightforward service',
-    description: 'Clear pricing, honest advice, and a team that knows the materials they sell.',
+    title: 'Customer Support',
+    description: 'Our team can help you choose the right materials for your project.',
   },
 ]
 
@@ -171,7 +190,7 @@ export default function Landing() {
           <div className="bg-white px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-2xs flex items-center justify-center" style={{ backgroundColor: '#ffffff' }}>
             <img
               src={samdamLogo}
-              alt="Samdam Ventures"
+              alt="Sam-Dam Ventures"
               className="h-8 sm:h-10 w-auto max-w-[180px] sm:max-w-[220px] object-contain object-left"
             />
           </div>
@@ -208,13 +227,14 @@ export default function Landing() {
           <span className="inline-block text-xs font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-100/80 dark:bg-indigo-950/80 border border-indigo-200/60 dark:border-indigo-800/60 px-3 py-1 rounded-full mb-6">
             Based in Accra, Ghana
           </span>
-          <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
-            Your one-stop shop for{' '}
-            <span className="text-indigo-600 dark:text-indigo-400">building materials.</span>
+          <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-4 leading-tight">
+            Sam-Dam Ventures
           </h2>
+          <p className="text-xl font-semibold text-indigo-700 dark:text-indigo-300 mb-4 max-w-3xl mx-auto">
+            Your One-Stop Shop for Building Materials, Plywood and Furniture Hardware
+          </p>
           <p className="text-lg text-gray-600 dark:text-slate-300 mb-8 max-w-2xl mx-auto">
-            Samdam Ventures supplies contractors, builders, and homeowners with quality
-            construction materials, tools, and hardware, all in one place.
+            From foundation to finishing, we supply quality building materials, woodwork accessories, and professional tools at the best prices.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-16">
@@ -240,7 +260,7 @@ export default function Landing() {
       <section id="products" className="max-w-5xl mx-auto px-6 py-20">
         <div className="text-center mb-12">
           <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3">
-            What we supply
+            Our Products
           </h3>
           <p className="text-gray-500 dark:text-slate-400">Quality materials for every stage of your build.</p>
         </div>
@@ -262,6 +282,24 @@ export default function Landing() {
             </div>
           ))}
         </div>
+        <div className="mt-16">
+          <div className="mb-6">
+            <h4 className="text-xl font-semibold text-gray-900 dark:text-white">Paints &amp; Finishes</h4>
+            <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">A look at paint brands and products available at Sam-Dam Ventures.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {paintProducts.map((product) => (
+              <figure key={product.name}>
+                <img
+                  src={product.image}
+                  alt={`${product.name} at Sam-Dam Ventures`}
+                  className="block aspect-[3/4] w-full object-cover"
+                />
+                <figcaption className="pt-2 text-sm font-medium text-gray-700 dark:text-slate-300">{product.name}</figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* Why Us */}
@@ -269,7 +307,7 @@ export default function Landing() {
         <div className="mx-auto max-w-5xl px-6 py-20">
           <div className="mb-12 max-w-2xl">
             <h3 className="mb-4 text-2xl font-bold text-slate-950 dark:text-white sm:text-3xl">
-              Why builders choose Samdam Ventures
+              Why Buy From Us?
             </h3>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
@@ -287,13 +325,16 @@ export default function Landing() {
       <section id="about" className="max-w-4xl mx-auto px-6 py-20 border-t border-gray-100 dark:border-slate-800">
         <div className="text-center mb-12">
           <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4">
-            About Samdam Ventures
+            About Sam-Dam Ventures
           </h3>
           <p className="text-gray-600 dark:text-slate-300 text-sm max-w-2xl mx-auto">
-            Samdam Ventures supplies construction materials, tools, and hardware to
-            contractors, builders, and homeowners across the region. We're focused on
-            keeping the right stock on hand and making it easy to get what you need,
-            when you need it.
+            Sam-Dam Ventures is a trusted supplier of building materials and furniture accessories in Ghana. We provide contractors, carpenters, interior decorators, and homeowners with durable and affordable products to get every job done right.
+          </p>
+          <p className="mt-4 text-gray-600 dark:text-slate-300 text-sm max-w-2xl mx-auto">
+            Whether you are building a house, fitting a kitchen, or furnishing a wardrobe, we have everything you need under one roof, from roofing sheets and plywood to cabinet handles and hinges.
+          </p>
+          <p className="mt-4 font-semibold text-gray-900 dark:text-white text-sm">
+            Quality, Affordability, and Reliable Service.
           </p>
         </div>
 
@@ -305,7 +346,7 @@ export default function Landing() {
           />
           <div className="text-center sm:text-left">
             <p className="font-semibold text-gray-900 dark:text-white">Deborah Peprah</p>
-            <p className="text-sm text-gray-600 dark:text-slate-400">Manager, Samdam Ventures</p>
+            <p className="text-sm text-gray-600 dark:text-slate-400">Manager, Sam-Dam Ventures</p>
           </div>
         </div>
       </section>
@@ -324,6 +365,31 @@ export default function Landing() {
               <p className="text-sm text-gray-600 dark:text-slate-400">{item.a}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Visit Us */}
+      <section id="visit-us" className="border-t border-gray-100 dark:border-slate-800">
+        <div className="mx-auto grid max-w-5xl grid-cols-1 items-center gap-8 px-6 py-16 md:grid-cols-2 md:gap-12">
+          <img
+            src={shopPhoto}
+            alt="Sam-Dam Ventures shop in Adenta-Frafraha"
+            className="block aspect-[4/5] w-full object-cover object-top"
+          />
+          <div>
+            <p className="mb-3 text-sm font-semibold uppercase text-indigo-700 dark:text-indigo-300">Visit Us</p>
+            <h3 className="mb-8 text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">Find Our Shop</h3>
+            <div className="space-y-6">
+              <div>
+                <h4 className="mb-1 font-semibold text-gray-900 dark:text-white">Location</h4>
+                <p className="text-gray-600 dark:text-slate-300">Adenta-Frafraha, Accra, Ghana<br />Dodowa Road</p>
+              </div>
+              <div>
+                <h4 className="mb-1 font-semibold text-gray-900 dark:text-white">Working Hours</h4>
+                <p className="text-gray-600 dark:text-slate-300">Monday to Saturday<br />6:30 am to 5 pm</p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -355,7 +421,8 @@ export default function Landing() {
         <p className="mb-2 flex items-center justify-center gap-1.5">
           <Truck size={14} /> Based in Accra, Ghana
         </p>
-        <p className="mb-4">© {new Date().getFullYear()} Samdam Ventures.</p>
+        <p className="mb-4">Sam-Dam Ventures - Dealers in wheelbarrows, roofing sheets, plywood, Formica, PVC edges, kitchen and wardrobe accessories, door locks, cabinet hinges and handles, screws, glues, and tools.</p>
+        <p className="mb-4">© {new Date().getFullYear()} Sam-Dam Ventures.</p>
         <p className="text-xs text-gray-300 dark:text-slate-600">
           Inventory system built by{' '}
           <a
