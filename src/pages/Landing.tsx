@@ -2,10 +2,13 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Truck, Phone, Sun, Moon } from 'lucide-react'
 import samdamLogo from '../assets/landing/samdamlogo.png'
-import sealantsPhoto from '../assets/landing/sam 5.jpeg'
-import wallpaperPhoto from '../assets/landing/sam 6.jpeg'
-import hardwarePhoto from '../assets/landing/sam 7.jpeg'
-import chemicalsPhoto from '../assets/landing/sam 8.jpeg'
+import furnitureAccessoriesPhoto from '../assets/landing/sam 7.jpeg'
+import toolsAdhesivesPhoto from '../assets/landing/sam 5.jpeg'
+import wheelbarrowPhoto from '../assets/landing/Wheelbarrow.jpg'
+import doorLocksPhoto from '../assets/landing/door locks.jpg'
+import doorLocksWithHandlesPhoto from '../assets/landing/door lock with handles.jpg'
+import doorLockPhoto from '../assets/landing/door lock.jpg'
+import doorHandlePhoto from '../assets/landing/door handle.jpg'
 import heroSlide1 from '../assets/landing/sam roll.jpg'
 import heroSlide2 from '../assets/landing/sam screw.jpg'
 import heroSlide3 from '../assets/landing/brush sam.jpg'
@@ -44,6 +47,13 @@ const paintProducts = [
   { image: fineNestPaint, name: 'Fine Nest Paint' },
   { image: laylandPaint, name: 'Layland Paint' },
   { image: laylandPaintRange, name: 'Layland Paint Range' },
+]
+
+const hardwareProducts = [
+  { image: doorLocksPhoto, name: 'Door Lock Display' },
+  { image: doorLocksWithHandlesPhoto, name: 'Door Locks with Handles' },
+  { image: doorLockPhoto, name: 'Door Locks' },
+  { image: doorHandlePhoto, name: 'Door Handles' },
 ]
 
 function HeroSlider({ images }: { images: string[] }) {
@@ -109,24 +119,29 @@ function HeroSlider({ images }: { images: string[] }) {
 
 const categories = [
   {
-    image: hardwarePhoto,
+    image: heroSlide7,
     title: 'Building Materials',
-    description: 'Wheelbarrows, wire mesh, roofing sheets, nails, plywood, laminate plywood, wall panels, and Formica sheets.',
+    description: 'Wire mesh, roofing sheets, nails, plywood, laminate plywood, wall panels, and Formica sheets.',
   },
   {
-    image: chemicalsPhoto,
+    image: furnitureAccessoriesPhoto,
     title: 'Furniture & Kitchen Accessories',
     description: 'PVC edges, kick boards, kitchen legs, wardrobe bars, assorted sliding wardrobe bars, and aluminium glass profiles.',
   },
   {
-    image: wallpaperPhoto,
+    image: doorLocksWithHandlesPhoto,
     title: 'Hardware & Fittings',
-    description: 'PVC Veneer, door locks, cabinet handles, assorted cabinet hinges, screws, and cabinet accessories.',
+    description: 'Door locks, lock-and-handle sets, door and cabinet handles, assorted cabinet hinges, screws, PVC Veneer, and cabinet accessories.',
   },
   {
-    image: sealantsPhoto,
+    image: toolsAdhesivesPhoto,
     title: 'Tools & Adhesives',
     description: 'Professional tools and assorted glues, including Top Bond.',
+  },
+  {
+    image: wheelbarrowPhoto,
+    title: 'Wheelbarrows',
+    description: 'Wheelbarrows for construction, site work, and material handling.',
   },
 ]
 
@@ -264,7 +279,7 @@ export default function Landing() {
           </h3>
           <p className="text-gray-500 dark:text-slate-400">Quality materials for every stage of your build.</p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {categories.map((category) => (
             <div
               key={category.title}
@@ -289,6 +304,24 @@ export default function Landing() {
           </div>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {paintProducts.map((product) => (
+              <figure key={product.name}>
+                <img
+                  src={product.image}
+                  alt={`${product.name} at Sam-Dam Ventures`}
+                  className="block aspect-[3/4] w-full object-cover"
+                />
+                <figcaption className="pt-2 text-sm font-medium text-gray-700 dark:text-slate-300">{product.name}</figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
+        <div className="mt-16">
+          <div className="mb-6">
+            <h4 className="text-xl font-semibold text-gray-900 dark:text-white">Door Locks &amp; Handles</h4>
+            <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">Explore door-lock and handle options available at Sam-Dam Ventures.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {hardwareProducts.map((product) => (
               <figure key={product.name}>
                 <img
                   src={product.image}
