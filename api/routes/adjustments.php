@@ -31,7 +31,7 @@ function handleBatchRoutes(PDO $pdo, string $method, array $uriParts): void
             $input = getJsonInput();
             $stmt = $pdo->prepare('UPDATE inventory_batches SET on_hand_quantity = ?, unit_cost = ?, expiry_date = ?, updated_at = NOW() WHERE id = ?');
             $stmt->execute([
-                (int)($input['on_hand_quantity'] ?? 0),
+                (float)($input['on_hand_quantity'] ?? 0),
                 (float)($input['unit_cost'] ?? 0.00),
                 $input['expiry_date'] ?? null,
                 $id
@@ -75,7 +75,7 @@ function handleAdjustmentRoutes(PDO $pdo, string $method): void
         $input = getJsonInput();
         $sku = trim($input['sku'] ?? '');
         $locationId = trim($input['location_id'] ?? '');
-        $quantityDelta = (int)($input['quantity_delta'] ?? 0);
+        $quantityDelta = (float)($input['quantity_delta'] ?? 0);
         $reason = $input['reason'] ?? 'other';
         $notes = $input['notes'] ?? null;
         // Only used when quantityDelta > 0 (a new batch is being created).
@@ -89,7 +89,7 @@ function handleAdjustmentRoutes(PDO $pdo, string $method): void
         }
 
         // Find matching item
-        $itemStmt = $pdo->prepare('SELECT id, name, quantity, unit_price FROM inventory_items WHERE sku = ? LIMIT 1');
+        $itemStmt = $pdo->prepare('SELECT id, name, quantity, unit_price, unit_cost FROM inventory_items WHERE sku = ? LIMIT 1');
         $itemStmt->execute([$sku]);
         $item = $itemStmt->fetch();
 
@@ -120,7 +120,7 @@ function handleAdjustmentRoutes(PDO $pdo, string $method): void
             ]);
 
             // 2. Update inventory_items on_hand quantity
-            $newQty = max(0, (int)$item['quantity'] + $quantityDelta);
+            $newQty = max(0, (float)$item['quantity'] + $quantityDelta);
             $updateItem = $pdo->prepare('UPDATE inventory_items SET quantity = ?, last_updated = NOW() WHERE id = ?');
             $updateItem->execute([$newQty, $item['id']]);
 
@@ -133,7 +133,7 @@ function handleAdjustmentRoutes(PDO $pdo, string $method): void
             if ($quantityDelta > 0) {
                 // Adding stock: create a new batch for the added quantity,
                 // same as Purchase Order receiving or the Add Item form does.
-                $costForBatch = $unitCost ?? (float)($item['unit_price'] ?? 0);
+                $costForBatch = $unitCost ?? (float)($item['unit_cost'] ?? $item['unit_price'] ?? 0);
                 $batchStmt = $pdo->prepare('
                     INSERT INTO inventory_batches (id, sku, inventory_item_id, batch_code, initial_quantity, on_hand_quantity, unit_cost)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -160,7 +160,7 @@ function handleAdjustmentRoutes(PDO $pdo, string $method): void
 
                 foreach ($batches as $b) {
                     if ($rem <= 0) break;
-                    $take = min((int)$b['on_hand_quantity'], $rem);
+                    $take = min((float)$b['on_hand_quantity'], $rem);
                     $upB = $pdo->prepare('UPDATE inventory_batches SET on_hand_quantity = on_hand_quantity - ? WHERE id = ?');
                     $upB->execute([$take, $b['id']]);
                     $rem -= $take;

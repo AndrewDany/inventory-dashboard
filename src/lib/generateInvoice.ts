@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf'
 import samdamLogoUrl from '../assets/landing/samdamlogo.png'
+import { parseUtcTimestamp } from './relativeTime'
 
 export interface InvoiceLineItem {
   sku: string
@@ -23,6 +24,8 @@ export interface InvoiceData {
   items: InvoiceLineItem[]
   logoDataUrl?: string
   note?: string
+  issuedAt?: string
+  paperSize?: 'pos'
 }
 
 let cachedLogoDataUrl: string | null = null
@@ -37,11 +40,14 @@ export function getLogoDataUrl(): Promise<string | null> {
     img.onload = () => {
       try {
         const canvas = document.createElement('canvas')
-        canvas.width = img.naturalWidth || img.width
-        canvas.height = img.naturalHeight || img.height
+        const sourceWidth = img.naturalWidth || img.width
+        const sourceHeight = img.naturalHeight || img.height
+        const scale = Math.min(1, 512 / sourceWidth)
+        canvas.width = Math.round(sourceWidth * scale)
+        canvas.height = Math.round(sourceHeight * scale)
         const ctx = canvas.getContext('2d')
         if (ctx) {
-          ctx.drawImage(img, 0, 0)
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
           cachedLogoDataUrl = canvas.toDataURL('image/png')
           resolve(cachedLogoDataUrl)
           return
@@ -68,39 +74,92 @@ if (typeof window !== 'undefined') {
  * background watermark on the invoice.
  */
 let cachedWatermark: { dataUrl: string; aspect: number } | null = null
+let watermarkPromise: Promise<{ dataUrl: string; aspect: number } | null> | null = null
 
-async function loadWatermarkImage(): Promise<{ dataUrl: string; aspect: number } | null> {
-  if (cachedWatermark) return cachedWatermark
-  try {
-    const res = await fetch('/favicon.svg')
-    const svgText = await res.text()
-    const svgDataUrl = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgText)))}`
-    const img: HTMLImageElement = await new Promise((resolve, reject) => {
-      const el = new Image()
-      el.onload = () => resolve(el)
-      el.onerror = () => reject(new Error('Failed to load watermark image'))
-      el.src = svgDataUrl
-    })
-    const scale = 10
-    const width = (img.naturalWidth || 48) * scale
-    const height = (img.naturalHeight || 46) * scale
-    const canvas = document.createElement('canvas')
-    canvas.width = width
-    canvas.height = height
-    const ctx = canvas.getContext('2d')
-    if (!ctx) throw new Error('Canvas 2D context unavailable')
-    ctx.drawImage(img, 0, 0, width, height)
-    cachedWatermark = { dataUrl: canvas.toDataURL('image/png'), aspect: width / height }
-    return cachedWatermark
-  } catch {
-    return null
+function loadWatermarkImage(): Promise<{ dataUrl: string; aspect: number } | null> {
+  if (cachedWatermark) return Promise.resolve(cachedWatermark)
+  if (!watermarkPromise) {
+    watermarkPromise = (async () => {
+      try {
+        const res = await fetch('/favicon.svg')
+        const svgText = await res.text()
+        const svgDataUrl = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgText)))}`
+        const img: HTMLImageElement = await new Promise((resolve, reject) => {
+          const el = new Image()
+          el.onload = () => resolve(el)
+          el.onerror = () => reject(new Error('Failed to load watermark image'))
+          el.src = svgDataUrl
+        })
+        const scale = 10
+        const width = (img.naturalWidth || 48) * scale
+        const height = (img.naturalHeight || 46) * scale
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        if (!ctx) throw new Error('Canvas 2D context unavailable')
+        ctx.drawImage(img, 0, 0, width, height)
+        cachedWatermark = { dataUrl: canvas.toDataURL('image/png'), aspect: width / height }
+        return cachedWatermark
+      } catch {
+        return null
+      }
+    })()
   }
+  return watermarkPromise
+}
+
+if (typeof window !== 'undefined') {
+  void loadWatermarkImage()
+}
+
+const invoiceBlobCache = new Map<string, Blob>()
+const invoiceBlobPromises = new Map<string, Promise<Blob>>()
+const MAX_CACHED_INVOICES = 8
+
+export function prepareInvoiceBlob(data: InvoiceData): Promise<Blob> {
+  const key = JSON.stringify(data)
+  const cached = invoiceBlobCache.get(key)
+  if (cached) {
+    invoiceBlobCache.delete(key)
+    invoiceBlobCache.set(key, cached)
+    return Promise.resolve(cached)
+  }
+
+  const pending = invoiceBlobPromises.get(key)
+  if (pending) return pending
+
+  const generation = renderInvoiceBlob(data)
+  invoiceBlobPromises.set(key, generation)
+  void generation.then((blob) => {
+    invoiceBlobCache.set(key, blob)
+    while (invoiceBlobCache.size > MAX_CACHED_INVOICES) {
+      const oldestKey = invoiceBlobCache.keys().next().value
+      if (oldestKey === undefined) break
+      invoiceBlobCache.delete(oldestKey)
+    }
+  }).catch(() => {}).finally(() => invoiceBlobPromises.delete(key))
+  return generation
+}
+
+export function preloadInvoiceBlob(data: InvoiceData): void {
+  void prepareInvoiceBlob(data).catch(() => {})
 }
 
 export async function generateInvoiceBlob(data: InvoiceData): Promise<string> {
-  // Ensure logo is loaded if possible
-  const logoData = data.logoDataUrl || cachedLogoDataUrl || (await getLogoDataUrl())
-  const watermark = await loadWatermarkImage()
+  return URL.createObjectURL(await prepareInvoiceBlob(data))
+}
+
+async function renderInvoiceBlob(data: InvoiceData): Promise<Blob> {
+  if (data.paperSize === 'pos') {
+    const logoData = data.logoDataUrl || cachedLogoDataUrl || (await getLogoDataUrl())
+    return renderPosReceiptBlob(data, logoData)
+  }
+
+  const [logoData, watermark] = await Promise.all([
+    data.logoDataUrl ? Promise.resolve(data.logoDataUrl) : getLogoDataUrl(),
+    loadWatermarkImage(),
+  ])
 
   const doc = new jsPDF({ unit: 'pt', format: 'a4' })
   const pageWidth = doc.internal.pageSize.getWidth() // 595.28
@@ -110,7 +169,7 @@ export async function generateInvoiceBlob(data: InvoiceData): Promise<string> {
 
   const subtotal = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
   const grandTotal = subtotal
-  const issuedAt = new Date()
+  const issuedAt = data.issuedAt ? parseUtcTimestamp(data.issuedAt) : new Date()
   const dateText = `${String(issuedAt.getDate()).padStart(2, '0')} ${issuedAt.toLocaleString('en-US', {
     month: 'long',
   })}, ${issuedAt.getFullYear()}`
@@ -201,10 +260,10 @@ export async function generateInvoiceBlob(data: InvoiceData): Promise<string> {
   doc.text('Bill to:', margin, metaY + 36)
 
   const billRows = [
-    ['Customer name:', data.customerName || 'Janet Amoako'],
-    ['Delivery Address:', data.shippingAddress || '+2335757118937'],
-    ['Email:', data.customerEmail || 'kukuaayerko@gmail.com'],
-    ['Contact:', data.customerPhone || '0543604166'],
+    ['Customer name:', data.customerName || 'N/A'],
+    ['Delivery Address:', data.shippingAddress || 'N/A'],
+    ['Email:', data.customerEmail || 'N/A'],
+    ['Contact:', formatGhanaPhone(data.customerPhone)],
   ]
 
   let billY = metaY + 52
@@ -344,8 +403,164 @@ export async function generateInvoiceBlob(data: InvoiceData): Promise<string> {
     drawBannerTextFallback(doc, pageWidth, bannerY + bannerHeight / 2)
   }
 
-  const blob = doc.output('blob')
-  return URL.createObjectURL(blob)
+  return doc.output('blob')
+}
+
+function renderPosReceiptBlob(data: InvoiceData, logoData: string | null): Blob {
+  const pageWidth = 80
+  const margin = 5
+  const contentWidth = pageWidth - margin * 2
+  const measureDoc = new jsPDF({ unit: 'mm', format: [pageWidth, 5000] })
+  measureDoc.setFontSize(8)
+  const customerRows = [
+    `Customer: ${data.customerName || 'Walk-in Customer'}`,
+    `Delivery Address: ${data.shippingAddress || 'N/A'}`,
+    `Contact: ${formatGhanaPhone(data.customerPhone)}`,
+    `Email: ${data.customerEmail || 'N/A'}`,
+  ]
+  const sellerRows = [
+    `From: ${data.companyName || 'samdamventures.com'}`,
+    'Foster Home Junction, Dodowa Highway',
+    'Opposite Jehovah Witness Hall',
+    'GPS Address: GM-122-9443',
+    ...(data.processedBy ? [`Processed by: ${data.processedBy}`] : []),
+  ]
+  const items = data.items
+  const itemBlocks = items.map((item) => ({
+    name: measureDoc.splitTextToSize(item.name, contentWidth),
+    sku: measureDoc.splitTextToSize(`SKU: ${item.sku}`, contentWidth),
+    sale: measureDoc.splitTextToSize(
+      `${item.quantity} ${item.unitLabel || 'unit'} x GHC ${item.unitPrice.toFixed(2)}`,
+      contentWidth,
+    ),
+    amount: `GHC ${(item.quantity * item.unitPrice).toFixed(2)}`,
+  }))
+  const invoiceRows = [
+    `Invoice: ${data.soNumber || data.invoiceNumber}`,
+    `Invoice count: #${String(data.invoiceCount ?? 1).padStart(3, '0')}`,
+    `Date: ${(data.issuedAt ? parseUtcTimestamp(data.issuedAt) : new Date()).toLocaleString('en-GB', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    })} Local time`,
+  ]
+  const noteRows = measureDoc.splitTextToSize(
+    data.note || 'Thank you for choosing us!',
+    contentWidth,
+  )
+  const wrapRows = (rows: string[]) => rows.flatMap((row) => measureDoc.splitTextToSize(row, contentWidth))
+  const invoiceLines = wrapRows(invoiceRows)
+  const customerLines = wrapRows(customerRows)
+  const sellerLines = wrapRows(sellerRows)
+  const contentLinesHeight = (invoiceLines.length + customerLines.length + sellerLines.length
+    + noteRows.length + itemBlocks.reduce((sum, item) => sum + item.name.length + item.sku.length + item.sale.length, 0)) * 4
+  const separatorAndGapHeight = 3 * 7 + 2 * 5
+  const itemGapHeight = itemBlocks.length * 2
+  const footerHeight = 6 + 5 + 7
+  const pageHeight = 6 + (logoData ? 14 : 10) + 6 + contentLinesHeight
+    + separatorAndGapHeight + itemGapHeight + footerHeight
+
+  const doc = new jsPDF({ unit: 'mm', format: [pageWidth, pageHeight], compress: true })
+  let y = 6
+
+  if (logoData) {
+    try {
+      doc.addImage(logoData, 'PNG', 22, y, 36, 11)
+      y += 14
+    } catch {
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(12)
+      doc.text('SAMDAM VENTURES', pageWidth / 2, y + 4, { align: 'center' })
+      y += 10
+    }
+  } else {
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(12)
+    doc.text('SAMDAM VENTURES', pageWidth / 2, y + 4, { align: 'center' })
+    y += 10
+  }
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(10)
+  doc.text('SALES RECEIPT', pageWidth / 2, y, { align: 'center' })
+  y += 6
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8)
+  for (const line of invoiceLines) {
+    doc.text(line, margin, y)
+    y += 4
+  }
+  y += 1
+  doc.setDrawColor(120, 120, 120)
+  doc.setLineDashPattern([1, 1], 0)
+  doc.line(margin, y, pageWidth - margin, y)
+  doc.setLineDashPattern([], 0)
+  y += 5
+
+  doc.setFont('helvetica', 'bold')
+  doc.text('BILL TO', margin, y)
+  y += 4
+  doc.setFont('helvetica', 'normal')
+  for (const line of customerLines) {
+    doc.text(line, margin, y)
+    y += 4
+  }
+
+  y += 1
+  doc.setFont('helvetica', 'bold')
+  doc.text('FROM', margin, y)
+  y += 4
+  doc.setFont('helvetica', 'normal')
+  for (const line of sellerLines) {
+    doc.text(line, margin, y)
+    y += 4
+  }
+
+  y += 2
+  doc.setDrawColor(120, 120, 120)
+  doc.setLineDashPattern([1, 1], 0)
+  doc.line(margin, y, pageWidth - margin, y)
+  doc.setLineDashPattern([], 0)
+  y += 5
+
+  for (const index of items.keys()) {
+    const block = itemBlocks[index]
+    doc.setFont('helvetica', 'bold')
+    doc.text(block.name, margin, y)
+    y += block.name.length * 4
+
+    doc.setFont('helvetica', 'normal')
+    for (const line of block.sku) {
+      doc.text(line, margin, y)
+      y += 4
+    }
+    for (const line of block.sale) {
+      doc.text(line, margin, y)
+      y += 4
+    }
+    doc.setFont('helvetica', 'bold')
+    doc.text(block.amount, pageWidth - margin, y, { align: 'right' })
+    y += 6
+  }
+
+  y += 1
+  doc.setDrawColor(120, 120, 120)
+  doc.setLineDashPattern([1, 1], 0)
+  doc.line(margin, y, pageWidth - margin, y)
+  doc.setLineDashPattern([], 0)
+  y += 6
+  const total = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(10)
+  doc.text(`TOTAL  GHC ${total.toFixed(2)}`, pageWidth - margin, y, { align: 'right' })
+  y += 6
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8)
+  doc.text(`Payment: ${data.paymentStatus || 'Cash'}`, margin, y)
+  y += 5
+  doc.text(noteRows, margin, y)
+
+  return doc.output('blob')
 }
 
 function drawFallbackHeaderLogo(doc: jsPDF, x: number, y: number) {
@@ -353,6 +568,14 @@ function drawFallbackHeaderLogo(doc: jsPDF, x: number, y: number) {
   doc.setFontSize(16)
   doc.setTextColor(15, 23, 42)
   doc.text('SAMDAM VENTURES', x, y + 20)
+}
+
+function formatGhanaPhone(phone?: string): string {
+  const digits = phone?.replace(/\D/g, '')
+  if (!digits) return 'N/A'
+  if (digits.startsWith('233')) return `+${digits}`
+  if (digits.startsWith('0')) return `+233 ${digits.slice(1)}`
+  return `+233 ${digits}`
 }
 
 function drawBannerTextFallback(doc: jsPDF, pageWidth: number, centerY: number) {

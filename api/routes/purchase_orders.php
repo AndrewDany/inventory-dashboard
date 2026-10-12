@@ -33,7 +33,7 @@ function handlePurchaseOrderRoutes(PDO $pdo, string $method, array $uriParts): v
 
             foreach ($receivedItems as $recv) {
                 $sku = $recv['sku'];
-                $qtyRecv = (int)($recv['quantity_received'] ?? 0);
+                $qtyRecv = (float)($recv['quantity_received'] ?? 0);
                 $unitCost = (float)($recv['unit_cost'] ?? 0.00);
                 $locationId = $recv['location_id'] ?? null;
 
@@ -50,7 +50,7 @@ function handlePurchaseOrderRoutes(PDO $pdo, string $method, array $uriParts): v
                 if (!$line) {
                     throw new Exception("No purchase order line found for {$sku} on this order");
                 }
-                $remaining = (int)$line['quantity_ordered'] - (int)$line['quantity_received'];
+                $remaining = (float)$line['quantity_ordered'] - (float)$line['quantity_received'];
                 if ($remaining <= 0) {
                     throw new Exception("{$sku} has already been fully received on this order");
                 }
@@ -238,7 +238,7 @@ function handlePurchaseOrderRoutes(PDO $pdo, string $method, array $uriParts): v
                     $poId,
                     $line['sku'],
                     $invItemId,
-                    (int)($line['quantity_ordered'] ?? 1),
+                    (float)($line['quantity_ordered'] ?? 1),
                     (float)($line['unit_cost'] ?? 0.00),
                     $line['currency'] ?? 'GHC'
                 ]);

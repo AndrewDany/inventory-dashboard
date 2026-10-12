@@ -70,7 +70,7 @@ function handleSalesOrderRoutes(PDO $pdo, string $method, array $uriParts): void
         try {
             foreach ($items as $line) {
                 $sku = $line['sku'];
-                $qty = (int)$line['quantity_ordered'];
+                $qty = (float)$line['quantity_ordered'];
 
                 // 1. Check availability BEFORE touching anything (was previously
                 // silently allowed to oversell — floored at 0 with no error).
@@ -78,12 +78,12 @@ function handleSalesOrderRoutes(PDO $pdo, string $method, array $uriParts): void
                 $findItem->execute([$sku]);
                 $inv = $findItem->fetch();
 
-                if ($inv && (int)$inv['quantity'] < $qty) {
+                if ($inv && (float)$inv['quantity'] < $qty) {
                     throw new Exception("Insufficient stock for {$sku}: need {$qty}, have {$inv['quantity']}");
                 }
 
                 if ($inv) {
-                    $newQty = (int)$inv['quantity'] - $qty;
+                    $newQty = (float)$inv['quantity'] - $qty;
                     $upInv = $pdo->prepare('UPDATE inventory_items SET quantity = ?, last_updated = NOW() WHERE id = ?');
                     $upInv->execute([$newQty, $inv['id']]);
 
@@ -91,14 +91,14 @@ function handleSalesOrderRoutes(PDO $pdo, string $method, array $uriParts): void
                     // cost of whichever batches this shipment drew from.
                     $rem = $qty;
                     $costTotal = 0.0;
-                    $costedUnits = 0;
+                    $costedUnits = 0.0;
                     $batchesStmt = $pdo->prepare('SELECT id, on_hand_quantity, unit_cost FROM inventory_batches WHERE sku = ? AND on_hand_quantity > 0 ORDER BY received_date ASC');
                     $batchesStmt->execute([$sku]);
                     $batches = $batchesStmt->fetchAll();
 
                     foreach ($batches as $b) {
                         if ($rem <= 0) break;
-                        $take = min((int)$b['on_hand_quantity'], $rem);
+                        $take = min((float)$b['on_hand_quantity'], $rem);
                         $upB = $pdo->prepare('UPDATE inventory_batches SET on_hand_quantity = on_hand_quantity - ? WHERE id = ?');
                         $upB->execute([$take, $b['id']]);
                         $costTotal += $take * (float)$b['unit_cost'];
@@ -263,7 +263,7 @@ function handleSalesOrderRoutes(PDO $pdo, string $method, array $uriParts): void
                     $soId,
                     $line['sku'],
                     $invItemId,
-                    (int)($line['quantity_ordered'] ?? 1),
+                    (float)($line['quantity_ordered'] ?? 1),
                     (float)($line['unit_price'] ?? 0.00),
                     $line['currency'] ?? 'GHC'
                 ]);
@@ -303,14 +303,7 @@ function handlePosCheckout(PDO $pdo, string $method): void
     $soNumber = 'POS-' . strtoupper(substr(uniqid(), -6));
     $soId = generateUuid();
 
-    // POS sales are paid in full on the spot -- compute the total up front so
-    // amount_paid can be set correctly at insert time, instead of silently
-    // defaulting to 0.00 (which would make a completed POS sale look unpaid
-    // anywhere the app displays payment status/balance due).
     $totalSale = 0.0;
-    foreach ($items as $line) {
-        $totalSale += ((int)($line['quantity'] ?? 1)) * ((float)($line['unit_price'] ?? 0.00));
-    }
 
     $pdo->beginTransaction();
     try {
@@ -321,49 +314,93 @@ function handlePosCheckout(PDO $pdo, string $method): void
 
         // 1. Create completed sales order
         $stmt = $pdo->prepare('INSERT INTO sales_orders (id, so_number, status, notes, customer_name, amount_paid, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)');
-        $stmt->execute([$soId, $soNumber, 'shipped', "POS ($paymentMethod): $notes", $customerName, $totalSale, $auth['email'] ?? 'system']);
+        $stmt->execute([$soId, $soNumber, 'shipped', "POS ($paymentMethod): $notes", $customerName, 0, $auth['email'] ?? 'system']);
 
         foreach ($items as $line) {
             $itemId = $line['id'] ?? null;
             $sku = $line['sku'];
-            $qty = (int)($line['quantity'] ?? 1);
+            $saleQty = (float)($line['quantity'] ?? 1);
+            $qty = $saleQty;
             $price = (float)($line['unit_price'] ?? 0.00);
+            $saleUnit = (string)($line['sale_unit'] ?? 'unit');
+            if ($saleQty <= 0) {
+                throw new Exception("Invalid quantity for {$sku}");
+            }
 
             // Check availability before selling (POS previously allowed oversell too)
-            if ($itemId) {
-                $checkStmt = $pdo->prepare('SELECT quantity FROM inventory_items WHERE id = ?');
-                $checkStmt->execute([$itemId]);
-                $curQty = (int)$checkStmt->fetchColumn();
+            $checkStmt = $pdo->prepare('SELECT id, quantity, unit_of_measure, unit_price, unit_cost, bundle_yards, bundle_price, cut_size_mm FROM inventory_items WHERE id = ? OR sku = ? LIMIT 1');
+            $checkStmt->execute([$itemId, $sku]);
+            $stockItem = $checkStmt->fetch();
+            if ($stockItem) {
+                $itemId = $stockItem['id'];
+                if ($stockItem['unit_of_measure'] === 'yard') {
+                    if ($saleUnit === 'bundle') {
+                        if ((float)$stockItem['bundle_yards'] <= 0 || $stockItem['bundle_price'] === null) {
+                            throw new Exception("{$sku} is missing its bundle size or price");
+                        }
+                        if (abs($saleQty - round($saleQty)) > 0.000001) {
+                            throw new Exception("{$sku} bundles must be sold in whole numbers");
+                        }
+                        $qty = round($saleQty * (float)$stockItem['bundle_yards'], 6);
+                        $price = (float)$stockItem['bundle_price'];
+                    } elseif ($saleUnit === 'cut') {
+                        if ((float)$stockItem['cut_size_mm'] <= 0) {
+                            throw new Exception("{$sku} has no configured cut length");
+                        }
+                        if (abs($saleQty - round($saleQty)) > 0.000001) {
+                            throw new Exception("{$sku} cuts must be sold in whole numbers");
+                        }
+                        $cutLength = (float)$stockItem['cut_size_mm'];
+                        $qty = round($saleQty * $cutLength / 914.4, 6);
+                        $price = round((float)$stockItem['unit_price'] * $cutLength / 914.4, 2);
+                    } elseif ($saleUnit === 'yard') {
+                        $qty = $saleQty;
+                        $price = (float)$stockItem['unit_price'];
+                    } else {
+                        throw new Exception("Invalid sale unit for yard product {$sku}");
+                    }
+                } elseif ($saleUnit === 'unit') {
+                    $qty = $saleQty;
+                }
+                $curQty = (float)$stockItem['quantity'];
                 if ($curQty < $qty) {
                     throw new Exception("Insufficient stock for {$sku}: need {$qty}, have {$curQty}");
                 }
             }
+            if ($qty <= 0) {
+                throw new Exception("Invalid stock quantity for {$sku}");
+            }
+            $totalSale += $saleQty * $price;
 
             // Decrement FIFO batches, tracking real weighted-average cost
             $rem = $qty;
             $costTotal = 0.0;
-            $costedUnits = 0;
+            $costedUnits = 0.0;
             $batchesStmt = $pdo->prepare('SELECT id, on_hand_quantity, unit_cost FROM inventory_batches WHERE sku = ? AND on_hand_quantity > 0 ORDER BY received_date ASC');
             $batchesStmt->execute([$sku]);
             $batches = $batchesStmt->fetchAll();
 
             foreach ($batches as $b) {
                 if ($rem <= 0) break;
-                $take = min((int)$b['on_hand_quantity'], $rem);
+                $take = min((float)$b['on_hand_quantity'], $rem);
                 $upB = $pdo->prepare('UPDATE inventory_batches SET on_hand_quantity = on_hand_quantity - ? WHERE id = ?');
                 $upB->execute([$take, $b['id']]);
                 $costTotal += $take * (float)$b['unit_cost'];
                 $costedUnits += $take;
                 $rem -= $take;
             }
-            $weightedUnitCost = $costedUnits > 0 ? $costTotal / $costedUnits : null;
+            $weightedUnitCost = $costedUnits > 0
+                ? ($costTotal / $costedUnits) * ($qty / $saleQty)
+                : ($stockItem && $stockItem['unit_cost'] !== null
+                    ? (float)$stockItem['unit_cost'] * ($qty / $saleQty)
+                    : null);
 
             // Insert sales order item WITH real per-sale cost captured
             $itemStmt = $pdo->prepare('
-                INSERT INTO sales_order_items (id, so_id, sku, inventory_item_id, quantity_ordered, quantity_shipped, unit_price, unit_cost)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO sales_order_items (id, so_id, sku, inventory_item_id, quantity_ordered, quantity_shipped, unit_price, sale_unit, unit_cost)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ');
-            $itemStmt->execute([generateUuid(), $soId, $sku, $itemId, $qty, $qty, $price, $weightedUnitCost]);
+            $itemStmt->execute([generateUuid(), $soId, $sku, $itemId, $saleQty, $saleQty, $price, $saleUnit, $weightedUnitCost]);
 
             // Decrement inventory item quantity
             if ($itemId) {
@@ -411,6 +448,8 @@ function handlePosCheckout(PDO $pdo, string $method): void
             ]);
         }
 
+        $updateTotal = $pdo->prepare('UPDATE sales_orders SET amount_paid = ? WHERE id = ?');
+        $updateTotal->execute([$totalSale, $soId]);
         $pdo->commit();
 
         // Notify admins of large sales only after the sale is safely committed

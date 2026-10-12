@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { adjustmentSchema, type AdjustmentFormValues } from '../../lib/procurementSchemas'
 import { useApplyInventoryAdjustment } from '../../hooks/useInventoryAdjustments'
+import { useInventory } from '../../hooks/useInventory'
 import { useLocations } from '../../hooks/useLocations'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 export default function AdjustmentForm({ onClose }: { onClose: () => void }) {
   const applyAdjustment = useApplyInventoryAdjustment()
+  const { data: items } = useInventory()
   const { data: locations } = useLocations()
 
   const {
@@ -31,6 +33,8 @@ export default function AdjustmentForm({ onClose }: { onClose: () => void }) {
 
   const reason = watch('reason')
   const locationId = watch('location_id')
+  const sku = watch('sku')
+  const isYardItem = items?.find((item) => item.sku === sku)?.unit_of_measure === 'yard'
 
   async function onSubmit(values: Record<string, any>) {
     await applyAdjustment.mutateAsync({
@@ -79,6 +83,7 @@ export default function AdjustmentForm({ onClose }: { onClose: () => void }) {
         <Input
           id="quantity_delta"
           type="number"
+          step={isYardItem ? '0.000001' : '1'}
           {...register('quantity_delta', { valueAsNumber: true })}
           placeholder="e.g. 10 or -5"
         />

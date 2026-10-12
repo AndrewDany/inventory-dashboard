@@ -6,9 +6,9 @@
 -- Password for admin@inventory.local is: Admin@12345 (bcrypt hashed)
 -- Password for demo@inventory.local is: Demo@12345 (bcrypt hashed)
 INSERT INTO `users` (`id`, `email`, `password_hash`, `role`, `created_at`) VALUES
-('u-admin-0001', 'admin@inventory.local', '$2y$10$vEV8TkwYBaTEtA2Nnc3rqu2excQwL2T.m0AzxBIMAuK9oWIgGe1la', 'admin', NOW()),
-('u-demo-0002', 'demo@inventory.local', '$2y$10$YLjaydm8Be1B1wdi8EhXJOf9d9of9tE8cwAnVqdGg.51cKEBH1hpC', 'demo', NOW())
-ON DUPLICATE KEY UPDATE `email` = VALUES(`email`);
+('u-admin-0001', 'admin@inventory.local', '$2y$12$YcwEVjAi2VWM3n3PG4sXru54Pikh7zj.OqivQc5DWeijPYBRG6vqO', 'admin', NOW()),
+('u-demo-0002', 'demo@inventory.local', '$2y$12$JJ2FCDAmd3rOTpCm1XWNbOth9RBONZFnyCG7UwO3cWKTnG4Jqnqh6', 'demo', NOW())
+ON DUPLICATE KEY UPDATE `email` = VALUES(`email`), `password_hash` = VALUES(`password_hash`);
 
 INSERT INTO `profiles` (`id`, `user_id`, `full_name`, `avatar_url`) VALUES
 ('p-admin-0001', 'u-admin-0001', 'System Administrator', NULL),

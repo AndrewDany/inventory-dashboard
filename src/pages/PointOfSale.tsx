@@ -1,11 +1,21 @@
 import { useState, useMemo, useRef, useEffect, lazy, Suspense } from 'react'
-import { Plus, Minus, Trash2, ScanLine, Receipt, Printer, Mail, MessageCircle, Send, Share2, WifiOff } from 'lucide-react'
+import { Plus, Minus, Trash2, ScanLine, Receipt, Printer, Mail, MessageCircle, Send, Share2, WifiOff, Download } from 'lucide-react'
 import { toast } from 'sonner'
 import { useInventory } from '../hooks/useInventory'
 import type { InventoryItem } from '../types/inventory'
 import { useLocations } from '../hooks/useLocations'
-import { usePointOfSaleCheckout, type CartLine } from '../hooks/usePointOfSale'
+import {
+  defaultSellMode,
+  isYardCutItem,
+  isYardItem,
+  lineSubtotal,
+  pricePerBaseUnit,
+  stockQuantity,
+  usePointOfSaleCheckout,
+  type CartLine,
+} from '../hooks/usePointOfSale'
 import { api } from '../lib/apiClient'
+import { prepareInvoiceBlob, type InvoiceData } from '../lib/generateInvoice'
 const BarcodeScanner = lazy(() => import('../components/inventory/BarcodeScanner'))
 import PageLayout from '../components/layout/PageLayout'
 import Modal from '../components/ui/Modal'
@@ -40,7 +50,10 @@ export default function PointOfSale() {
   const [isVerifyingCustomer, setIsVerifyingCustomer] = useState(false)
   const [shippingAddress, setShippingAddress] = useState('')
   const [paymentStatus, setPaymentStatus] = useState('Cash')
+  const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null)
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null)
   const [invoiceUrl, setInvoiceUrl] = useState<string | null>(null)
+  const [invoiceFrameReady, setInvoiceFrameReady] = useState(false)
   const [invoiceNumber, setInvoiceNumber] = useState('')
   const [invoiceShareText, setInvoiceShareText] = useState('')
   const [invoiceCount, setInvoiceCount] = useState(() => {
@@ -70,17 +83,40 @@ export default function PointOfSale() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!showInvoiceModal || !invoiceData) return
+
+    let active = true
+    let generatedUrl: string | null = null
+    void prepareInvoiceBlob(invoiceData).then((blob) => {
+      const file = new File([blob], `invoice-${invoiceData.invoiceNumber}.pdf`, { type: 'application/pdf' })
+      const url = URL.createObjectURL(blob)
+      generatedUrl = url
+      if (!active) {
+        URL.revokeObjectURL(url)
+        return
+      }
+      setInvoiceFile(file)
+      setInvoiceFrameReady(false)
+      setInvoiceUrl(url)
+    }).catch((error: unknown) => {
+      if (active) toast.error(error instanceof Error ? error.message : 'Unable to prepare invoice PDF')
+    })
+
+    return () => {
+      active = false
+      if (generatedUrl) URL.revokeObjectURL(generatedUrl)
+    }
+  }, [showInvoiceModal, invoiceData])
+
   const filteredItems = useMemo(() => {
     if (!search) return []
     const q = search.toLowerCase()
     return (items ?? []).filter(
       (item) =>
-        item.name.toLowerCase().includes(q) ||
-        item.sku.toLowerCase().includes(q) ||
-        (item.type?.toLowerCase().includes(q) ?? false) ||
-        (item.brand?.toLowerCase().includes(q) ?? false) ||
-        (item.color?.toLowerCase().includes(q) ?? false) ||
-        (item.size?.toLowerCase().includes(q) ?? false)
+        [item.name, item.sku, item.type, item.brand, item.color, item.size].some((value) =>
+          String(value ?? '').toLowerCase().includes(q)
+        )
     ).slice(0, 6)
   }, [items, search])
 
@@ -93,9 +129,12 @@ export default function PointOfSale() {
 
   function addToCart(item: (typeof filteredItems)[number]) {
     const available = stockBySku[item.sku] ?? 0
-    const existingQty = cart.find((line) => line.item.id === item.id)?.quantity ?? 0
+    const existingLine = cart.find((line) => line.item.id === item.id)
+    const existingStockQty = existingLine ? stockQuantity(existingLine) : 0
+    const sellMode = existingLine?.sellMode ?? defaultSellMode(item)
+    const addedStockQty = stockQuantity({ item, quantity: 1, sellMode })
 
-    if (existingQty + 1 > available) {
+    if (existingStockQty + addedStockQty > available) {
       toast.warning(`Only ${available} ${item.sku} available in stock.`)
       return
     }
@@ -107,7 +146,7 @@ export default function PointOfSale() {
           line.item.id === item.id ? { ...line, quantity: line.quantity + 1 } : line
         )
       }
-      return [...prev, { item, quantity: 1 }]
+      return [...prev, { item, quantity: 1, sellMode }]
     })
     setSearch('')
   }
@@ -124,7 +163,7 @@ export default function PointOfSale() {
     setCart((prev) => prev.filter((line) => line.item.id !== itemId))
   }
 
-  const subtotal = cart.reduce((sum, line) => sum + line.quantity * (line.item.unit_price ?? 0), 0)
+  const subtotal = cart.reduce((sum, line) => sum + lineSubtotal(line), 0)
   const grandTotal = subtotal
 
   async function handleCheckout() {
@@ -135,8 +174,8 @@ export default function PointOfSale() {
       return
     }
 
-    if (customerPhone && !/^\d{10}$/.test(customerPhone)) {
-      toast.error('Contact phone must contain exactly 10 digits.')
+    if (customerPhone && !/^\d{9}$/.test(customerPhone)) {
+      toast.error('Contact phone must contain 9 digits after +233.')
       return
     }
 
@@ -150,7 +189,7 @@ export default function PointOfSale() {
       return
     }
 
-    const hasOversell = cart.some((line) => (stockBySku[line.item.sku] ?? 0) < line.quantity)
+    const hasOversell = cart.some((line) => (stockBySku[line.item.sku] ?? 0) < stockQuantity(line))
     if (hasOversell) {
       toast.error('One or more items exceed available stock at this location.')
       return
@@ -164,7 +203,7 @@ export default function PointOfSale() {
         locationId,
         customerName: customerName || undefined,
         customerEmail: customerEmail || undefined,
-        customerPhone: customerPhone || undefined,
+        customerPhone: customerPhone ? `0${customerPhone}` : undefined,
         shippingAddress: shippingAddress || undefined,
         paymentStatus,
         companyName: 'samdamventures.com',
@@ -176,7 +215,9 @@ export default function PointOfSale() {
       setInvoiceCount(nextCount)
       setInvoiceNumber(invoice.invoiceNumber)
       setInvoiceShareText(invoice.shareText)
-      setInvoiceUrl(invoice.blobUrl ?? null)
+      setInvoiceData(invoice.invoiceData)
+      setInvoiceFile(null)
+      setInvoiceUrl(null)
       setShowInvoiceModal(true)
       setCart([])
       setCustomerName('')
@@ -191,8 +232,8 @@ export default function PointOfSale() {
   }
 
   async function verifyCustomer() {
-    if (!/^\d{10}$/.test(customerPhone)) {
-      toast.error('Enter exactly 10 digits to verify the customer.')
+    if (!/^\d{9}$/.test(customerPhone)) {
+      toast.error('Enter 9 digits after +233 to verify the customer.')
       return
     }
 
@@ -203,7 +244,7 @@ export default function PointOfSale() {
         phone: string
         email: string | null
         delivery_address: string | null
-      } | null>(`/customers?phone=${customerPhone}`)
+      } | null>(`/customers?phone=0${customerPhone}`)
 
       if (!customer) {
         setCustomerVerified(false)
@@ -225,8 +266,10 @@ export default function PointOfSale() {
   }
 
   function handlePrint() {
-    if (iframeRef.current) {
+    if (invoiceFrameReady && iframeRef.current) {
       iframeRef.current.contentWindow?.print()
+    } else {
+      toast.info('The invoice preview is still loading.')
     }
   }
 
@@ -238,70 +281,55 @@ export default function PointOfSale() {
     link.click()
   }
 
-  /**
-   * Reserves a blank tab synchronously, in direct response to the click.
-   * Safari and other strict browsers only allow window.open() to bypass
-   * the popup blocker when called synchronously from a user gesture — if
-   * we wait until after an `await` to open it, it gets silently blocked.
-   * Opening blank now and setting .location on it later sidesteps this.
-   */
-  function reserveTab(): Window | null {
-    return window.open('', '_blank', 'noopener,noreferrer')
-  }
-
   async function shareInvoice(channel: 'whatsapp' | 'telegram' | 'email') {
-    const popup = channel === 'email' ? null : reserveTab()
+    if (!invoiceFile) {
+      toast.info('The invoice PDF is still being prepared.')
+      return
+    }
 
-    // Try the OS-level share sheet first. This lets the person pick
-    // whichever app they actually have installed (WhatsApp, Telegram,
-    // Mail, etc.) with the PDF attached directly, and it works
-    // consistently across mobile browsers without any window.open
-    // involved at all, so there's nothing for a popup blocker to catch.
-    if (navigator.share && invoiceUrl) {
+    if (channel === 'whatsapp' && navigator.share && navigator.canShare?.({ files: [invoiceFile] })) {
       try {
-        const pdfBlob = await fetch(invoiceUrl).then((response) => response.blob())
-        const pdfFile = new File([pdfBlob], `invoice-${invoiceNumber}.pdf`, { type: 'application/pdf' })
-        if (navigator.canShare?.({ files: [pdfFile] })) {
-          popup?.close()
-          await navigator.share({ title: `Invoice ${invoiceNumber}`, text: invoiceShareText, files: [pdfFile] })
-          return
-        }
-      } catch {
-        // Person cancelled the share sheet, or the browser only claims to
-        // support file sharing — fall through to the link-based approach.
+        await navigator.share({
+          title: `Invoice ${invoiceNumber}`,
+          text: invoiceShareText,
+          files: [invoiceFile],
+        })
+        return
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return
       }
     }
 
-    // Fallback: download the PDF locally so it can be attached manually,
-    // and open a pre-filled share link using universal https:// URLs.
-    // Custom schemes like "whatsapp://send" only work on devices that
-    // registered that scheme, and fail silently everywhere else —
-    // wa.me and t.me are real web pages every browser can open, which
-    // then hand off to the installed app if there is one.
-    downloadInvoicePdf()
+    if (invoiceUrl) downloadInvoicePdf()
+
     const message = encodeURIComponent(invoiceShareText || `Invoice ${invoiceNumber}`)
     const targetUrls: Record<'whatsapp' | 'telegram' | 'email', string> = {
       whatsapp: `https://wa.me/?text=${message}`,
       telegram: `https://t.me/share/url?url=&text=${message}`,
-      email: `mailto:?subject=${encodeURIComponent(`Invoice ${invoiceNumber}`)}&body=${message}`,
+      email: `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(`Invoice ${invoiceNumber}`)}&body=${message}`,
     }
 
     if (channel === 'email') {
-      window.location.href = targetUrls.email
-    } else if (popup) {
-      popup.location.href = targetUrls[channel]
+      const popup = window.open(targetUrls.email, '_blank')
+      if (popup) popup.opener = null
+      else window.location.href = targetUrls.email
     } else {
-      // Popup was blocked outright (rare — e.g. popups fully disabled) —
-      // last-resort direct navigation in a new tab.
-      window.open(targetUrls[channel], '_blank', 'noopener,noreferrer')
+      const popup = window.open(targetUrls[channel], '_blank')
+      if (popup) popup.opener = null
+      else window.location.href = targetUrls[channel]
     }
 
-    toast.info(`Invoice ${invoiceNumber} PDF downloaded. Attach it in ${channel === 'email' ? 'your email' : channel}.`)
+    toast.info(`Attach the downloaded invoice PDF in ${channel === 'email' ? 'your email' : channel}.`)
   }
 
   async function handleNativeShare() {
     if (!navigator.share) {
-      toast.info('Native sharing is not supported in this browser.')
+      try {
+        await navigator.clipboard.writeText(invoiceShareText || `Invoice ${invoiceNumber}`)
+        toast.success('Invoice details copied. Choose WhatsApp, Telegram, or Email to share.')
+      } catch {
+        toast.info('Choose WhatsApp, Telegram, or Email to share this invoice.')
+      }
       return
     }
     try {
@@ -386,7 +414,12 @@ export default function PointOfSale() {
                         {` · ${item.quantity} ${getUnitLabel(item)} in stock`}
                       </p>
                     </div>
-                    <span className="text-sm font-medium text-slate-900 dark:text-slate-100">GHC {(item.unit_price ?? 0).toFixed(2)}</span>
+                    <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                      GHC {Number(item.unit_price ?? 0).toFixed(2)}{item.unit_of_measure === 'yard' ? ' / yard' : ''}
+                      {item.bundle_price != null && (
+                        <span className="block text-xs text-gray-500">Bundle GHC {Number(item.bundle_price).toFixed(2)}</span>
+                      )}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -430,20 +463,52 @@ export default function PointOfSale() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        GHC {(line.item.unit_price ?? 0).toFixed(2)}
-                        {line.item.unit_of_measure && (
-                          <span className="text-xs text-gray-400 ml-1">/{line.item.unit_of_measure}</span>
-                        )}
+                        GHC {pricePerBaseUnit(line).toFixed(2)}
+                        <span className="text-xs text-gray-400 ml-1">
+                          /{isYardItem(line.item)
+                            ? line.sellMode === 'bundle'
+                              ? 'bundle'
+                              : line.sellMode === 'cut'
+                                ? `${line.item.cut_size_mm} mm cut`
+                                : 'yard'
+                            : line.item.unit_of_measure ?? 'unit'}
+                        </span>
                       </TableCell>
                       <TableCell className="text-right">
+                        {isYardItem(line.item) && (
+                          <Select
+                            value={line.sellMode ?? 'yard'}
+                            onValueChange={(value) => setCart((prev) => prev.map((current) =>
+                              current.item.id === line.item.id
+                                ? { ...current, quantity: 1, sellMode: value as CartLine['sellMode'] }
+                                : current
+                            ))}
+                          >
+                            <SelectTrigger className="mb-1 h-8 w-28 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="yard">Yard</SelectItem>
+                              {isYardCutItem(line.item) && (
+                                <SelectItem value="cut">{line.item.cut_size_mm} mm cut</SelectItem>
+                              )}
+                              {Number(line.item.bundle_yards) > 0 && line.item.bundle_price != null && (
+                                <SelectItem value="bundle">Bundle ({line.item.bundle_yards} yd)</SelectItem>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        )}
                         {line.item.unit_type === 'weight' ? (
                           <Input
                             type="number"
-                            step="0.01"
+                            step={isYardItem(line.item)
+                              ? line.sellMode === 'yard' ? '0.01' : '1'
+                              : '0.01'}
                             min="0"
                             value={line.quantity}
                             onChange={(e) => {
-                              const val = Math.max(0, Number(e.target.value))
+                              const rawValue = Math.max(0, Number(e.target.value))
+                              const val = isYardItem(line.item) && line.sellMode !== 'yard' ? Math.trunc(rawValue) : rawValue
                               setCart((prev) =>
                                 prev
                                   .map((l) => (l.item.id === line.item.id ? { ...l, quantity: val } : l))
@@ -471,7 +536,7 @@ export default function PointOfSale() {
                         )}
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        GHC {(line.quantity * (line.item.unit_price ?? 0)).toFixed(2)}
+                        GHC {lineSubtotal(line).toFixed(2)}
                       </TableCell>
                       <TableCell className="text-right">
                         <button
@@ -534,24 +599,30 @@ export default function PointOfSale() {
           <div>
             <Label htmlFor="customer-phone" className="mb-1 block">Contact Phone</Label>
             <div className="flex gap-2">
-              <Input
-                id="customer-phone"
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]{10}"
-                maxLength={10}
-                value={customerPhone}
-                onChange={(e) => {
-                  setCustomerPhone(e.target.value.replace(/\D/g, '').slice(0, 10))
-                  setCustomerVerified(false)
-                }}
-                placeholder="0241234567"
-              />
-              <Button type="button" variant="outline" onClick={verifyCustomer} disabled={isVerifyingCustomer || customerPhone.length !== 10}>
+              <div className="flex min-w-0 flex-1">
+                <span className="inline-flex items-center rounded-l-lg border border-r-0 border-input bg-slate-50 px-3 text-sm text-slate-600">
+                  +233
+                </span>
+                <Input
+                  id="customer-phone"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]{9}"
+                  maxLength={9}
+                  value={customerPhone}
+                  onChange={(e) => {
+                    setCustomerPhone(e.target.value.replace(/\D/g, '').slice(0, 9))
+                    setCustomerVerified(false)
+                  }}
+                  placeholder="241234567"
+                  className="rounded-l-none"
+                />
+              </div>
+              <Button type="button" variant="outline" onClick={verifyCustomer} disabled={isVerifyingCustomer || customerPhone.length !== 9}>
                 {isVerifyingCustomer ? 'Checking...' : 'Verify'}
               </Button>
             </div>
-            <p className="mt-1 text-xs text-slate-500">Enter 10 digits only.</p>
+            <p className="mt-1 text-xs text-slate-500">Enter 9 digits after +233, without the leading 0.</p>
             {customerVerified && <p className="mt-1 text-xs font-medium text-emerald-600">Customer details verified.</p>}
           </div>
 
@@ -617,7 +688,7 @@ export default function PointOfSale() {
       </div>
 
       {/* Invoice Preview Modal */}
-      {showInvoiceModal && invoiceUrl && (
+      {showInvoiceModal && (
         <Modal title="Invoice Preview" onClose={() => { setShowInvoiceModal(false) }}>
           <div className="space-y-4">
             <div className="rounded-lg border border-indigo-100 bg-indigo-50 p-3">
@@ -625,21 +696,28 @@ export default function PointOfSale() {
               <p className="mt-1 text-sm text-indigo-900">Invoice {invoiceCount} of your issued invoices</p>
             </div>
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <iframe
-                ref={iframeRef}
-                src={invoiceUrl}
-                className="w-full h-125"
-                title="Invoice Preview"
-              />
+              {invoiceUrl ? (
+                <iframe
+                  ref={iframeRef}
+                  src={invoiceUrl}
+                  className="w-full h-125"
+                  title="Invoice Preview"
+                  onLoad={() => setInvoiceFrameReady(true)}
+                />
+              ) : (
+                <div className="flex h-125 items-center justify-center text-sm text-slate-500" role="status">
+                  Preparing invoice PDF...
+                </div>
+              )}
             </div>
             <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
-              <Button className="min-w-35 flex-1" variant="outline" onClick={() => shareInvoice('whatsapp')} title="Share invoice PDF to WhatsApp">
+              <Button className="min-w-35 flex-1" variant="outline" onClick={() => shareInvoice('whatsapp')} title="Share invoice details to WhatsApp">
                 <MessageCircle size={16} className="mr-2 text-emerald-600" /> WhatsApp
               </Button>
-              <Button className="min-w-30 flex-1" variant="outline" onClick={() => shareInvoice('email')} title="Share by email">
+              <Button className="min-w-30 flex-1" variant="outline" onClick={() => shareInvoice('email')} title="Share invoice details by email">
                 <Mail size={16} className="mr-2 text-blue-600" /> Email
               </Button>
-              <Button className="min-w-30 flex-1" variant="outline" onClick={() => shareInvoice('telegram')} title="Share on Telegram">
+              <Button className="min-w-30 flex-1" variant="outline" onClick={() => shareInvoice('telegram')} title="Share invoice details on Telegram">
                 <Send size={16} className="mr-2 text-sky-600" /> Telegram
               </Button>
               <Button className="min-w-30 flex-1" variant="outline" onClick={handleNativeShare} title="Share invoice">
@@ -647,10 +725,14 @@ export default function PointOfSale() {
               </Button>
             </div>
             <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={downloadInvoicePdf} disabled={!invoiceUrl}>
+                <Download size={16} className="mr-2" />
+                Download PDF
+              </Button>
               <Button variant="outline" onClick={() => { setShowInvoiceModal(false) }}>
                 Close
               </Button>
-              <Button onClick={handlePrint}>
+              <Button onClick={handlePrint} disabled={!invoiceUrl || !invoiceFrameReady}>
                 <Printer size={16} className="mr-2" />
                 Print
               </Button>

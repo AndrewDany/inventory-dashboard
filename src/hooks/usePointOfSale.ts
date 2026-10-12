@@ -1,14 +1,30 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { api, getStoredUser } from '../lib/apiClient'
-import { generateInvoiceBlob } from '../lib/generateInvoice'
+import type { InvoiceData } from '../lib/generateInvoice'
 import type { InventoryItem } from '../types/inventory'
 import type { AuthUser } from './useAuth'
 
 export interface CartLine {
   item: InventoryItem
   quantity: number
-  sellMode?: 'box' | 'piece'
+  sellMode?: 'box' | 'piece' | 'yard' | 'bundle' | 'cut'
+}
+
+export const MM_PER_YARD = 914.4
+
+export function isYardItem(item: InventoryItem): boolean {
+  return item.unit_of_measure === 'yard'
+}
+
+export function isYardCutItem(item: InventoryItem): boolean {
+  return isYardItem(item) && Number(item.cut_size_mm) > 0
+}
+
+export function defaultSellMode(item: InventoryItem): CartLine['sellMode'] {
+  if (isYardCutItem(item)) return 'cut'
+  if (isYardItem(item)) return 'yard'
+  return undefined
 }
 
 export function basePieceQuantity(line: CartLine): number {
@@ -17,8 +33,26 @@ export function basePieceQuantity(line: CartLine): number {
   return line.sellMode === 'piece' ? line.quantity : line.quantity * upb
 }
 
+export function stockQuantity(line: CartLine): number {
+  if (!isYardItem(line.item)) return basePieceQuantity(line)
+  const yardQuantity = line.sellMode === 'bundle'
+    ? line.quantity * Number(line.item.bundle_yards ?? 0)
+    : line.sellMode === 'cut'
+      ? line.quantity * Number(line.item.cut_size_mm ?? 0) / MM_PER_YARD
+      : line.quantity
+  return Math.round(yardQuantity * 1_000_000) / 1_000_000
+}
+
 export function pricePerBaseUnit(line: CartLine): number {
   const price = line.item.unit_price ?? 0
+  if (isYardItem(line.item)) {
+    if (line.sellMode === 'bundle') return Number(line.item.bundle_price ?? 0)
+    if (line.sellMode === 'cut') {
+      const cutPrice = price * Number(line.item.cut_size_mm ?? 0) / MM_PER_YARD
+      return Math.round(cutPrice * 100) / 100
+    }
+    return price
+  }
   const upb = line.item.unit_type === 'box' ? line.item.units_per_box : null
   if (upb && line.sellMode === 'piece') {
     return price / upb
@@ -31,6 +65,11 @@ export function lineSubtotal(line: CartLine): number {
 }
 
 export function invoiceUnitLabel(line: CartLine): string {
+  if (isYardItem(line.item)) {
+    if (line.sellMode === 'bundle') return 'bundle'
+    if (line.sellMode === 'cut') return `${line.item.cut_size_mm} mm cut`
+    return 'yard'
+  }
   const upb = line.item.unit_type === 'box' ? line.item.units_per_box : null
   if (upb) return line.sellMode === 'piece' ? 'pcs' : 'box'
   if (line.item.unit_type === 'box') return 'box'
@@ -64,7 +103,7 @@ export function usePointOfSaleCheckout() {
       shippingAddress,
       paymentStatus,
       companyName,
-    }: CheckoutInput): Promise<{ blobUrl: string; invoiceNumber: string; shareText: string }> => {
+    }: CheckoutInput): Promise<{ invoiceData: InvoiceData; invoiceNumber: string; shareText: string }> => {
       const user = getStoredUser<AuthUser>()
 
       const checkoutPayload = {
@@ -78,15 +117,17 @@ export function usePointOfSaleCheckout() {
           id: line.item.id,
           sku: line.item.sku,
           name: line.item.name,
-          quantity: basePieceQuantity(line),
+          quantity: isYardItem(line.item) ? line.quantity : stockQuantity(line),
           unit_price: pricePerBaseUnit(line),
+          sale_unit: line.sellMode ?? 'unit',
         })),
       }
 
       const res = await api.post<{ so_number: string; so_id: string }>('/pos/checkout', checkoutPayload)
       const soNumber = res?.so_number || `SO-${Date.now().toString().slice(-8)}`
 
-      const blobUrl = await generateInvoiceBlob({
+      const invoiceData: InvoiceData = {
+        paperSize: 'pos',
         invoiceNumber: soNumber,
         invoiceCount,
         soNumber,
@@ -104,10 +145,10 @@ export function usePointOfSaleCheckout() {
           unitPrice: pricePerBaseUnit(line),
           unitLabel: invoiceUnitLabel(line),
         })),
-      })
+      }
 
       return {
-        blobUrl,
+        invoiceData,
         invoiceNumber: soNumber,
         shareText: `Invoice ${soNumber} from ${companyName}. Total: GHC ${cart.reduce((sum, line) => sum + lineSubtotal(line), 0).toFixed(2)}.`,
       }

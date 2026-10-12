@@ -15,9 +15,12 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS
     exit;
 }
 
-// Load environment variables from .env if present
-$envPath = dirname(__DIR__, 2) . '/.env';
-if (file_exists($envPath)) {
+// Load base environment variables first, then local overrides.
+foreach ([dirname(__DIR__, 2) . '/.env', dirname(__DIR__, 2) . '/.env.local'] as $envPath) {
+    if (!file_exists($envPath)) {
+        continue;
+    }
+
     $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
         $line = trim($line);

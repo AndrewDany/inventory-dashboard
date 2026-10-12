@@ -54,13 +54,13 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
                 $existing = $existingStmt->fetch();
 
                 $itemId = $existing['id'] ?? generateUuid();
-                $previousQty = (int)($existing['quantity'] ?? 0);
+                $previousQty = (float)($existing['quantity'] ?? 0);
                 $unitPrice = isset($item['unit_price']) ? (float)$item['unit_price'] : 0.00;
                 // Same fallback reasoning as the single-item endpoint: prefer
                 // a real cost if the CSV provides one, otherwise fall back
                 // to unit_price rather than leaving margin undefined.
                 $unitCost = isset($item['unit_cost']) ? (float)$item['unit_cost'] : $unitPrice;
-                $quantity = (int)($item['quantity'] ?? 0);
+                $quantity = (float)($item['quantity'] ?? 0);
                 $itemName = $item['name'] ?? 'Unnamed Product';
 
                 $stmt->execute([
@@ -76,7 +76,7 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
                     $item['unit_of_measure'] ?? null,
                     isset($item['units_per_box']) ? (int)$item['units_per_box'] : null,
                     $quantity,
-                    (int)($item['reorder_level'] ?? 0),
+                    (float)($item['reorder_level'] ?? 0),
                     $unitPrice,
                     $item['supplier'] ?? null,
                     $item['location_id'] ?? null,
@@ -186,6 +186,10 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
                         unit_type = ?,
                         unit_of_measure = ?,
                         units_per_box = ?,
+                        unit_cost = ?,
+                        bundle_yards = ?,
+                        bundle_price = ?,
+                        cut_size_mm = ?,
                         quantity = ?,
                         reorder_level = ?,
                         unit_price = ?,
@@ -195,7 +199,7 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
                     WHERE id = ?
                 ');
 
-                $newQty = isset($input['quantity']) ? (int)$input['quantity'] : (int)$current['quantity'];
+                $newQty = isset($input['quantity']) ? (float)$input['quantity'] : (float)$current['quantity'];
 
                 $stmt->execute([
                     $input['name'] ?? $current['name'],
@@ -208,8 +212,12 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
                     $input['unit_type'] ?? $current['unit_type'],
                     $input['unit_of_measure'] ?? $current['unit_of_measure'],
                     isset($input['units_per_box']) ? (int)$input['units_per_box'] : $current['units_per_box'],
+                    isset($input['unit_cost']) ? (float)$input['unit_cost'] : $current['unit_cost'],
+                    isset($input['bundle_yards']) ? (float)$input['bundle_yards'] : $current['bundle_yards'],
+                    isset($input['bundle_price']) ? (float)$input['bundle_price'] : $current['bundle_price'],
+                    isset($input['cut_size_mm']) ? (float)$input['cut_size_mm'] : $current['cut_size_mm'],
                     $newQty,
-                    isset($input['reorder_level']) ? (int)$input['reorder_level'] : (int)$current['reorder_level'],
+                    isset($input['reorder_level']) ? (float)$input['reorder_level'] : (float)$current['reorder_level'],
                     isset($input['unit_price']) ? (float)$input['unit_price'] : (float)$current['unit_price'],
                     $input['supplier'] ?? $current['supplier'],
                     $input['location_id'] ?? $current['location_id'],
@@ -217,7 +225,7 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
                 ]);
 
                 // If quantity changed, record stock movement
-                $delta = $newQty - (int)$current['quantity'];
+                $delta = $newQty - (float)$current['quantity'];
                 if ($delta !== 0) {
                     $movStmt = $pdo->prepare('INSERT INTO stock_movements (id, item_id, item_name, change_amount, reason, location_id, user_email) VALUES (?, ?, ?, ?, ?, ?, ?)');
                     $movStmt->execute([
@@ -252,7 +260,16 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
     // Collection operations: /api/inventory
     switch ($method) {
         case 'GET':
-            $stmt = $pdo->query('SELECT * FROM inventory_items ORDER BY name ASC');
+            $stmt = $pdo->query('
+                SELECT i.*,
+                    COALESCE((
+                        SELECT SUM(b.on_hand_quantity * b.unit_cost) / NULLIF(SUM(b.on_hand_quantity), 0)
+                        FROM inventory_batches b
+                        WHERE b.sku = i.sku AND b.on_hand_quantity > 0
+                    ), i.unit_cost) AS unit_cost
+                FROM inventory_items i
+                ORDER BY i.name ASC
+            ');
             $items = $stmt->fetchAll();
             jsonSuccess($items);
             break;
@@ -275,8 +292,8 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
             }
 
             $id = generateUuid();
-            $quantity = (int)($input['quantity'] ?? 0);
-            $reorderLevel = (int)($input['reorder_level'] ?? 0);
+            $quantity = (float)($input['quantity'] ?? 0);
+            $reorderLevel = (float)($input['reorder_level'] ?? 0);
             $unitPrice = isset($input['unit_price']) ? (float)$input['unit_price'] : 0.00;
             // What was actually paid for the initial stock, for accurate
             // P&L margin. Falls back to unit_price only for old clients
@@ -285,8 +302,8 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
             $unitCost = isset($input['unit_cost']) ? (float)$input['unit_cost'] : $unitPrice;
 
             $stmt = $pdo->prepare('
-                INSERT INTO inventory_items (id, name, sku, category, type, brand, color, size, unit_type, unit_of_measure, units_per_box, quantity, reorder_level, unit_price, supplier, location_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO inventory_items (id, name, sku, category, type, brand, color, size, unit_type, unit_of_measure, units_per_box, unit_cost, bundle_yards, bundle_price, cut_size_mm, quantity, reorder_level, unit_price, supplier, location_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ');
 
             $stmt->execute([
@@ -301,6 +318,10 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
                 $input['unit_type'] ?? 'unit',
                 $input['unit_of_measure'] ?? null,
                 isset($input['units_per_box']) ? (int)$input['units_per_box'] : null,
+                isset($input['unit_cost']) ? (float)$input['unit_cost'] : null,
+                isset($input['bundle_yards']) ? (float)$input['bundle_yards'] : null,
+                isset($input['bundle_price']) ? (float)$input['bundle_price'] : null,
+                isset($input['cut_size_mm']) ? (float)$input['cut_size_mm'] : null,
                 $quantity,
                 $reorderLevel,
                 $unitPrice,

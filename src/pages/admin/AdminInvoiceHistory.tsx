@@ -1,9 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Download, FileText, Search } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useSalesOrders } from '../../hooks/useSalesOrders'
-import { generateInvoiceBlob } from '../../lib/generateInvoice'
+import { generateInvoiceBlob, preloadInvoiceBlob, type InvoiceData } from '../../lib/generateInvoice'
+import { parseUtcTimestamp } from '../../lib/relativeTime'
 
 type InvoiceOrder = {
   id: string
@@ -34,8 +36,30 @@ function downloadUrl(url: string, filename: string) {
   const link = document.createElement('a')
   link.href = url
   link.download = filename
+  link.style.display = 'none'
+  document.body.appendChild(link)
   link.click()
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+  link.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
+}
+
+function invoiceData(order: InvoiceOrder, invoiceCount: number): InvoiceData {
+  return {
+    invoiceNumber: order.so_number,
+    invoiceCount,
+    soNumber: order.so_number,
+    customerName: order.customer_name ?? undefined,
+    customerPhone: order.customer_phone ?? undefined,
+    paymentStatus: 'Paid',
+    companyName: 'samdamventures.com',
+    issuedAt: order.created_at,
+    items: order.sales_order_items.map((item) => ({
+      sku: item.sku,
+      name: item.item_name ?? item.sku,
+      quantity: Number(item.quantity_shipped),
+      unitPrice: Number(item.unit_price ?? 0),
+    })),
+  }
 }
 
 export default function AdminInvoiceHistory() {
@@ -45,7 +69,7 @@ export default function AdminInvoiceHistory() {
   const invoices = useMemo(() => {
     const completed = ((orders ?? []) as InvoiceOrder[])
       .filter((order) => order.status === 'shipped')
-      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+      .sort((a, b) => parseUtcTimestamp(a.created_at).getTime() - parseUtcTimestamp(b.created_at).getTime())
 
     const query = search.trim().toLowerCase()
     return completed
@@ -58,30 +82,30 @@ export default function AdminInvoiceHistory() {
       .reverse()
   }, [orders, search])
 
+  useEffect(() => {
+    const newestInvoice = invoices[0]
+    if (!newestInvoice) return
+
+    const timeout = window.setTimeout(() => {
+      preloadInvoiceBlob(invoiceData(newestInvoice.order, newestInvoice.invoiceCount))
+    }, 250)
+    return () => window.clearTimeout(timeout)
+  }, [invoices])
+
   async function downloadInvoice(order: InvoiceOrder, invoiceCount: number) {
-    const url = await generateInvoiceBlob({
-      invoiceNumber: order.so_number,
-      invoiceCount,
-      soNumber: order.so_number,
-      customerName: order.customer_name ?? undefined,
-      customerPhone: order.customer_phone ?? undefined,
-      paymentStatus: 'Paid',
-      companyName: 'samdamventures.com',
-      items: order.sales_order_items.map((item) => ({
-        sku: item.sku,
-        name: item.item_name ?? item.sku,
-        quantity: item.quantity_shipped,
-        unitPrice: item.unit_price ?? 0,
-      })),
-    })
-    downloadUrl(url, `invoice-${order.so_number}.pdf`)
+    try {
+      const url = await generateInvoiceBlob(invoiceData(order, invoiceCount))
+      downloadUrl(url, `invoice-${order.so_number}.pdf`)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to generate invoice PDF')
+    }
   }
 
   function exportCsv() {
     const rows = invoices.map(({ order, invoiceCount }) => [
       invoiceCount,
       order.so_number,
-      new Date(order.created_at).toLocaleString(),
+      parseUtcTimestamp(order.created_at).toLocaleString(),
       order.customer_name ?? '',
       order.customer_phone ?? '',
       orderTotal(order).toFixed(2),
@@ -134,11 +158,17 @@ export default function AdminInvoiceHistory() {
                 <tr key={order.id} className="hover:bg-slate-50">
                   <td className="px-4 py-3 font-bold text-slate-900">{invoiceCount}</td>
                   <td className="px-4 py-3 font-medium text-slate-900">{order.so_number}</td>
-                  <td className="px-4 py-3 text-slate-500">{new Date(order.created_at).toLocaleString()}</td>
+                  <td className="px-4 py-3 text-slate-500">{parseUtcTimestamp(order.created_at).toLocaleString()}</td>
                   <td className="px-4 py-3">{order.customer_name || 'Walk-in Customer'}</td>
                   <td className="px-4 py-3 text-right font-semibold">GHC {orderTotal(order).toFixed(2)}</td>
                   <td className="px-4 py-3 text-right">
-                    <Button variant="ghost" size="sm" onClick={() => downloadInvoice(order, invoiceCount)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onMouseEnter={() => preloadInvoiceBlob(invoiceData(order, invoiceCount))}
+                      onFocus={() => preloadInvoiceBlob(invoiceData(order, invoiceCount))}
+                      onClick={() => downloadInvoice(order, invoiceCount)}
+                    >
                       <FileText size={15} className="mr-1" /> Download PDF
                     </Button>
                   </td>

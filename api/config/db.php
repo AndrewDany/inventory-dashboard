@@ -16,6 +16,19 @@ if (file_exists($localDbConfig)) {
     }
 }
 
+foreach ([
+    'host' => 'DB_HOST',
+    'port' => 'DB_PORT',
+    'database' => 'DB_NAME',
+    'username' => 'DB_USER',
+    'password' => 'DB_PASS',
+] as $key => $environmentVariable) {
+    $value = getenv($environmentVariable);
+    if ($value !== false) {
+        $config['db'][$key] = $value;
+    }
+}
+
 $db = $config['db'];
 
 $dsn = sprintf(
@@ -57,10 +70,11 @@ try {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ");
 } catch (PDOException $e) {
+    error_log('Database connection failed: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'error' => 'Database connection failed: ' . $e->getMessage()
+        'error' => 'Database connection failed. Check the local DB_* settings in .env.local.'
     ]);
     exit;
 }

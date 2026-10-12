@@ -54,15 +54,11 @@ export default function InventoryTable({
   }, [items])
 
   const filteredItems = useMemo(() => {
+    const q = search.toLowerCase()
     return items.filter((item) => {
-      const q = search.toLowerCase()
-      const matchesSearch =
-        item.name.toLowerCase().includes(q) ||
-        item.sku.toLowerCase().includes(q) ||
-        (item.type?.toLowerCase().includes(q) ?? false) ||
-        (item.brand?.toLowerCase().includes(q) ?? false) ||
-        (item.color?.toLowerCase().includes(q) ?? false) ||
-        (item.size?.toLowerCase().includes(q) ?? false)
+      const matchesSearch = [item.name, item.sku, item.type, item.brand, item.color, item.size].some(
+        (value) => String(value ?? '').toLowerCase().includes(q)
+      )
       const matchesCategory = categoryFilter && categoryFilter !== 'all' ? item.category === categoryFilter : true
       return matchesSearch && matchesCategory
     })
@@ -96,6 +92,13 @@ export default function InventoryTable({
       columnHelper.accessor('reorder_level', { header: 'Reorder Level' }),
       columnHelper.accessor('unit_price', {
         header: 'Unit Price',
+        cell: (info) => {
+          const val = info.getValue()
+          return val != null ? `GHC ${Number(val).toFixed(2)}` : '—'
+        },
+      }),
+      columnHelper.accessor('unit_cost', {
+        header: 'Unit Cost',
         cell: (info) => {
           const val = info.getValue()
           return val != null ? `GHC ${Number(val).toFixed(2)}` : '—'

@@ -1,4 +1,5 @@
-import { useForm, useFieldArray } from 'react-hook-form'
+import { useEffect } from 'react'
+import { useForm, useFieldArray, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -31,13 +32,12 @@ export default function PreOrderForm({ onClose }: PreOrderFormProps) {
     register,
     control,
     handleSubmit,
-    watch,
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<PreOrderFormInput, unknown, PreOrderFormValues>({
     resolver: zodResolver(preOrderSchema),
     defaultValues: {
-      so_number: `PRE-${Date.now().toString().slice(-8)}`,
+      so_number: '',
       customer_name: '',
       customer_phone: '',
       fulfillment_method: 'pickup',
@@ -49,9 +49,13 @@ export default function PreOrderForm({ onClose }: PreOrderFormProps) {
   })
 
   const { fields, append, remove } = useFieldArray({ control, name: 'items' })
-  const items = watch('items')
-  const fulfillmentMethod = watch('fulfillment_method')
-  const depositAmount = watch('deposit_amount')
+  const items = useWatch({ control, name: 'items' })
+  const fulfillmentMethod = useWatch({ control, name: 'fulfillment_method' })
+  const depositAmount = useWatch({ control, name: 'deposit_amount' })
+
+  useEffect(() => {
+    setValue('so_number', `PRE-${Date.now().toString().slice(-8)}`)
+  }, [setValue])
 
   const total = items.reduce((sum, item) => {
     const qty = Number(item.quantity_ordered) || 0
@@ -76,7 +80,7 @@ export default function PreOrderForm({ onClose }: PreOrderFormProps) {
         so_number: values.so_number,
         notes: values.notes || undefined,
         customer_name: values.customer_name,
-        customer_phone: values.customer_phone,
+        customer_phone: `0${values.customer_phone}`,
         is_preorder: true,
         fulfillment_method: values.fulfillment_method,
         delivery_address: values.fulfillment_method === 'delivery' ? values.delivery_address : undefined,
@@ -113,7 +117,23 @@ export default function PreOrderForm({ onClose }: PreOrderFormProps) {
         </div>
         <div>
           <Label htmlFor="customer-phone" className="mb-1 block">Phone number</Label>
-          <Input id="customer-phone" {...register('customer_phone')} placeholder="For pickup/delivery contact" />
+          <div className="flex">
+            <span className="inline-flex items-center rounded-l-lg border border-r-0 border-input bg-slate-50 px-3 text-sm text-slate-600">
+              +233
+            </span>
+            <Input
+              id="customer-phone"
+              type="tel"
+              inputMode="numeric"
+              maxLength={9}
+              className="rounded-l-none"
+              {...register('customer_phone', {
+                setValueAs: (value: string) => value.replace(/\D/g, '').slice(0, 9),
+              })}
+              placeholder="241234567"
+            />
+          </div>
+          <p className="mt-1 text-xs text-slate-500">Enter 9 digits without the leading 0.</p>
           {errors.customer_phone && <p className="text-red-600 text-sm mt-1">{errors.customer_phone.message}</p>}
         </div>
       </div>

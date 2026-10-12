@@ -46,9 +46,14 @@ export function useUpdateInventoryItem() {
       values: InventoryFormValues
       previousQuantity?: number
     }) => {
-      await api.put<InventoryItem>(`/inventory/${id}`, values)
+      return api.put<InventoryItem>(`/inventory/${id}`, values)
     },
-    onSuccess: () => {
+    onSuccess: (updatedItem, variables) => {
+      queryClient.setQueryData<InventoryItem[]>(['inventory_items'], (currentItems) =>
+        currentItems?.map((currentItem) =>
+          currentItem.id === variables.id ? { ...currentItem, ...updatedItem } : currentItem
+        )
+      )
       queryClient.invalidateQueries({ queryKey: ['inventory_items'] })
       queryClient.invalidateQueries({ queryKey: ['activity_logs'] })
       queryClient.invalidateQueries({ queryKey: ['stock_movements'] })

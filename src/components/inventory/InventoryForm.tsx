@@ -16,7 +16,7 @@ import type { InventoryItem } from '../../types/inventory'
 const UNIT_TYPE_LABELS: Record<string, string> = {
   unit: 'Unit (piece, bag, item)',
   box: 'Box',
-  weight: 'Weight',
+  weight: 'Measured quantity',
 }
 
 export default function InventoryForm({
@@ -52,8 +52,12 @@ export default function InventoryForm({
           // them so the form doesn't render an unknown option.
           unit_type:
             (item.unit_type as string) === 'measured' ? 'weight' : item.unit_type,
-          unit_of_measure: item.unit_of_measure === 'kg' ? 'kg' : null,
+          unit_of_measure: item.unit_of_measure === 'kg' || item.unit_of_measure === 'yard' ? item.unit_of_measure : null,
           units_per_box: item.units_per_box ?? null,
+          unit_cost: item.unit_cost ?? undefined,
+          bundle_yards: item.bundle_yards ?? null,
+          bundle_price: item.bundle_price ?? null,
+          cut_size_mm: item.cut_size_mm ?? null,
           quantity: item.quantity,
           reorder_level: item.reorder_level,
           unit_price: item.unit_price ?? undefined,
@@ -77,6 +81,9 @@ export default function InventoryForm({
           unit_type: 'unit',
           unit_of_measure: null,
           units_per_box: null,
+          bundle_yards: null,
+          bundle_price: null,
+          cut_size_mm: null,
         },
   })
 
@@ -211,7 +218,7 @@ export default function InventoryForm({
             <SelectContent>
               <SelectItem value="unit">Unit (piece, bag, item)</SelectItem>
               <SelectItem value="box">Box</SelectItem>
-              <SelectItem value="weight">Weight</SelectItem>
+              <SelectItem value="weight">Measured quantity</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -221,18 +228,35 @@ export default function InventoryForm({
             <Label className="mb-1 block">Unit of Measure</Label>
             <Select
               value={unitOfMeasureValue ?? 'kg'}
-              onValueChange={(v) => setValue('unit_of_measure', (v as 'kg') ?? 'kg')}
+              onValueChange={(v) => setValue('unit_of_measure', (v as 'kg' | 'yard') ?? 'kg')}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a unit" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="kg">Kilograms (kg)</SelectItem>
+                <SelectItem value="yard">Yards (yd)</SelectItem>
               </SelectContent>
             </Select>
             {errors.unit_of_measure && (
               <p className="text-red-600 text-sm mt-1">{errors.unit_of_measure.message}</p>
             )}
+          </div>
+        )}
+        {unitOfMeasureValue === 'yard' && (
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <Label htmlFor="bundle_yards" className="mb-1 block">Yards per Bundle</Label>
+              <Input id="bundle_yards" type="number" min="0" step="0.01" {...register('bundle_yards')} />
+            </div>
+            <div>
+              <Label htmlFor="bundle_price" className="mb-1 block">Bundle Price (GHC)</Label>
+              <Input id="bundle_price" type="number" min="0" step="0.01" {...register('bundle_price')} />
+            </div>
+            <div>
+              <Label htmlFor="cut_size_mm" className="mb-1 block">Cut Length (mm)</Label>
+              <Input id="cut_size_mm" type="number" min="0" step="0.01" {...register('cut_size_mm')} />
+            </div>
           </div>
         )}
       </div>
@@ -270,7 +294,7 @@ export default function InventoryForm({
           <Input
             id="quantity"
             type="number"
-            step={isWeight ? '0.01' : '1'}
+            step={unitOfMeasureValue === 'yard' ? '0.000001' : isWeight ? '0.01' : '1'}
             {...register('quantity')}
           />
           {errors.quantity && <p className="text-red-600 text-sm mt-1">{errors.quantity.message}</p>}
@@ -284,7 +308,7 @@ export default function InventoryForm({
           <Input
             id="reorder_level"
             type="number"
-            step={isWeight ? '0.01' : '1'}
+            step={unitOfMeasureValue === 'yard' ? '0.000001' : isWeight ? '0.01' : '1'}
             {...register('reorder_level')}
           />
           {errors.reorder_level && <p className="text-red-600 text-sm mt-1">{errors.reorder_level.message}</p>}

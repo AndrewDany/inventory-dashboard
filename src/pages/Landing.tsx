@@ -12,11 +12,11 @@ import doorHandlePhoto from '../assets/landing/door handle.jpg'
 import heroSlide1 from '../assets/landing/sam roll.jpg'
 import heroSlide2 from '../assets/landing/sam screw.jpg'
 import heroSlide3 from '../assets/landing/brush sam.jpg'
-import heroSlide4 from '../assets/landing/paint sam 1.jpg'
 import heroSlide5 from '../assets/landing/paint sam.jpg'
 import heroSlide6 from '../assets/landing/panit.jpg'
 import heroSlide7 from '../assets/landing/plywod sam.jpg'
 import heroSlide8 from '../assets/landing/sam nail.jpg'
+import goldPaint from '../assets/landing/Gold paint.jpeg'
 import managerPhoto from '../assets/landing/deborah.jpg'
 import shopPhoto from '../assets/landing/the shop.jpeg'
 import homeCharmPaint from '../assets/landing/Home charm paint.jpeg'
@@ -24,19 +24,24 @@ import homeCharmPaint1 from '../assets/landing/Home charm paint 1.jpeg'
 import homeCharmPaint2 from '../assets/landing/Home charm paint 2.jpeg'
 import flamingoPaint from '../assets/landing/Flammingo paint .jpeg'
 import fineNestPaint from '../assets/landing/fine nest paint.jpeg'
-import laylandPaint from '../assets/landing/layland paint.jpeg'
-import laylandPaintRange from '../assets/landing/lay land paint.jpeg'
+import leylandPaint from '../assets/landing/layland paint.jpeg'
+import leylandPaintRange from '../assets/landing/lay land paint.jpeg'
+import roofingSheetPhoto from '../assets/landing/roofing sheet.jpg'
+import shieldPaint from '../assets/landing/shield.png'
+import deLuxyPaint from '../assets/landing/De-luxy paint.jpeg'
+import azarPaint from '../assets/landing/azar paint.jpeg'
+import goldShieldPaintRange from '../assets/landing/gold paint.png'
 
 const heroSlides = [
   shopPhoto,
   heroSlide1,
   heroSlide2,
   heroSlide3,
-  heroSlide4,
   heroSlide5,
   heroSlide6,
   heroSlide7,
   heroSlide8,
+  goldPaint,
 ]
 
 const paintProducts = [
@@ -45,8 +50,13 @@ const paintProducts = [
   { image: homeCharmPaint2, name: 'Home Charm Paint Range' },
   { image: flamingoPaint, name: 'Flamingo Paint' },
   { image: fineNestPaint, name: 'Fine Nest Paint' },
-  { image: laylandPaint, name: 'Layland Paint' },
-  { image: laylandPaintRange, name: 'Layland Paint Range' },
+  { image: leylandPaint, name: 'Leyland Paint' },
+  { image: leylandPaintRange, name: 'Leyland Paint Range' },
+  { image: shieldPaint, name: 'Shield Paint' },
+  { image: deLuxyPaint, name: 'De-Luxy Paint' },
+  { image: azarPaint, name: 'Azar Paint' },
+  { image: goldShieldPaintRange, name: 'Gold & Shield Acrylic Paint Range' },
+  { image: goldPaint, name: 'Gold Paint Range' },
 ]
 
 const hardwareProducts = [
@@ -122,6 +132,11 @@ const categories = [
     image: heroSlide7,
     title: 'Building Materials',
     description: 'Wire mesh, roofing sheets, nails, plywood, laminate plywood, wall panels, and Formica sheets.',
+  },
+  {
+    image: roofingSheetPhoto,
+    title: 'Roofing Sheets',
+    description: 'Durable roofing sheets for residential and commercial building projects.',
   },
   {
     image: furnitureAccessoriesPhoto,
@@ -308,9 +323,9 @@ export default function Landing() {
                 <img
                   src={product.image}
                   alt={`${product.name} at Sam-Dam Ventures`}
-                  className="block aspect-[3/4] w-full object-cover"
+                  className="block aspect-3/4 w-full bg-slate-50 object-contain"
                 />
-                <figcaption className="pt-2 text-sm font-medium text-gray-700 dark:text-slate-300">{product.name}</figcaption>
+                <figcaption className="min-h-10 pt-2 text-sm font-medium text-gray-700 dark:text-slate-300">{product.name}</figcaption>
               </figure>
             ))}
           </div>
@@ -415,11 +430,11 @@ export default function Landing() {
             <div className="space-y-6">
               <div>
                 <h4 className="mb-1 font-semibold text-gray-900 dark:text-white">Location</h4>
-                <p className="text-gray-600 dark:text-slate-300">Adenta-Frafraha, Accra, Ghana<br />Dodowa Road</p>
+                <p className="text-gray-600 dark:text-slate-300">Adenta-Frafraha, Accra, Ghana<br />Dodowa Highway</p>
               </div>
               <div>
                 <h4 className="mb-1 font-semibold text-gray-900 dark:text-white">Working Hours</h4>
-                <p className="text-gray-600 dark:text-slate-300">Monday to Saturday<br />6:30 am to 5 pm</p>
+                <p className="text-gray-600 dark:text-slate-300">Monday to Friday: 7 am to 5 pm<br />Saturday: 7 am to 2 pm</p>
               </div>
             </div>
           </div>

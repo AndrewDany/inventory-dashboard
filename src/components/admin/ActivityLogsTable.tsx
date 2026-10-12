@@ -1,6 +1,6 @@
 import { Activity, Plus, Pencil, Trash2, LogIn, LogOut } from 'lucide-react'
 import { useActivityLogs } from '../../hooks/useActivityLogs'
-import { relativeTime } from '../../lib/relativeTime'
+import { formatTimestamp, relativeTime } from '../../lib/relativeTime'
 
 const ACTION_META = {
   created: { icon: Plus, bg: 'bg-emerald-50', text: 'text-emerald-600' },
@@ -20,32 +20,34 @@ export default function ActivityLogsTable() {
   if (!logs || logs.length === 0) return <p className="text-gray-500 text-sm">No activity yet.</p>
 
   return (
-    <div className="divide-y divide-slate-100 rounded-lg border border-slate-100 bg-white">
-      {logs.map((log) => {
-        const meta = ACTION_META[log.action as keyof typeof ACTION_META] ?? DEFAULT_ACTION_META
-        const Icon = meta.icon
-        return (
-          <div key={log.id} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
-            <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${meta.bg} ${meta.text}`}>
-              <Icon size={14} />
-            </span>
+    <div className="max-h-[480px] overflow-auto rounded-lg border border-slate-100 bg-white">
+      <div className="min-w-[640px] divide-y divide-slate-100">
+        {logs.map((log) => {
+          const meta = ACTION_META[log.action as keyof typeof ACTION_META] ?? DEFAULT_ACTION_META
+          const Icon = meta.icon
+          return (
+            <div key={log.id} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
+              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${meta.bg} ${meta.text}`}>
+                <Icon size={14} />
+              </span>
 
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-slate-900">{log.item_name}</p>
-              <p className="text-xs text-slate-500">
-                {log.user_email} &middot; <span className="capitalize">{log.action}</span>
-              </p>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-slate-900">{log.item_name}</p>
+                <p className="text-xs text-slate-500">
+                  {log.user_email} &middot; <span className="capitalize">{log.action}</span>
+                </p>
+              </div>
+
+              <span
+                className="shrink-0 text-xs text-slate-400"
+                title={formatTimestamp(log.created_at)}
+              >
+                {relativeTime(log.created_at)}
+              </span>
             </div>
-
-            <span
-              className="shrink-0 text-xs text-slate-400"
-              title={new Date(log.created_at).toLocaleString()}
-            >
-              {relativeTime(log.created_at)}
-            </span>
-          </div>
-        )
-      })}
+          )
+        })}
+      </div>
     </div>
   )
 }

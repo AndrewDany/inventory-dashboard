@@ -15,8 +15,11 @@ export const inventoryItemSchema = z.object({
   supplier: z.string().optional(),
   location_id: z.string().optional(),
   unit_type: z.enum(['unit', 'box', 'weight']).default('unit'),
-  unit_of_measure: z.enum(['kg']).nullable().optional(),
+  unit_of_measure: z.enum(['kg', 'yard']).nullable().optional(),
   units_per_box: z.coerce.number().positive('Must be greater than 0').nullable().optional(),
+  bundle_yards: z.coerce.number().min(0).nullable().optional(),
+  bundle_price: z.coerce.number().min(0).nullable().optional(),
+  cut_size_mm: z.coerce.number().min(0).nullable().optional(),
 })
 
 export type InventoryFormValues = z.infer<typeof inventoryItemSchema>

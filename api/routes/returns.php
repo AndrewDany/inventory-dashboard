@@ -28,7 +28,7 @@ function handleReturnRoutes(PDO $pdo, string $method, array $uriParts): void
         $pdo->beginTransaction();
         try {
             $sku = $ret['sku'];
-            $qty = (int)$ret['quantity'];
+            $qty = (float)$ret['quantity'];
             $locationId = $ret['location_id'];
             $resolution = $ret['resolution'];
             $returnUnitCost = (float)($ret['unit_cost'] ?? 0);
@@ -93,7 +93,7 @@ function handleReturnRoutes(PDO $pdo, string $method, array $uriParts): void
                             $batches = $batchesStmt->fetchAll();
                             foreach ($batches as $b) {
                                 if ($rem <= 0) break;
-                                $take = min((int)$b['on_hand_quantity'], $rem);
+                                $take = min((float)$b['on_hand_quantity'], $rem);
                                 $upB = $pdo->prepare('UPDATE inventory_batches SET on_hand_quantity = on_hand_quantity - ? WHERE id = ?');
                                 $upB->execute([$take, $b['id']]);
                                 $rem -= $take;
@@ -177,7 +177,7 @@ function handleReturnRoutes(PDO $pdo, string $method, array $uriParts): void
         $returnNumber = trim($input['return_number'] ?? ('RET-' . strtoupper(substr(uniqid(), -6))));
         $sku = trim($input['sku'] ?? '');
         $locationId = trim($input['location_id'] ?? '');
-        $quantity = (int)($input['quantity'] ?? 1);
+        $quantity = (float)($input['quantity'] ?? 1);
         $returnType = $input['return_type'] ?? 'customer_return';
         $reason = $input['reason'] ?? 'damaged';
         $resolution = $input['resolution'] ?? 'refund';

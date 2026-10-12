@@ -38,7 +38,7 @@ export const adjustmentSchema = z.object({
   sku: z.string().min(1, 'SKU is required'),
   inventory_item_id: z.string().optional(),
   location_id: z.string().min(1, 'Location is required'),
-  quantity_delta: z.coerce.number().int().refine((v) => v !== 0, 'Quantity change cannot be zero'),
+  quantity_delta: z.coerce.number().refine((v) => v !== 0, 'Quantity change cannot be zero'),
   reason: z.enum(['manual_add', 'manual_remove', 'cycle_count', 'write_off', 'other']),
   notes: z.string().optional(),
 })
@@ -49,7 +49,8 @@ export const preOrderSchema = z
   .object({
     so_number: z.string().min(1, 'Order number is required'),
     customer_name: z.string().min(1, "Client's name is required"),
-    customer_phone: z.string().min(1, 'Phone number is required'),
+    customer_phone: z.string()
+      .regex(/^\d{9}$/, 'Enter 9 digits after +233, without the leading 0.'),
     fulfillment_method: z.enum(['pickup', 'delivery']),
     delivery_address: z.string().optional(),
     deposit_amount: z.coerce.number().min(0, 'Deposit cannot be negative').optional(),
