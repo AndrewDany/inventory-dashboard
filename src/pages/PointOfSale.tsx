@@ -117,7 +117,7 @@ export default function PointOfSale() {
         [item.name, item.sku, item.type, item.brand, item.color, item.size].some((value) =>
           String(value ?? '').toLowerCase().includes(q)
         )
-    ).slice(0, 6)
+    )
   }, [items, search])
 
   const stockBySku = useMemo(() => {
@@ -398,7 +398,7 @@ export default function PointOfSale() {
             )}
 
             {filteredItems.length > 0 && (
-              <div className="mt-3 bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-800 divide-y dark:divide-slate-800">
+              <div className="mt-3 max-h-96 overflow-y-auto bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-800 divide-y dark:divide-slate-800">
                 {filteredItems.map((item) => (
                   <button
                     key={item.id}

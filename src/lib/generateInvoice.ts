@@ -403,6 +403,11 @@ async function renderInvoiceBlob(data: InvoiceData): Promise<Blob> {
     drawBannerTextFallback(doc, pageWidth, bannerY + bannerHeight / 2)
   }
 
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8.5)
+  doc.setTextColor(255, 255, 255)
+  doc.text('samdamventures.com', pageWidth / 2, bannerY + bannerHeight - 9, { align: 'center' })
+
   return doc.output('blob')
 }
 
@@ -423,6 +428,7 @@ function renderPosReceiptBlob(data: InvoiceData, logoData: string | null): Blob 
     'Foster Home Junction, Dodowa Highway',
     'Opposite Jehovah Witness Hall',
     'GPS Address: GM-122-9443',
+    'Website: samdamventures.com',
     ...(data.processedBy ? [`Processed by: ${data.processedBy}`] : []),
   ]
   const items = data.items
@@ -486,7 +492,8 @@ function renderPosReceiptBlob(data: InvoiceData, logoData: string | null): Blob 
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
-  for (const line of invoiceLines) {
+  for (const [index, line] of invoiceLines.entries()) {
+    doc.setFont('helvetica', index === 0 ? 'bold' : 'normal')
     doc.text(line, margin, y)
     y += 4
   }

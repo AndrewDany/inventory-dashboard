@@ -28,13 +28,19 @@ ALTER TABLE `returns`
 ALTER TABLE `audit_events`
   MODIFY COLUMN `quantity_delta` DECIMAL(12, 6) NULL DEFAULT 0;
 
-SET @yard_item_columns = (
-  SELECT COUNT(*) FROM information_schema.COLUMNS
-  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'inventory_items' AND COLUMN_NAME = 'bundle_yards'
+SET @yard_item_ddl = CONCAT_WS(', ',
+  IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'inventory_items' AND COLUMN_NAME = 'bundle_yards') = 0,
+    'ADD COLUMN `bundle_yards` DECIMAL(12, 4) NULL DEFAULT NULL', NULL),
+  IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'inventory_items' AND COLUMN_NAME = 'bundle_price') = 0,
+    'ADD COLUMN `bundle_price` DECIMAL(12, 2) NULL DEFAULT NULL', NULL),
+  IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'inventory_items' AND COLUMN_NAME = 'bundle_cost') = 0,
+    'ADD COLUMN `bundle_cost` DECIMAL(12, 2) NULL DEFAULT NULL', NULL),
+  IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'inventory_items' AND COLUMN_NAME = 'cut_size_mm') = 0,
+    'ADD COLUMN `cut_size_mm` DECIMAL(8, 2) NULL DEFAULT NULL', NULL),
+  IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'inventory_items' AND COLUMN_NAME = 'unit_cost') = 0,
+    'ADD COLUMN `unit_cost` DECIMAL(12, 2) NULL DEFAULT NULL', NULL)
 );
-SET @yard_item_ddl = IF(@yard_item_columns = 0,
-  'ALTER TABLE `inventory_items` ADD COLUMN `bundle_yards` DECIMAL(12, 4) NULL DEFAULT NULL, ADD COLUMN `bundle_price` DECIMAL(12, 2) NULL DEFAULT NULL, ADD COLUMN `cut_size_mm` DECIMAL(8, 2) NULL DEFAULT NULL, ADD COLUMN `unit_cost` DECIMAL(12, 2) NULL DEFAULT NULL',
-  'SELECT 1');
+SET @yard_item_ddl = IF(@yard_item_ddl = '', 'SELECT 1', CONCAT('ALTER TABLE `inventory_items` ', @yard_item_ddl));
 PREPARE yard_item_stmt FROM @yard_item_ddl;
 EXECUTE yard_item_stmt;
 DEALLOCATE PREPARE yard_item_stmt;
@@ -55,9 +61,9 @@ INSERT INTO `inventory_items` (
   `unit_of_measure`, `units_per_box`, `unit_cost`, `bundle_yards`, `bundle_price`, `cut_size_mm`,
   `quantity`, `reorder_level`, `unit_price`
 ) VALUES
-  (UUID(), 'EKOBIT 2 inches', 'EKOBIT-2IN', NULL, 'EKOBIT', '2 inches', 'weight', 'yard', NULL, NULL, NULL, 100, 0, 0, 18.00),
-  (UUID(), 'EKOBIT 3 inches', 'EKOBIT-3IN', NULL, 'EKOBIT', '3 inches', 'weight', 'yard', NULL, NULL, NULL, 100, 0, 0, 20.00),
-  (UUID(), 'EKOBIT 4 inches', 'EKOBIT-4IN', NULL, 'EKOBIT', '4 inches', 'weight', 'yard', NULL, NULL, NULL, 100, 0, 0, 25.00),
+  (UUID(), 'EKOBIT 2 inches', 'EKOBIT-2IN', NULL, 'EKOBIT', '2 inches', 'weight', 'yard', NULL, NULL, NULL, 100, 0, 0, 0, 18.00),
+  (UUID(), 'EKOBIT 3 inches', 'EKOBIT-3IN', NULL, 'EKOBIT', '3 inches', 'weight', 'yard', NULL, NULL, NULL, 100, 0, 0, 0, 20.00),
+  (UUID(), 'EKOBIT 4 inches', 'EKOBIT-4IN', NULL, 'EKOBIT', '4 inches', 'weight', 'yard', NULL, NULL, NULL, 100, 0, 0, 0, 25.00),
   (UUID(), 'Concrete Nails 3 inches - Small Bundle', 'CONCRETE-NAILS-3IN', 'Nails', NULL, '3 inches', 'box', NULL, 10, NULL, NULL, NULL, NULL, 70, 0, 5.00),
   (UUID(), 'Concrete Nails 4 inches - Small Bundle', 'CONCRETE-NAILS-4IN', 'Nails', NULL, '4 inches', 'box', NULL, 10, NULL, NULL, NULL, NULL, 60, 0, 5.00),
   (UUID(), 'Concrete Nails 2.5 inches - Small Bundle', 'CONCRETE-NAILS-2.5IN', 'Nails', NULL, '2.5 inches', 'box', NULL, 15, NULL, NULL, NULL, NULL, 90, 0, 5.00),
@@ -84,9 +90,9 @@ INSERT INTO `inventory_items` (
   `unit_of_measure`, `units_per_box`, `unit_cost`, `bundle_yards`, `bundle_price`,
   `cut_size_mm`, `quantity`, `reorder_level`, `unit_price`
 ) VALUES
-  (UUID(), 'Mosquito Net', 'MOSQUITO-NET', 'Nets', NULL, NULL, NULL, 'weight', 'yard', NULL, 0.60, 100, 65.00, NULL, 0, 0, 6.00),
-  (UUID(), 'Filter Net - Ash', 'FILTER-NET-ASH', 'Nets', NULL, 'Ash', NULL, 'weight', 'yard', NULL, 1.50, 100, 160.00, NULL, 0, 0, 12.00),
-  (UUID(), 'Filter Net - Black', 'FILTER-NET-BLACK', 'Nets', NULL, 'Black', NULL, 'weight', 'yard', NULL, 1.50, 100, 160.00, NULL, 0, 0, 12.00),
+  (UUID(), 'Mosquito Net', 'MOSQUITO-NET', 'Nets', NULL, NULL, NULL, 'weight', 'yard', NULL, 4.00, 100, 65.00, NULL, 0, 0, 6.00),
+  (UUID(), 'Fiber Net - Ash', 'FIBER-NET-ASH', 'Nets', NULL, 'Ash', NULL, 'weight', 'yard', NULL, 10.00, 100, 160.00, NULL, 0, 0, 12.00),
+  (UUID(), 'Fiber Net - Black', 'FIBER-NET-BLACK', 'Nets', NULL, 'Black', NULL, 'weight', 'yard', NULL, 1.50, 100, 160.00, NULL, 0, 0, 12.00),
   (UUID(), 'Edge Glossy 3/4 inch', 'EDGE-GLOSSY-075IN', 'Edge', NULL, NULL, '3/4 inch', 'weight', 'yard', NULL, NULL, 100, 220.00, NULL, 0, 0, 5.00),
   (UUID(), 'Edge Glossy 1.5 inches', 'EDGE-GLOSSY-15IN', 'Edge', NULL, NULL, '1.5 inches', 'weight', 'yard', NULL, NULL, 100, 320.00, NULL, 0, 0, 6.00),
   (UUID(), 'Edge Matt 3/4 inch', 'EDGE-MATT-075IN', 'Edge', NULL, NULL, '3/4 inch', 'weight', 'yard', NULL, NULL, 100, 180.00, NULL, 0, 0, 3.00),
@@ -110,3 +116,34 @@ ON DUPLICATE KEY UPDATE
   `bundle_price` = VALUES(`bundle_price`),
   `cut_size_mm` = VALUES(`cut_size_mm`),
   `unit_price` = VALUES(`unit_price`);
+
+UPDATE `inventory_items`
+SET `unit_cost` = CASE `sku`
+    WHEN 'MOSQUITO-NET' THEN 4.00
+    ELSE `unit_cost`
+  END,
+  `bundle_cost` = CASE `sku`
+    WHEN 'MOSQUITO-NET' THEN 60.00
+    WHEN 'FIBER-NET-ASH' THEN 150.00
+    WHEN 'FIBER-NET-BLACK' THEN 150.00
+    ELSE `bundle_cost`
+  END
+WHERE `sku` IN ('MOSQUITO-NET', 'FIBER-NET-ASH', 'FIBER-NET-BLACK');
+
+DELETE FROM `inventory_items`
+WHERE `sku` = 'FILTER-NET-ASH'
+  AND `quantity` = 0
+  AND NOT EXISTS (
+    SELECT 1 FROM `inventory_batches` b
+    WHERE b.`inventory_item_id` = `inventory_items`.`id`
+      AND b.`on_hand_quantity` > 0
+  );
+
+DELETE FROM `inventory_items`
+WHERE `sku` = 'FILTER-NET-BLACK'
+  AND `quantity` = 0
+  AND NOT EXISTS (
+    SELECT 1 FROM `inventory_batches` b
+    WHERE b.`inventory_item_id` = `inventory_items`.`id`
+      AND b.`on_hand_quantity` > 0
+  );

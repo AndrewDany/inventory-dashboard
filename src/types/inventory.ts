@@ -16,6 +16,7 @@ export interface InventoryItem {
   units_per_box: number | null
   bundle_yards: number | null
   bundle_price: number | null
+  bundle_cost: number | null
   cut_size_mm: number | null
   quantity: number
   reorder_level: number

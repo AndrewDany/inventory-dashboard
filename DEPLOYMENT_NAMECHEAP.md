@@ -21,6 +21,7 @@ This guide walks you through deploying the **Inventory Suite** with its **PHP 8 
 3. Click the **Import** tab:
    - First choose [`db/schema.sql`](file:///c:/Users/Andrews/inventory-dashboard/db/schema.sql) and click **Go** (creates all tables, indexes, foreign keys).
    - Next choose [`db/seed.sql`](file:///c:/Users/Andrews/inventory-dashboard/db/seed.sql) and click **Go** (seeds initial administrator, locations, suppliers, budget).
+   - Then choose [`db/migration_ekobit_yard_products.sql`](file:///c:/Users/Andrews/inventory-dashboard/db/migration_ekobit_yard_products.sql) and click **Go** (adds the EKOBIT, mosquito net, filter net, edge, veneer, and concrete nail products).
 
 ---
 
@@ -98,7 +99,7 @@ public_html/
 - [ ] Visit `https://yourdomain.com/api/health` — Returns `{"success": true, "status": "online", "service": "Inventory Suite REST API"}`.
 - [ ] Log in with the default seeded Admin:
   - **Email**: `admin@inventory.local`
-  - **Password**: `admin123`
+   - **Password**: `Admin@12345`
 - [ ] Navigate to `/admin/overview`, `/admin/locations`, `/pos`, etc. — Subroutes route seamlessly through `index.html`.
 - [ ] Create or update items, perform sales or adjustments, check live profit & loss calculations.
 

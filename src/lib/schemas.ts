@@ -19,6 +19,7 @@ export const inventoryItemSchema = z.object({
   units_per_box: z.coerce.number().positive('Must be greater than 0').nullable().optional(),
   bundle_yards: z.coerce.number().min(0).nullable().optional(),
   bundle_price: z.coerce.number().min(0).nullable().optional(),
+  bundle_cost: z.coerce.number().min(0).nullable().optional(),
   cut_size_mm: z.coerce.number().min(0).nullable().optional(),
 })
 

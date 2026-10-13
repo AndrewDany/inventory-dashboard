@@ -29,6 +29,66 @@ export function exportToCSV(items: InventoryItem[]) {
   URL.revokeObjectURL(url)
 }
 
+export function exportLowStockToCSV(items: InventoryItem[]) {
+  const headers = ['Name', 'SKU', 'Type', 'Brand', 'Color', 'Size', 'Current Quantity', 'Reorder Level', 'Supplier']
+  const rows = items.map((item) => [
+    item.name,
+    item.sku,
+    item.type ?? '',
+    item.brand ?? '',
+    item.color ?? '',
+    item.size ?? '',
+    item.quantity,
+    item.reorder_level,
+    item.supplier ?? '',
+  ])
+  const csvContent = [headers, ...rows]
+    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    .join('\n')
+  const url = URL.createObjectURL(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `low-stock-alerts-${new Date().toISOString().slice(0, 10)}.csv`
+  link.click()
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+export async function exportLowStockToPDF(items: InventoryItem[]) {
+  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+    import('jspdf'),
+    import('jspdf-autotable'),
+  ])
+  const doc = new jsPDF({ orientation: 'landscape' })
+  const reportDate = new Date().toLocaleDateString()
+
+  doc.setFontSize(16)
+  doc.text('Low Stock Alert', 14, 18)
+  doc.setFontSize(10)
+  doc.setTextColor(100)
+  doc.text(`Generated ${reportDate}  |  ${items.length} items require attention`, 14, 25)
+  doc.setTextColor(0)
+
+  autoTable(doc, {
+    startY: 32,
+    head: [['Name', 'SKU', 'Type', 'Brand', 'Color', 'Size', 'Current Qty', 'Reorder Level', 'Supplier']],
+    body: items.map((item) => [
+      item.name,
+      item.sku,
+      item.type || '—',
+      item.brand || '—',
+      item.color || '—',
+      item.size || '—',
+      item.quantity,
+      item.reorder_level,
+      item.supplier || '—',
+    ]),
+    headStyles: { fillColor: [30, 41, 59] },
+    styles: { fontSize: 8 },
+  })
+
+  doc.save(`low-stock-alerts-${new Date().toISOString().slice(0, 10)}.pdf`)
+}
+
 export async function exportToPDF(items: InventoryItem[], companyName = 'samdamventures.com') {
   // Loaded on demand — jsPDF + autotable are large and only needed when a user actually exports a PDF.
   const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([

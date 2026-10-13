@@ -189,6 +189,7 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
                         unit_cost = ?,
                         bundle_yards = ?,
                         bundle_price = ?,
+                        bundle_cost = ?,
                         cut_size_mm = ?,
                         quantity = ?,
                         reorder_level = ?,
@@ -215,6 +216,7 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
                     isset($input['unit_cost']) ? (float)$input['unit_cost'] : $current['unit_cost'],
                     isset($input['bundle_yards']) ? (float)$input['bundle_yards'] : $current['bundle_yards'],
                     isset($input['bundle_price']) ? (float)$input['bundle_price'] : $current['bundle_price'],
+                    isset($input['bundle_cost']) ? (float)$input['bundle_cost'] : $current['bundle_cost'],
                     isset($input['cut_size_mm']) ? (float)$input['cut_size_mm'] : $current['cut_size_mm'],
                     $newQty,
                     isset($input['reorder_level']) ? (float)$input['reorder_level'] : (float)$current['reorder_level'],
@@ -261,12 +263,7 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
     switch ($method) {
         case 'GET':
             $stmt = $pdo->query('
-                SELECT i.*,
-                    COALESCE((
-                        SELECT SUM(b.on_hand_quantity * b.unit_cost) / NULLIF(SUM(b.on_hand_quantity), 0)
-                        FROM inventory_batches b
-                        WHERE b.sku = i.sku AND b.on_hand_quantity > 0
-                    ), i.unit_cost) AS unit_cost
+                SELECT i.*
                 FROM inventory_items i
                 ORDER BY i.name ASC
             ');
@@ -302,8 +299,8 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
             $unitCost = isset($input['unit_cost']) ? (float)$input['unit_cost'] : $unitPrice;
 
             $stmt = $pdo->prepare('
-                INSERT INTO inventory_items (id, name, sku, category, type, brand, color, size, unit_type, unit_of_measure, units_per_box, unit_cost, bundle_yards, bundle_price, cut_size_mm, quantity, reorder_level, unit_price, supplier, location_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO inventory_items (id, name, sku, category, type, brand, color, size, unit_type, unit_of_measure, units_per_box, unit_cost, bundle_yards, bundle_price, bundle_cost, cut_size_mm, quantity, reorder_level, unit_price, supplier, location_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ');
 
             $stmt->execute([
@@ -321,6 +318,7 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
                 isset($input['unit_cost']) ? (float)$input['unit_cost'] : null,
                 isset($input['bundle_yards']) ? (float)$input['bundle_yards'] : null,
                 isset($input['bundle_price']) ? (float)$input['bundle_price'] : null,
+                isset($input['bundle_cost']) ? (float)$input['bundle_cost'] : null,
                 isset($input['cut_size_mm']) ? (float)$input['cut_size_mm'] : null,
                 $quantity,
                 $reorderLevel,

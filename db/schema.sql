@@ -72,6 +72,7 @@ CREATE TABLE IF NOT EXISTS `inventory_items` (
   `unit_cost` DECIMAL(12, 2) NULL DEFAULT NULL,
   `bundle_yards` DECIMAL(12, 4) NULL DEFAULT NULL,
   `bundle_price` DECIMAL(12, 2) NULL DEFAULT NULL,
+  `bundle_cost` DECIMAL(12, 2) NULL DEFAULT NULL,
   `cut_size_mm` DECIMAL(8, 2) NULL DEFAULT NULL,
   `quantity` DECIMAL(12, 6) NOT NULL DEFAULT 0,
   `reorder_level` DECIMAL(12, 6) NOT NULL DEFAULT 0,

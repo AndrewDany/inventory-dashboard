@@ -57,6 +57,7 @@ export default function InventoryForm({
           unit_cost: item.unit_cost ?? undefined,
           bundle_yards: item.bundle_yards ?? null,
           bundle_price: item.bundle_price ?? null,
+          bundle_cost: item.bundle_cost ?? null,
           cut_size_mm: item.cut_size_mm ?? null,
           quantity: item.quantity,
           reorder_level: item.reorder_level,
@@ -83,6 +84,7 @@ export default function InventoryForm({
           units_per_box: null,
           bundle_yards: null,
           bundle_price: null,
+          bundle_cost: null,
           cut_size_mm: null,
         },
   })
@@ -244,7 +246,7 @@ export default function InventoryForm({
           </div>
         )}
         {unitOfMeasureValue === 'yard' && (
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div>
               <Label htmlFor="bundle_yards" className="mb-1 block">Yards per Bundle</Label>
               <Input id="bundle_yards" type="number" min="0" step="0.01" {...register('bundle_yards')} />
@@ -252,6 +254,10 @@ export default function InventoryForm({
             <div>
               <Label htmlFor="bundle_price" className="mb-1 block">Bundle Price (GHC)</Label>
               <Input id="bundle_price" type="number" min="0" step="0.01" {...register('bundle_price')} />
+            </div>
+            <div>
+              <Label htmlFor="bundle_cost" className="mb-1 block">Bundle Cost (GHC)</Label>
+              <Input id="bundle_cost" type="number" min="0" step="0.01" {...register('bundle_cost')} />
             </div>
             <div>
               <Label htmlFor="cut_size_mm" className="mb-1 block">Cut Length (mm)</Label>

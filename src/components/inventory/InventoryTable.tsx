@@ -1,4 +1,4 @@
-import { useState, useMemo, lazy, Suspense } from 'react'
+import { Fragment, useState, useMemo, lazy, Suspense } from 'react'
 import {
   useReactTable,
   getCoreRowModel,
@@ -66,7 +66,20 @@ export default function InventoryTable({
 
   const columns = useMemo(
     () => [
-      columnHelper.accessor('name', { header: 'Name' }),
+      columnHelper.accessor('name', {
+        header: 'Name',
+        cell: (info) => {
+          const item = info.row.original
+          return (
+            <div>
+              <div>{info.getValue()}</div>
+              {item.unit_of_measure === 'yard' && item.bundle_yards != null && (
+                <div className="text-[10px] text-slate-500">1 yard</div>
+              )}
+            </div>
+          )
+        },
+      }),
       columnHelper.accessor('sku', { header: 'SKU' }),
       columnHelper.accessor('category', {
         header: 'Category',
@@ -90,18 +103,18 @@ export default function InventoryTable({
       }),
       columnHelper.accessor('quantity', { header: 'Quantity' }),
       columnHelper.accessor('reorder_level', { header: 'Reorder Level' }),
-      columnHelper.accessor('unit_price', {
-        header: 'Unit Price',
+      columnHelper.accessor('unit_cost', {
+        header: 'Cost Price',
         cell: (info) => {
-          const val = info.getValue()
-          return val != null ? `GHC ${Number(val).toFixed(2)}` : '—'
+          const cost = info.getValue()
+          return cost != null ? `GHC ${Number(cost).toFixed(2)}` : '—'
         },
       }),
-      columnHelper.accessor('unit_cost', {
-        header: 'Unit Cost',
+      columnHelper.accessor('unit_price', {
+        header: 'Selling Price',
         cell: (info) => {
-          const val = info.getValue()
-          return val != null ? `GHC ${Number(val).toFixed(2)}` : '—'
+          const price = info.getValue()
+          return price != null ? `GHC ${Number(price).toFixed(2)}` : '—'
         },
       }),
       columnHelper.accessor('supplier', {
@@ -226,15 +239,57 @@ export default function InventoryTable({
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id} className="hover:bg-slate-50/80 transition-colors">
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className="py-2.5 text-xs whitespace-nowrap">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
+            {table.getRowModel().rows.map((row) => {
+              const item = row.original
+              const hasBundlePricing = item.unit_of_measure === 'yard'
+                && item.bundle_yards != null
+                && (item.bundle_price != null || item.bundle_cost != null)
+              const bundleCost = item.bundle_cost != null
+                ? Number(item.bundle_cost)
+                : item.unit_cost != null && item.bundle_yards != null
+                  ? Number(item.unit_cost) * Number(item.bundle_yards)
+                  : null
+
+              return (
+                <Fragment key={row.id}>
+                  <TableRow className="hover:bg-slate-50/80 transition-colors">
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id} className="py-2.5 text-xs whitespace-nowrap">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                  {hasBundlePricing && (
+                    <TableRow className="bg-slate-50/70 hover:bg-slate-50">
+                      {row.getVisibleCells().map((cell) => {
+                        if (cell.column.id === 'name') {
+                          return (
+                            <TableCell key={cell.id} className="py-2 text-xs font-medium text-slate-600 whitespace-nowrap">
+                              {item.name} Bundle
+                            </TableCell>
+                          )
+                        }
+                        if (cell.column.id === 'unit_cost') {
+                          return (
+                            <TableCell key={cell.id} className="py-2 text-xs whitespace-nowrap">
+                              {bundleCost == null ? '—' : `GHC ${bundleCost.toFixed(2)}`}
+                            </TableCell>
+                          )
+                        }
+                        if (cell.column.id === 'unit_price') {
+                          return (
+                            <TableCell key={cell.id} className="py-2 text-xs whitespace-nowrap">
+                              {item.bundle_price == null ? '—' : `GHC ${Number(item.bundle_price).toFixed(2)}`}
+                            </TableCell>
+                          )
+                        }
+                        return <TableCell key={cell.id} className="py-2 text-xs" />
+                      })}
+                    </TableRow>
+                  )}
+                </Fragment>
+              )
+            })}
           </TableBody>
         </Table>
       </div>
