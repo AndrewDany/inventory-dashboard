@@ -114,7 +114,7 @@ export default function PointOfSale() {
     const q = search.toLowerCase()
     return (items ?? []).filter(
       (item) =>
-        [item.name, item.sku, item.type, item.brand, item.color, item.size].some((value) =>
+        [item.name, item.sku, item.category, item.type, item.brand, item.color, item.size].some((value) =>
           String(value ?? '').toLowerCase().includes(q)
         )
     )

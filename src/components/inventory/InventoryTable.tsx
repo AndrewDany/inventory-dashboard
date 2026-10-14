@@ -56,7 +56,7 @@ export default function InventoryTable({
   const filteredItems = useMemo(() => {
     const q = search.toLowerCase()
     return items.filter((item) => {
-      const matchesSearch = [item.name, item.sku, item.type, item.brand, item.color, item.size].some(
+      const matchesSearch = [item.name, item.sku, item.category, item.type, item.brand, item.color, item.size].some(
         (value) => String(value ?? '').toLowerCase().includes(q)
       )
       const matchesCategory = categoryFilter && categoryFilter !== 'all' ? item.category === categoryFilter : true

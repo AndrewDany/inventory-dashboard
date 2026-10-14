@@ -132,8 +132,12 @@ export default function Sidebar({
   const isAdmin = profile?.role === 'admin'
 
   const userEmail = session?.user.email ?? profile?.email ?? 'User'
-  const userName = userEmail.split('@')[0]
-  const initials = userName.slice(0, 2).toUpperCase()
+  const fullName = profile?.full_name || session?.user.full_name || ''
+  const activeAccountName = fullName || (userEmail ? userEmail.split('@')[0] : 'User')
+  const initials = (fullName
+    ? fullName.split(' ').filter(Boolean).map((w: string) => w[0]).join('').slice(0, 2)
+    : activeAccountName.slice(0, 2)
+  ).toUpperCase()
 
   const linkClass = (path: string) => {
     const active = location.pathname === path
@@ -141,11 +145,11 @@ export default function Sidebar({
       active
         ? 'bg-slate-900 dark:bg-indigo-600 text-white font-semibold shadow-xs'
         : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-    } ${isCollapsed ? 'justify-center px-2' : ''}`
+    } ${isCollapsed ? 'md:justify-center md:px-2' : ''}`
   }
 
   const actionBtnClass = `flex w-full items-center gap-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 transition-all hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white ${
-    isCollapsed ? 'justify-center px-2' : ''
+    isCollapsed ? 'md:justify-center md:px-2' : ''
   }`
 
   return (
@@ -160,9 +164,9 @@ export default function Sidebar({
       <aside
         className={`fixed left-0 top-0 z-50 flex h-screen flex-col justify-between overflow-hidden border-r border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm transition-all duration-200 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
-        } ${isCollapsed ? 'w-20' : 'w-64'} md:sticky md:top-0 md:h-screen md:translate-x-0 md:shrink-0 ${
+        } w-72 max-w-[85vw] md:w-auto ${
           isCollapsed ? 'md:w-20' : 'md:w-64'
-        }`}
+        } md:sticky md:top-0 md:h-screen md:translate-x-0 md:shrink-0`}
       >
         {/* Top Brand & Collapse Toggle */}
         <div className="flex-1 overflow-y-auto px-3.5 py-4 scrollbar-thin">
@@ -333,7 +337,7 @@ export default function Sidebar({
 
               {!isCollapsed && (
                 <div className="min-w-0 leading-tight">
-                  <p className="truncate text-xs font-semibold text-slate-900 dark:text-slate-100 capitalize">{userName}</p>
+                  <p className="truncate text-xs font-semibold text-slate-900 dark:text-slate-100 capitalize">{activeAccountName}</p>
                   <span className="inline-block rounded bg-slate-100 dark:bg-slate-800 px-1 py-0.2 text-[9px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                     {profile?.role ?? 'Member'}
                   </span>

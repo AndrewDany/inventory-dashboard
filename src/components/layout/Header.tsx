@@ -39,10 +39,14 @@ export default function Header({
     localStorage.setItem('theme_mode', nextIsDark ? 'dark' : 'light')
   }
 
-  const role = profile?.role ?? 'staff'
+  const role = profile?.role ?? session?.user.role ?? 'staff'
+  const fullName = profile?.full_name || session?.user.full_name || ''
   const userEmail = session?.user.email ?? profile?.email ?? ''
-  const userName = userEmail ? userEmail.split('@')[0] : 'User'
-  const initials = userName.slice(0, 2).toUpperCase()
+  const activeAccountName = fullName || (userEmail ? userEmail.split('@')[0] : 'User')
+  const initials = (fullName
+    ? fullName.split(' ').filter(Boolean).map((w: string) => w[0]).join('').slice(0, 2)
+    : activeAccountName.slice(0, 2)
+  ).toUpperCase()
 
   const roleBadgeConfig = {
     admin: { label: 'Admin', bg: 'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800', dot: 'bg-indigo-500' },
@@ -51,8 +55,8 @@ export default function Header({
   }[role] || { label: role, bg: 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700', dot: 'bg-slate-400' }
 
   return (
-    <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 px-4 sm:px-6 py-2.5 flex items-center justify-between shadow-2xs">
-      <div className="flex items-center gap-3 min-w-0">
+    <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 px-3 sm:px-6 py-2.5 flex items-center justify-between shadow-2xs">
+      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
         <button
           onClick={onMenuClick}
           className="md:hidden text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
@@ -65,12 +69,12 @@ export default function Header({
             <img
               src={samdamLogo}
               alt="Samdam Logo"
-              className="h-6 w-auto max-w-[110px] object-contain object-left"
+              className="h-6 w-auto max-w-[100px] object-contain object-left"
             />
           </div>
         </Link>
-        <div className="flex items-center gap-2.5 min-w-0">
-          <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 truncate tracking-tight">{t(title)}</h1>
+        <div className="flex items-center gap-2 min-w-0">
+          <h1 className="text-sm sm:text-lg font-bold text-slate-900 dark:text-slate-100 truncate tracking-tight">{t(title)}</h1>
           <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider border shadow-2xs bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
             Live
@@ -78,27 +82,31 @@ export default function Header({
         </div>
       </div>
 
-      <div className="flex items-center gap-2.5 sm:gap-4">
+      <div className="flex items-center gap-2 sm:gap-4">
         <button
           type="button"
           onClick={toggleTheme}
-          className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center justify-center"
+          className="p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center justify-center"
           title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           aria-label="Toggle dark mode"
         >
-          {isDark ? <Sun size={17} className="text-amber-400" /> : <Moon size={17} className="text-slate-600" />}
+          {isDark ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} className="text-slate-600" />}
         </button>
 
         <NotificationCenter />
 
         <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block" />
 
-        <div className="hidden sm:flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 dark:bg-indigo-600 text-xs font-bold text-white shadow-2xs">
+        {/* Active Account User Pill */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 dark:bg-indigo-600 text-xs font-bold text-white shadow-2xs">
             {initials}
+            <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900" title="Active" />
           </div>
-          <div className="leading-tight text-left">
-            <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 capitalize truncate max-w-[140px]">{userName}</p>
+          <div className="hidden sm:block leading-tight text-left">
+            <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 capitalize truncate max-w-[130px] lg:max-w-[160px]">
+              {activeAccountName}
+            </p>
             <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.2 text-[10px] font-medium border ${roleBadgeConfig.bg}`}>
               <span className={`h-1.5 w-1.5 rounded-full ${roleBadgeConfig.dot}`} />
               {roleBadgeConfig.label}

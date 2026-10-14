@@ -114,18 +114,50 @@ export default function AdminPanel() {
           </div>
         </div>
 
-        {/* Page content from nested route.
-            This has its own Suspense boundary so that switching between
-            admin sub-pages (each lazy-loaded in App.tsx) only shows a
-            local loader here while the chunk fetches. Without this, the
-            nearest boundary was the app-wide one in App.tsx, which
-            unmounts this entire shell -- banner, sidebar, and header
-            included -- while a not-yet-loaded sub-page's chunk downloads.
-            That collapses the page to the tiny full-screen spinner and
-            then pops it back to full height once the chunk resolves, and
-            that later layout shift is what was leaving the scroll
-            position stuck part-way down the page. */}
-        <div ref={contentRef} className="rounded-[24px] border border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 text-slate-900 dark:text-slate-100 shadow-[0_16px_45px_rgba(15,23,42,0.06)] p-6">
+        {/* Responsive Admin Quick Navigation Bar */}
+        <div className="overflow-x-auto no-scrollbar -mx-2 px-2 py-1">
+          <div className="flex items-center gap-1.5 min-w-max pb-1">
+            {[
+              { path: '/admin/overview', label: 'Overview' },
+              { path: '/admin/locations', label: 'Locations' },
+              { path: '/admin/users', label: 'Users & Roles' },
+              { path: '/admin/low-stock', label: 'Low Stock' },
+              { path: '/admin/orders', label: 'Purchase Orders' },
+              { path: '/admin/sales-orders', label: 'Sales Orders' },
+              { path: '/admin/pre-orders', label: 'Pre-Orders' },
+              { path: '/admin/batches', label: 'FIFO Batches' },
+              { path: '/admin/adjustments', label: 'Adjustments' },
+              { path: '/admin/movements', label: 'Movements' },
+              { path: '/admin/suppliers', label: 'Suppliers' },
+              { path: '/admin/returns', label: 'Returns' },
+              { path: '/admin/financials', label: 'P&L Financials' },
+              { path: '/admin/invoice-history', label: 'Invoices' },
+              { path: '/admin/valuation', label: 'Valuation' },
+              { path: '/admin/reports', label: 'Reports' },
+              { path: '/admin/activity', label: 'Activity Logs' },
+              { path: '/admin/audit-events', label: 'Audit Trail' },
+              { path: '/admin/settings', label: 'Settings' },
+            ].map((tab) => {
+              const active = location.pathname === tab.path
+              return (
+                <Link
+                  key={tab.path}
+                  to={tab.path}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-xl transition-all whitespace-nowrap ${
+                    active
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200/80 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {tab.label}
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Page content from nested route */}
+        <div ref={contentRef} className="rounded-[24px] border border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 text-slate-900 dark:text-slate-100 shadow-[0_16px_45px_rgba(15,23,42,0.06)] p-4 sm:p-6">
           <Suspense
             fallback={
               <div className="flex items-center justify-center py-24">

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Truck, Phone, Sun, Moon } from 'lucide-react'
+import { Truck, Phone, Sun, Moon, Menu, X } from 'lucide-react'
 import samdamLogo from '../assets/landing/samdamlogo.png'
 import furnitureAccessoriesPhoto from '../assets/landing/sam 7.jpeg'
 import toolsAdhesivesPhoto from '../assets/landing/sam 5.jpeg'
@@ -199,6 +199,7 @@ const faqs = [
 ]
 
 export default function Landing() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isDark, setIsDark] = useState(() => {
     if (typeof window === 'undefined') return false
     return document.documentElement.classList.contains('dark')
@@ -215,16 +216,18 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-950/90 backdrop-blur border-b border-gray-100 dark:border-slate-800/80 px-6 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-950/90 backdrop-blur border-b border-gray-100 dark:border-slate-800/80 px-4 sm:px-6 py-3.5 flex items-center justify-between">
         <div className="flex min-w-0 items-center">
-          <div className="bg-white px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-2xs flex items-center justify-center" style={{ backgroundColor: '#ffffff' }}>
+          <div className="bg-white px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-2xs flex items-center justify-center" style={{ backgroundColor: '#ffffff' }}>
             <img
               src={samdamLogo}
               alt="Sam-Dam Ventures"
-              className="h-8 sm:h-10 w-auto max-w-[180px] sm:max-w-[220px] object-contain object-left"
+              className="h-7 sm:h-10 w-auto max-w-[150px] sm:max-w-[220px] object-contain object-left"
             />
           </div>
         </div>
+
+        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-6">
           <a href="#home" className="text-sm font-medium text-gray-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Home</a>
           <a href="#products" className="text-sm font-medium text-gray-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Products</a>
@@ -232,7 +235,8 @@ export default function Landing() {
           <a href="#about" className="text-sm font-medium text-gray-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">About</a>
           <a href="#contact" className="text-sm font-medium text-gray-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Contact</a>
         </nav>
-        <div className="flex items-center gap-3">
+
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             type="button"
             onClick={toggleTheme}
@@ -244,12 +248,75 @@ export default function Landing() {
           </button>
           <Link
             to="/login"
-            className="text-sm font-medium text-white bg-indigo-600 px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+            className="hidden sm:inline-flex text-sm font-medium text-white bg-indigo-600 px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
           >
             Staff Sign In
           </Link>
+
+          {/* Mobile Menu Hamburger Button */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle mobile navigation menu"
+            className="md:hidden p-2 rounded-lg border border-gray-200 dark:border-slate-800 text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+          >
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
         </div>
       </header>
+
+      {/* Mobile Navigation Dropdown Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-x-0 top-[61px] sm:top-[69px] z-29 bg-white/98 dark:bg-slate-900/98 backdrop-blur-md border-b border-gray-200 dark:border-slate-800 px-6 py-5 shadow-xl animate-in slide-in-from-top-2 duration-150">
+          <nav className="flex flex-col space-y-3">
+            <a
+              href="#home"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg text-base font-medium text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              Home
+            </a>
+            <a
+              href="#products"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg text-base font-medium text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              Products
+            </a>
+            <a
+              href="#why-us"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg text-base font-medium text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              Why Us
+            </a>
+            <a
+              href="#about"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg text-base font-medium text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              About
+            </a>
+            <a
+              href="#contact"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg text-base font-medium text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              Contact
+            </a>
+
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+              <Link
+                to="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full flex items-center justify-center text-sm font-semibold text-white bg-indigo-600 px-4 py-2.5 rounded-xl hover:bg-indigo-700 transition-colors shadow-sm"
+              >
+                Staff Sign In
+              </Link>
+            </div>
+          </nav>
+        </div>
+      )}
 
       {/* Hero */}
       <section id="home" className="relative overflow-hidden bg-linear-to-b from-indigo-50/80 via-white to-white dark:from-slate-900 dark:via-slate-950 dark:to-slate-950">
