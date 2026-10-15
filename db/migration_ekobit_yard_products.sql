@@ -91,9 +91,11 @@ INSERT INTO `inventory_items` (
   `unit_of_measure`, `units_per_box`, `unit_cost`, `bundle_yards`, `bundle_price`,
   `cut_size_mm`, `quantity`, `reorder_level`, `unit_price`
 ) VALUES
-  (UUID(), 'Mosquito Net', 'MOSQUITO-NET', 'Nets', NULL, NULL, NULL, 'weight', 'yard', NULL, 4.00, 100, 65.00, NULL, 0, 0, 6.00),
-  (UUID(), 'Fiber Net - Ash', 'FIBER-NET-ASH', 'Nets', NULL, 'Ash', NULL, 'weight', 'yard', NULL, 10.00, 100, 160.00, NULL, 0, 0, 12.00),
-  (UUID(), 'Fiber Net - Black', 'FIBER-NET-BLACK', 'Nets', NULL, 'Black', NULL, 'weight', 'yard', NULL, 1.50, 100, 160.00, NULL, 0, 0, 12.00),
+  (UUID(), 'Mosquito Net', 'MOSQUITO-NET', 'NETS', NULL, NULL, NULL, 'weight', 'yard', NULL, 4.00, 100, 65.00, NULL, 0, 0, 6.00),
+  (UUID(), 'Mosquito Net - Blue', 'MOSQUITO-NET-BLUE', 'NETS', NULL, 'Blue', NULL, 'weight', 'yard', NULL, 4.00, 100, 65.00, NULL, 0, 0, 6.00),
+  (UUID(), 'Mosquito Net - Green', 'MOSQUITO-NET-GREEN', 'NETS', NULL, 'Green', NULL, 'weight', 'yard', NULL, 4.00, 100, 65.00, NULL, 0, 0, 6.00),
+  (UUID(), 'Fiber Net - Ash', 'FIBER-NET-ASH', 'NETS', NULL, 'Ash', NULL, 'weight', 'yard', NULL, 10.00, 100, 160.00, NULL, 0, 0, 12.00),
+  (UUID(), 'Fiber Net - Black', 'FIBER-NET-BLACK', 'NETS', NULL, 'Black', NULL, 'weight', 'yard', NULL, 1.50, 100, 160.00, NULL, 0, 0, 12.00),
   (UUID(), 'Edge Glossy 3/4 inch', 'EDGE-GLOSSY-075IN', 'Edge', NULL, NULL, '3/4 inch', 'weight', 'yard', NULL, NULL, 100, 220.00, NULL, 0, 0, 5.00),
   (UUID(), 'Edge Glossy 1.5 inches', 'EDGE-GLOSSY-15IN', 'Edge', NULL, NULL, '1.5 inches', 'weight', 'yard', NULL, NULL, 100, 320.00, NULL, 0, 0, 6.00),
   (UUID(), 'Edge Matt 3/4 inch', 'EDGE-MATT-075IN', 'Edge', NULL, NULL, '3/4 inch', 'weight', 'yard', NULL, NULL, 100, 180.00, NULL, 0, 0, 3.00),
@@ -125,11 +127,13 @@ SET `unit_cost` = CASE `sku`
   END,
   `bundle_cost` = CASE `sku`
     WHEN 'MOSQUITO-NET' THEN 60.00
+    WHEN 'MOSQUITO-NET-BLUE' THEN 60.00
+    WHEN 'MOSQUITO-NET-GREEN' THEN 60.00
     WHEN 'FIBER-NET-ASH' THEN 150.00
     WHEN 'FIBER-NET-BLACK' THEN 150.00
     ELSE `bundle_cost`
   END
-WHERE `sku` IN ('MOSQUITO-NET', 'FIBER-NET-ASH', 'FIBER-NET-BLACK');
+WHERE `sku` IN ('MOSQUITO-NET', 'MOSQUITO-NET-BLUE', 'MOSQUITO-NET-GREEN', 'FIBER-NET-ASH', 'FIBER-NET-BLACK');
 
 DELETE FROM `inventory_items`
 WHERE `sku` = 'FILTER-NET-ASH'

@@ -37,7 +37,7 @@ export default function Dashboard() {
   const { data: monthlyFinancials } = useMonthlyFinancials()
   const deleteItem = useDeleteInventoryItem()
 
-  const [showAddModal, setShowAddModal] = useState(false)
+  const [addProductMode, setAddProductMode] = useState<'unit' | 'yard' | 'bundle' | null>(null)
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null)
   const [deletingItem, setDeletingItem] = useState<InventoryItem | null>(null)
   const [showPasswordForm, setShowPasswordForm] = useState(false)
@@ -71,7 +71,9 @@ export default function Dashboard() {
   return (
     <PageLayout
       title="Dashboard"
-      onAddItem={isDemo ? undefined : () => setShowAddModal(true)}
+      onAddItem={isDemo ? undefined : () => setAddProductMode('unit')}
+      onAddYardProduct={isDemo ? undefined : () => setAddProductMode('yard')}
+      onAddBundleProduct={isDemo ? undefined : () => setAddProductMode('bundle')}
       onBulkAddProducts={isDemo ? undefined : () => setShowBulkAddModal(true)}
       onSellItem={isDemo ? undefined : () => navigate('/pos')}
       onChangePassword={isDemo ? undefined : () => setShowPasswordForm(true)}
@@ -150,9 +152,12 @@ export default function Dashboard() {
         </>
       )}
 
-      {showAddModal && (
-        <Modal title="Add Inventory Item" onClose={() => setShowAddModal(false)}>
-          <InventoryForm onClose={() => setShowAddModal(false)} />
+      {addProductMode && (
+        <Modal
+          title={addProductMode === 'yard' ? 'Add Yard Product' : addProductMode === 'bundle' ? 'Add Bundle Product' : 'Add Inventory Item'}
+          onClose={() => setAddProductMode(null)}
+        >
+          <InventoryForm mode={addProductMode} onClose={() => setAddProductMode(null)} />
         </Modal>
       )}
 

@@ -16,6 +16,7 @@ import {
   FileText,
   Users,
   Package,
+  Ruler,
   ShoppingCart,
   Phone,
   AlertTriangle,
@@ -40,6 +41,8 @@ interface SidebarProps {
   isCollapsed: boolean
   onToggleCollapse: () => void
   onAddItem?: () => void
+  onAddYardProduct?: () => void
+  onAddBundleProduct?: () => void
   onBulkAddProducts?: () => void
   onSellItem?: () => void
   onChangePassword?: () => void
@@ -115,6 +118,8 @@ export default function Sidebar({
   isCollapsed,
   onToggleCollapse,
   onAddItem,
+  onAddYardProduct,
+  onAddBundleProduct,
   onBulkAddProducts,
   onSellItem,
   onChangePassword,
@@ -245,7 +250,7 @@ export default function Sidebar({
           </nav>
 
           {/* Quick Operations Button List */}
-          {(onAddItem || onSellItem || onBulkAddProducts || onAddPurchaseOrder || onAddSupplier || onAddLocation || onInviteUser || onChangePassword || onSettings || onUpdateBudget) && (
+          {(onAddItem || onAddYardProduct || onAddBundleProduct || onSellItem || onBulkAddProducts || onAddPurchaseOrder || onAddSupplier || onAddLocation || onInviteUser || onChangePassword || onSettings || onUpdateBudget) && (
             <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
               {!isCollapsed && (
                 <p className="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">
@@ -257,6 +262,20 @@ export default function Sidebar({
                 <button onClick={onAddItem} className={actionBtnClass} title="Add Product">
                   <Plus size={15} className="text-indigo-600 dark:text-indigo-400" />
                   {!isCollapsed && <span>Add Product</span>}
+                </button>
+              )}
+
+              {onAddYardProduct && (
+                <button onClick={onAddYardProduct} className={actionBtnClass} title="Add Yard Product">
+                  <Ruler size={15} className="text-cyan-600 dark:text-cyan-400" />
+                  {!isCollapsed && <span>Add Yard Product</span>}
+                </button>
+              )}
+
+              {onAddBundleProduct && (
+                <button onClick={onAddBundleProduct} className={actionBtnClass} title="Add Bundle Product">
+                  <Package size={15} className="text-amber-600 dark:text-amber-400" />
+                  {!isCollapsed && <span>Add Bundle Product</span>}
                 </button>
               )}
 

@@ -22,9 +22,11 @@ const UNIT_TYPE_LABELS: Record<string, string> = {
 export default function InventoryForm({
   onClose,
   item,
+  mode = 'unit',
 }: {
   onClose: () => void
   item?: InventoryItem
+  mode?: 'unit' | 'yard' | 'bundle'
 }) {
   const [showScanner, setShowScanner] = useState(false)
   const { data: locations } = useLocations()
@@ -34,6 +36,7 @@ export default function InventoryForm({
     register,
     handleSubmit,
     setValue,
+    setError,
     watch,
     formState: { errors, isSubmitting },
   } = useForm<InventoryFormValues>({
@@ -79,8 +82,8 @@ export default function InventoryForm({
           unit_cost: undefined,
           supplier: '',
           location_id: undefined,
-          unit_type: 'unit',
-          unit_of_measure: null,
+          unit_type: mode === 'unit' ? 'unit' : 'weight',
+          unit_of_measure: mode === 'unit' ? null : 'yard',
           units_per_box: null,
           bundle_yards: null,
           bundle_price: null,
@@ -92,6 +95,8 @@ export default function InventoryForm({
   const addItem = useAddInventoryItem()
   const updateItem = useUpdateInventoryItem()
   const isEditMode = Boolean(item)
+  const isBundleMode = !isEditMode && mode === 'bundle'
+  const isYardMode = !isEditMode && mode === 'yard'
   const locationValue = watch('location_id')
   const unitTypeValue = watch('unit_type')
   const unitOfMeasureValue = watch('unit_of_measure')
@@ -102,6 +107,26 @@ export default function InventoryForm({
   const hasBoxConversion = isBox && Boolean(unitsPerBoxValue)
 
   async function onSubmit(values: InventoryFormValues) {
+    if (isBundleMode) {
+      const yardsPerBundle = Number(values.bundle_yards)
+      if (!Number.isFinite(yardsPerBundle) || yardsPerBundle <= 0) {
+        setError('bundle_yards', { type: 'validate', message: 'Enter a bundle size greater than 0' })
+        return
+      }
+      if (values.bundle_price == null) {
+        setError('bundle_price', { type: 'validate', message: 'Bundle price is required' })
+        return
+      }
+
+      values = {
+        ...values,
+        quantity: values.quantity * yardsPerBundle,
+        reorder_level: values.reorder_level * yardsPerBundle,
+        unit_cost: values.bundle_cost == null ? undefined : Number(values.bundle_cost) / yardsPerBundle,
+        unit_price: Number(values.bundle_price) / yardsPerBundle,
+      }
+    }
+
     if (isEditMode && item) {
       await updateItem.mutateAsync({ id: item.id, values, previousQuantity: item.quantity })
     } else {
@@ -195,6 +220,7 @@ export default function InventoryForm({
         </div>
       </div>
 
+      {!isYardMode && !isBundleMode && (
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label className="mb-1 block">Sold By</Label>
@@ -245,27 +271,35 @@ export default function InventoryForm({
             )}
           </div>
         )}
-        {unitOfMeasureValue === 'yard' && (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div>
-              <Label htmlFor="bundle_yards" className="mb-1 block">Yards per Bundle</Label>
-              <Input id="bundle_yards" type="number" min="0" step="0.01" {...register('bundle_yards')} />
-            </div>
-            <div>
-              <Label htmlFor="bundle_price" className="mb-1 block">Bundle Price (GHC)</Label>
-              <Input id="bundle_price" type="number" min="0" step="0.01" {...register('bundle_price')} />
-            </div>
-            <div>
-              <Label htmlFor="bundle_cost" className="mb-1 block">Bundle Cost (GHC)</Label>
-              <Input id="bundle_cost" type="number" min="0" step="0.01" {...register('bundle_cost')} />
-            </div>
-            <div>
-              <Label htmlFor="cut_size_mm" className="mb-1 block">Cut Length (mm)</Label>
-              <Input id="cut_size_mm" type="number" min="0" step="0.01" {...register('cut_size_mm')} />
-            </div>
-          </div>
-        )}
       </div>
+      )}
+
+      {unitOfMeasureValue === 'yard' && !isYardMode && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div>
+            <Label htmlFor="bundle_yards" className="mb-1 block">Yards per Bundle</Label>
+            <Input id="bundle_yards" type="number" min="0.01" step="0.01" required={isBundleMode} {...register('bundle_yards')} />
+          </div>
+          <div>
+            <Label htmlFor="bundle_price" className="mb-1 block">Bundle Price (GHC)</Label>
+            <Input id="bundle_price" type="number" min="0" step="0.01" required={isBundleMode} {...register('bundle_price')} />
+          </div>
+          <div>
+            <Label htmlFor="bundle_cost" className="mb-1 block">Bundle Cost (GHC)</Label>
+            <Input id="bundle_cost" type="number" min="0" step="0.01" {...register('bundle_cost')} />
+          </div>
+          <div>
+            <Label htmlFor="cut_size_mm" className="mb-1 block">Cut Length (mm)</Label>
+            <Input id="cut_size_mm" type="number" min="0" step="0.01" {...register('cut_size_mm')} />
+          </div>
+        </div>
+      )}
+
+      {(isYardMode || isBundleMode) && (
+        <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+          Stock tracked in yards
+        </div>
+      )}
 
       {isBox && (
         <div>
@@ -294,13 +328,13 @@ export default function InventoryForm({
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="quantity" className="mb-1 block">
-            Quantity {isWeight && unitOfMeasureValue ? `(${unitOfMeasureValue})` : ''}
+            Quantity {isBundleMode ? '(bundles)' : isYardMode ? '(yards)' : isWeight && unitOfMeasureValue ? `(${unitOfMeasureValue})` : ''}
             {isBox ? (hasBoxConversion ? '(pieces)' : '(boxes)') : ''}
           </Label>
           <Input
             id="quantity"
             type="number"
-            step={unitOfMeasureValue === 'yard' ? '0.000001' : isWeight ? '0.01' : '1'}
+            step={isBundleMode ? '1' : unitOfMeasureValue === 'yard' ? '0.000001' : isWeight ? '0.01' : '1'}
             {...register('quantity')}
           />
           {errors.quantity && <p className="text-red-600 text-sm mt-1">{errors.quantity.message}</p>}
@@ -308,20 +342,26 @@ export default function InventoryForm({
 
         <div>
           <Label htmlFor="reorder_level" className="mb-1 block">
-            Reorder Level {isWeight && unitOfMeasureValue ? `(${unitOfMeasureValue})` : ''}
+            Reorder Level {isBundleMode ? '(bundles)' : isYardMode ? '(yards)' : isWeight && unitOfMeasureValue ? `(${unitOfMeasureValue})` : ''}
             {isBox ? (hasBoxConversion ? '(pieces)' : '(boxes)') : ''}
           </Label>
           <Input
             id="reorder_level"
             type="number"
-            step={unitOfMeasureValue === 'yard' ? '0.000001' : isWeight ? '0.01' : '1'}
+            step={isBundleMode ? '1' : unitOfMeasureValue === 'yard' ? '0.000001' : isWeight ? '0.01' : '1'}
             {...register('reorder_level')}
           />
           {errors.reorder_level && <p className="text-red-600 text-sm mt-1">{errors.reorder_level.message}</p>}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      {isBundleMode && (
+        <p className="text-xs text-gray-500 -mt-2">
+          Opening stock and reorder levels are entered in bundles and saved as yards.
+        </p>
+      )}
+
+      {!isBundleMode && <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="unit_cost" className="mb-1 block">
             Unit Cost {isWeight && unitOfMeasureValue ? `(per ${unitOfMeasureValue})` : unitTypeValue === 'box' ? '(per box)' : ''}
@@ -336,9 +376,11 @@ export default function InventoryForm({
           <Input id="unit_price" type="number" step="0.01" {...register('unit_price')} placeholder="What you sell for" />
           {errors.unit_price && <p className="text-red-600 text-sm mt-1">{errors.unit_price.message}</p>}
         </div>
-      </div>
+      </div>}
       <p className="text-xs text-gray-500 -mt-2">
-        Unit Cost feeds Profit &amp; Loss margin calculations for this item's initial stock. Leave blank if you're only setting up the catalog with no stock yet.
+        {isBundleMode
+          ? 'Bundle cost is used to calculate the cost per yard for stock valuation.'
+          : "Unit Cost feeds Profit & Loss margin calculations for this item's initial stock. Leave blank if you're only setting up the catalog with no stock yet."}
       </p>
 
       <div>

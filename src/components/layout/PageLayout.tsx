@@ -9,6 +9,8 @@ export default function PageLayout({
   children,
   title,
   onAddItem,
+  onAddYardProduct,
+  onAddBundleProduct,
   onBulkAddProducts,
   onSellItem,
   onChangePassword,
@@ -22,6 +24,8 @@ export default function PageLayout({
   children: ReactNode
   title: string
   onAddItem?: () => void
+  onAddYardProduct?: () => void
+  onAddBundleProduct?: () => void
   onBulkAddProducts?: () => void
   onSellItem?: () => void
   onChangePassword?: () => void
@@ -46,6 +50,8 @@ export default function PageLayout({
         isCollapsed={isCollapsed}
         onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
         onAddItem={onAddItem}
+        onAddYardProduct={onAddYardProduct}
+        onAddBundleProduct={onAddBundleProduct}
         onBulkAddProducts={onBulkAddProducts}
         onSellItem={onSellItem}
         onChangePassword={onChangePassword}
