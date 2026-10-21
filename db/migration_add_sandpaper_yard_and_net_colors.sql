@@ -49,12 +49,12 @@ INSERT INTO `inventory_items` (
   `id`, `name`, `sku`, `category`, `unit_type`, `unit_of_measure`,
   `quantity`, `reorder_level`, `unit_cost`, `unit_price`, `created_at`, `last_updated`
 ) VALUES (
-  UUID(), 'SAND PAPER YARD', 'SAND-PAPER-YARD', 'SAND PAPER', 'weight', 'yard',
+  UUID(), 'SAND PAPER YARD', 'SAND-PAPER-YARD', 'SANDPAPER', 'weight', 'yard',
   0, 0, NULL, NULL, NOW(), NOW()
 )
 ON DUPLICATE KEY UPDATE
   `name` = VALUES(`name`),
-  `category` = 'SAND PAPER',
+  `category` = 'SANDPAPER',
   `unit_type` = 'weight',
   `unit_of_measure` = 'yard',
   `last_updated` = NOW();

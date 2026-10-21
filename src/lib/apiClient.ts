@@ -40,8 +40,9 @@ export function getStoredUser<T>(): T | null {
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = getAuthToken()
+  const isMultipart = options.body instanceof FormData
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(!isMultipart ? { 'Content-Type': 'application/json' } : {}),
     ...(options.headers as Record<string, string>),
   }
 
@@ -89,7 +90,7 @@ export const api = {
   post: <T>(endpoint: string, body?: unknown) =>
     request<T>(endpoint, {
       method: 'POST',
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body instanceof FormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
     }),
   put: <T>(endpoint: string, body?: unknown) =>
     request<T>(endpoint, {

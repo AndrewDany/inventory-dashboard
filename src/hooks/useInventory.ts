@@ -19,7 +19,7 @@ export function useAddInventoryItem() {
 
   return useMutation({
     mutationFn: async (values: InventoryFormValues) => {
-      await api.post<InventoryItem>('/inventory', values)
+      return api.post<InventoryItem>('/inventory', values)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory_items'] })

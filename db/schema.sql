@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS `inventory_items` (
   `brand` VARCHAR(100) NULL,
   `color` VARCHAR(50) NULL,
   `size` VARCHAR(50) NULL,
+  `image_url` VARCHAR(500) NULL,
   `unit_type` ENUM('unit', 'box', 'weight') NOT NULL DEFAULT 'unit',
   `unit_of_measure` VARCHAR(50) NULL,
   `units_per_box` INT NULL DEFAULT NULL,

@@ -10,8 +10,100 @@ require_once __DIR__ . '/../middleware/auth.php';
 
 function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
 {
-    $auth = requireAuth();
     $id = $uriParts[1] ?? null;
+
+    if ($id === 'images' && $method === 'GET') {
+        $filename = $uriParts[2] ?? '';
+        if (!preg_match('/\A[a-f0-9]{32}\.(?:jpg|png|webp|gif)\z/i', $filename)) {
+            jsonError('Image not found', 404);
+        }
+
+        $imagePath = __DIR__ . '/../storage/product-images/' . $filename;
+        if (!is_file($imagePath)) jsonError('Image not found', 404);
+
+        $mimeType = (new finfo(FILEINFO_MIME_TYPE))->file($imagePath);
+        if (!in_array($mimeType, ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], true)) {
+            jsonError('Image not found', 404);
+        }
+
+        header('Content-Type: ' . $mimeType);
+        header('Content-Length: ' . filesize($imagePath));
+        header('Cache-Control: public, max-age=31536000, immutable');
+        header('X-Content-Type-Options: nosniff');
+        readfile($imagePath);
+        exit;
+    }
+
+    if ($id && ($uriParts[2] ?? null) === 'image' && in_array($method, ['POST', 'DELETE'], true)) {
+        $auth = requireAuth();
+        if ($auth['role'] === 'demo') jsonError('Demo account cannot modify inventory', 403);
+
+        $itemStmt = $pdo->prepare('SELECT id, image_url FROM inventory_items WHERE id = ? LIMIT 1');
+        $itemStmt->execute([$id]);
+        $item = $itemStmt->fetch();
+        if (!$item) jsonError('Item not found', 404);
+
+        $imageDirectory = __DIR__ . '/../storage/product-images';
+        $removePreviousImage = static function (?string $imageUrl) use ($imageDirectory): void {
+            $filename = basename((string)(parse_url($imageUrl ?? '', PHP_URL_PATH) ?: ''));
+            if (preg_match('/\A[a-f0-9]{32}\.(?:jpg|png|webp|gif)\z/i', $filename)) {
+                $path = $imageDirectory . DIRECTORY_SEPARATOR . $filename;
+                if (is_file($path)) unlink($path);
+            }
+        };
+
+        if ($method === 'DELETE') {
+            $pdo->prepare('UPDATE inventory_items SET image_url = NULL, last_updated = NOW() WHERE id = ?')->execute([$id]);
+            $removePreviousImage($item['image_url'] ?? null);
+            jsonSuccess(['image_url' => null], 200, 'Product image removed');
+        }
+
+        if (!isset($_FILES['image']) || !is_array($_FILES['image'])) {
+            jsonError('Choose an image to upload', 400);
+        }
+
+        $upload = $_FILES['image'];
+        if (($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            jsonError('Image upload failed', 400);
+        }
+        if (($upload['size'] ?? 0) > 5 * 1024 * 1024) {
+            jsonError('Image must be 5 MB or smaller', 413);
+        }
+
+        $mimeType = (new finfo(FILEINFO_MIME_TYPE))->file($upload['tmp_name']);
+        $allowedTypes = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            'image/gif' => 'gif',
+        ];
+        if (!isset($allowedTypes[$mimeType]) || @getimagesize($upload['tmp_name']) === false) {
+            jsonError('Use a valid JPG, PNG, WebP, or GIF image', 415);
+        }
+
+        if (!is_dir($imageDirectory) && !mkdir($imageDirectory, 0755, true) && !is_dir($imageDirectory)) {
+            jsonError('Image storage is unavailable', 500);
+        }
+
+        $filename = bin2hex(random_bytes(16)) . '.' . $allowedTypes[$mimeType];
+        $destination = $imageDirectory . DIRECTORY_SEPARATOR . $filename;
+        if (!move_uploaded_file($upload['tmp_name'], $destination)) {
+            jsonError('Could not save the uploaded image', 500);
+        }
+
+        $imageUrl = '/api/inventory/images/' . $filename;
+        try {
+            $pdo->prepare('UPDATE inventory_items SET image_url = ?, last_updated = NOW() WHERE id = ?')->execute([$imageUrl, $id]);
+        } catch (Throwable $error) {
+            unlink($destination);
+            throw $error;
+        }
+        $removePreviousImage($item['image_url'] ?? null);
+
+        jsonSuccess(['image_url' => $imageUrl], 200, 'Product image uploaded');
+    }
+
+    $auth = requireAuth();
 
     // Bulk Import endpoint: POST /api/inventory/bulk
     if ($id === 'bulk' && $method === 'POST') {
@@ -249,8 +341,16 @@ function handleInventoryRoutes(PDO $pdo, string $method, array $uriParts): void
 
             case 'DELETE':
                 if ($auth['role'] === 'demo') jsonError('Demo account cannot delete inventory', 403);
+                $imageStmt = $pdo->prepare('SELECT image_url FROM inventory_items WHERE id = ?');
+                $imageStmt->execute([$id]);
+                $imageUrl = $imageStmt->fetchColumn();
                 $stmt = $pdo->prepare('DELETE FROM inventory_items WHERE id = ?');
                 $stmt->execute([$id]);
+                $filename = basename((string)(parse_url((string)$imageUrl, PHP_URL_PATH) ?: ''));
+                if (preg_match('/\A[a-f0-9]{32}\.(?:jpg|png|webp|gif)\z/i', $filename)) {
+                    $imagePath = __DIR__ . '/../storage/product-images/' . $filename;
+                    if (is_file($imagePath)) unlink($imagePath);
+                }
                 jsonSuccess(null, 200, 'Item deleted successfully');
                 break;
 

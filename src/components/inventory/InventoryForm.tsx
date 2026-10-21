@@ -1,11 +1,14 @@
-import { useState, lazy, Suspense } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ScanLine } from 'lucide-react'
+import { ImagePlus, ScanLine, X } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { inventoryItemSchema, type InventoryFormValues } from '../../lib/schemas'
 import { useAddInventoryItem, useUpdateInventoryItem } from '../../hooks/useInventory'
 import { useLocations } from '../../hooks/useLocations'
 import { useSuppliers } from '../../hooks/useSuppliers'
+import { api } from '../../lib/apiClient'
 const BarcodeScanner = lazy(() => import('./BarcodeScanner'))
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -29,8 +32,16 @@ export default function InventoryForm({
   mode?: 'unit' | 'yard' | 'bundle'
 }) {
   const [showScanner, setShowScanner] = useState(false)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(item?.image_url ?? null)
+  const [removeImage, setRemoveImage] = useState(false)
   const { data: locations } = useLocations()
   const { data: suppliers } = useSuppliers()
+  const queryClient = useQueryClient()
+
+  useEffect(() => () => {
+    if (imagePreview?.startsWith('blob:')) URL.revokeObjectURL(imagePreview)
+  }, [imagePreview])
 
   const {
     register,
@@ -127,10 +138,29 @@ export default function InventoryForm({
       }
     }
 
+    let savedItemId = item?.id
     if (isEditMode && item) {
       await updateItem.mutateAsync({ id: item.id, values, previousQuantity: item.quantity })
     } else {
-      await addItem.mutateAsync(values)
+      const createdItem = await addItem.mutateAsync(values)
+      savedItemId = createdItem.id
+    }
+
+    try {
+      if (imageFile && savedItemId) {
+        const formData = new FormData()
+        formData.append('image', imageFile)
+        await api.post(`/inventory/${savedItemId}/image`, formData)
+      } else if (removeImage && savedItemId) {
+        await api.delete(`/inventory/${savedItemId}/image`)
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown upload error'
+      toast.error(`Product saved, but its image could not be updated: ${message}`)
+    }
+
+    if (imageFile || removeImage) {
+      await queryClient.invalidateQueries({ queryKey: ['inventory_items'] })
     }
     onClose()
   }
@@ -141,6 +171,51 @@ export default function InventoryForm({
         <Label htmlFor="name" className="mb-1 block">Name</Label>
         <Input id="name" {...register('name')} />
         {errors.name && <p className="text-red-600 text-sm mt-1">{errors.name.message}</p>}
+      </div>
+
+      <div>
+        <Label htmlFor="product-image" className="mb-1 block">Product Image</Label>
+        <div className="flex items-center gap-3">
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded border border-slate-200 bg-slate-50">
+            {imagePreview && !removeImage ? (
+              <img src={imagePreview} alt="Product preview" className="h-full w-full object-cover" />
+            ) : (
+              <ImagePlus size={22} className="text-slate-400" />
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <Input
+              id="product-image"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={(event) => {
+                const file = event.target.files?.[0]
+                if (!file) return
+                setImageFile(file)
+                setImagePreview(URL.createObjectURL(file))
+                setRemoveImage(false)
+              }}
+              className="h-auto cursor-pointer py-2 text-xs"
+            />
+            <p className="mt-1 text-xs text-slate-500">JPG, PNG, WebP, or GIF; up to 5 MB.</p>
+            {imagePreview && !removeImage && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="mt-1 h-7 px-2 text-xs text-slate-600"
+                onClick={() => {
+                  setImageFile(null)
+                  setImagePreview(null)
+                  setRemoveImage(true)
+                }}
+              >
+                <X size={13} />
+                Remove image
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
 
       <div>
@@ -277,7 +352,7 @@ export default function InventoryForm({
       {unitOfMeasureValue === 'yard' && !isYardMode && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div>
-            <Label htmlFor="bundle_yards" className="mb-1 block">Yards per Bundle</Label>
+            <Label htmlFor="bundle_yards" className="mb-1 block">Bundle (yards)</Label>
             <Input id="bundle_yards" type="number" min="0.01" step="0.01" required={isBundleMode} {...register('bundle_yards')} />
           </div>
           <div>
@@ -288,10 +363,12 @@ export default function InventoryForm({
             <Label htmlFor="bundle_cost" className="mb-1 block">Bundle Cost (GHC)</Label>
             <Input id="bundle_cost" type="number" min="0" step="0.01" {...register('bundle_cost')} />
           </div>
-          <div>
-            <Label htmlFor="cut_size_mm" className="mb-1 block">Cut Length (mm)</Label>
-            <Input id="cut_size_mm" type="number" min="0" step="0.01" {...register('cut_size_mm')} />
-          </div>
+          {!isBundleMode && (
+            <div>
+              <Label htmlFor="cut_size_mm" className="mb-1 block">Cut Length (mm)</Label>
+              <Input id="cut_size_mm" type="number" min="0" step="0.01" {...register('cut_size_mm')} />
+            </div>
+          )}
         </div>
       )}
 

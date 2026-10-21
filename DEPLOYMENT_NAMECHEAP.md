@@ -22,6 +22,7 @@ This guide walks you through deploying the **Inventory Suite** with its **PHP 8 
    - First choose [`db/schema.sql`](file:///c:/Users/Andrews/inventory-dashboard/db/schema.sql) and click **Go** (creates all tables, indexes, foreign keys).
    - Next choose [`db/seed.sql`](file:///c:/Users/Andrews/inventory-dashboard/db/seed.sql) and click **Go** (seeds initial administrator, locations, suppliers, budget).
    - Then choose [`db/migration_ekobit_yard_products.sql`](file:///c:/Users/Andrews/inventory-dashboard/db/migration_ekobit_yard_products.sql) and click **Go** (adds the EKOBIT, mosquito net, filter net, edge, veneer, and concrete nail products).
+   - Choose [`db/migration_add_inventory_product_images.sql`](file:///c:/Users/Andrews/inventory-dashboard/db/migration_add_inventory_product_images.sql) and click **Go** (adds optional product image URLs).
 
 ---
 
@@ -91,6 +92,8 @@ public_html/
         ├── notifications.php
         └── reports.php
 ```
+
+Product images accept JPG, PNG, WebP, or GIF files up to 5 MB. The PHP process must be able to create and write to `api/storage/product-images/`; the folder is created on the first upload.
 
 ---
 

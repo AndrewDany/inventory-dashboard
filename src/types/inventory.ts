@@ -7,6 +7,7 @@ export interface InventoryItem {
   color?: string | null
   brand?: string | null
   size?: string | null
+  image_url?: string | null
   unit_type: 'unit' | 'box' | 'weight'
   unit_of_measure: 'kg' | 'yard' | null
   // For box items only: how many individual pieces are in one box. When set,

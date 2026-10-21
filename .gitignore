@@ -26,3 +26,4 @@ dist-ssr
 .env
 .env.local
 api/config/db_config.php
+api/storage/product-images/

@@ -8,7 +8,7 @@ import {
   createColumnHelper,
   type SortingState,
 } from '@tanstack/react-table'
-import { ScanLine } from 'lucide-react'
+import { Image as ImageIcon, ScanLine } from 'lucide-react'
 const BarcodeScanner = lazy(() => import('./BarcodeScanner'))
 import { useLocations } from '../../hooks/useLocations'
 import { Input } from '@/components/ui/input'
@@ -25,6 +25,10 @@ import {
 import type { InventoryItem } from '../../types/inventory'
 
 const columnHelper = createColumnHelper<InventoryItem>()
+
+function canonicalCategory(category: string | null): string | null {
+  return category?.toUpperCase().replace(/[^A-Z0-9]/g, '') === 'SANDPAPER' ? 'SANDPAPER' : category
+}
 
 export default function InventoryTable({
   items,
@@ -49,7 +53,7 @@ export default function InventoryTable({
   }, [locations])
 
   const categories = useMemo(() => {
-    const unique = new Set(items.map((i) => i.category).filter(Boolean))
+    const unique = new Set(items.map((i) => canonicalCategory(i.category)).filter(Boolean))
     return Array.from(unique) as string[]
   }, [items])
 
@@ -59,13 +63,35 @@ export default function InventoryTable({
       const matchesSearch = [item.name, item.sku, item.category, item.type, item.brand, item.color, item.size].some(
         (value) => String(value ?? '').toLowerCase().includes(q)
       )
-      const matchesCategory = categoryFilter && categoryFilter !== 'all' ? item.category === categoryFilter : true
+      const matchesCategory =
+        categoryFilter && categoryFilter !== 'all'
+          ? canonicalCategory(item.category) === categoryFilter
+          : true
       return matchesSearch && matchesCategory
     })
   }, [items, search, categoryFilter])
 
   const columns = useMemo(
     () => [
+      columnHelper.display({
+        id: 'image',
+        header: 'Image',
+        cell: (info) => {
+          const item = info.row.original
+          return item.image_url ? (
+            <img
+              src={item.image_url}
+              alt={item.name}
+              loading="lazy"
+              className="h-10 w-10 rounded border border-slate-200 object-cover"
+            />
+          ) : (
+            <div className="flex h-10 w-10 items-center justify-center rounded border border-dashed border-slate-300 bg-slate-50 text-slate-400">
+              <ImageIcon size={16} aria-label="No product image" />
+            </div>
+          )
+        },
+      }),
       columnHelper.accessor('name', {
         header: 'Name',
         cell: (info) => {
