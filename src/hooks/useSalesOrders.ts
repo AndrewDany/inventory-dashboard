@@ -7,11 +7,16 @@ export interface SalesOrderWithItems extends SalesOrder {
   sales_order_items: SalesOrderItem[]
 }
 
+type SalesOrderApiRecord = SalesOrder & {
+  items?: SalesOrderItem[]
+  sales_order_items?: SalesOrderItem[]
+}
+
 export function useSalesOrders() {
   return useQuery({
     queryKey: ['sales_orders'],
     queryFn: async (): Promise<SalesOrderWithItems[]> => {
-      const data = await api.get<any[]>('/sales-orders')
+      const data = await api.get<SalesOrderApiRecord[]>('/sales-orders')
       return (data || []).map((so) => ({
         ...so,
         sales_order_items: so.items || so.sales_order_items || [],
@@ -96,17 +101,19 @@ export function usePreOrders() {
 interface RecordPaymentInput {
   so_id: string
   amount: number
+  payment_method?: string
 }
 
 export function useRecordPreOrderPayment() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ so_id, amount }: RecordPaymentInput) => {
-      return await api.post(`/sales-orders/${so_id}/payment`, { amount })
+    mutationFn: async ({ so_id, amount, payment_method }: RecordPaymentInput) => {
+      return await api.post(`/sales-orders/${so_id}/payment`, { amount, payment_method })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sales_orders'] })
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
       toast.success('Payment recorded')
     },
     onError: (error: Error) => {

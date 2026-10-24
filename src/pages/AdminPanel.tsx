@@ -124,6 +124,7 @@ export default function AdminPanel() {
               { path: '/admin/low-stock', label: 'Low Stock' },
               { path: '/admin/orders', label: 'Purchase Orders' },
               { path: '/admin/sales-orders', label: 'Sales Orders' },
+              { path: '/admin/customers', label: 'Customers & Credit' },
               { path: '/admin/pre-orders', label: 'Pre-Orders' },
               { path: '/admin/batches', label: 'FIFO Batches' },
               { path: '/admin/adjustments', label: 'Adjustments' },

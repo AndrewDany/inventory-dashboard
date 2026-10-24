@@ -83,11 +83,14 @@ export interface SalesOrder {
   notes: string | null
   customer_name: string | null
   customer_phone: string | null
+  customer_id?: string | null
   is_preorder: boolean | number
   fulfillment_method: 'pickup' | 'delivery'
   delivery_address: string | null
   deposit_amount: number
   amount_paid: number
+  due_date?: string | null
+  payments?: { id: string; amount: number; payment_method: string; received_by: string | null; paid_at: string }[]
   created_by: string | null
   created_at: string
 }

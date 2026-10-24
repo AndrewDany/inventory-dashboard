@@ -187,17 +187,21 @@ CREATE TABLE IF NOT EXISTS `sales_orders` (
   `notes` TEXT NULL,
   `customer_name` VARCHAR(255) NULL,
   `customer_phone` VARCHAR(50) NULL,
+  `customer_id` VARCHAR(36) NULL,
   `is_preorder` TINYINT(1) NOT NULL DEFAULT 0,
   `fulfillment_method` ENUM('pickup', 'delivery') NOT NULL DEFAULT 'pickup',
   `delivery_address` TEXT NULL,
   `deposit_amount` DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
   `amount_paid` DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+  `due_date` DATE NULL,
   `created_by` VARCHAR(255) NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_so_status` (`status`),
-  KEY `idx_so_preorder` (`is_preorder`)
+  KEY `idx_so_preorder` (`is_preorder`),
+  KEY `idx_so_customer` (`customer_id`),
+  KEY `idx_so_due_date` (`due_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sales_order_items` (
@@ -214,6 +218,19 @@ CREATE TABLE IF NOT EXISTS `sales_order_items` (
   PRIMARY KEY (`id`),
   KEY `idx_soi_so_id` (`so_id`),
   CONSTRAINT `fk_soi_so` FOREIGN KEY (`so_id`) REFERENCES `sales_orders` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sales_order_payments` (
+  `id` VARCHAR(36) NOT NULL,
+  `so_id` VARCHAR(36) NOT NULL,
+  `amount` DECIMAL(12, 2) NOT NULL,
+  `payment_method` VARCHAR(100) NOT NULL DEFAULT 'Cash',
+  `received_by` VARCHAR(255) NULL,
+  `paid_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_sop_so_id` (`so_id`),
+  KEY `idx_sop_paid_at` (`paid_at`),
+  CONSTRAINT `fk_sop_so` FOREIGN KEY (`so_id`) REFERENCES `sales_orders` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------
@@ -330,6 +347,7 @@ CREATE TABLE IF NOT EXISTS `customers` (
   `phone` VARCHAR(50) NOT NULL UNIQUE,
   `email` VARCHAR(255) NULL,
   `delivery_address` TEXT NULL,
+  `credit_limit` DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
   `first_purchase_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `last_purchase_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),

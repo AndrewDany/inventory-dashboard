@@ -86,6 +86,7 @@ interface CheckoutInput {
   customerPhone?: string
   shippingAddress?: string
   paymentStatus: string
+  dueDate?: string
   companyName: string
 }
 
@@ -102,6 +103,7 @@ export function usePointOfSaleCheckout() {
       customerPhone,
       shippingAddress,
       paymentStatus,
+      dueDate,
       companyName,
     }: CheckoutInput): Promise<{ invoiceData: InvoiceData; invoiceNumber: string; shareText: string }> => {
       const user = getStoredUser<AuthUser>()
@@ -112,6 +114,7 @@ export function usePointOfSaleCheckout() {
         customer_email: customerEmail,
         shipping_address: shippingAddress,
         payment_method: paymentStatus,
+        due_date: dueDate,
         location_id: locationId,
         items: cart.map((line) => ({
           id: line.item.id,
@@ -137,6 +140,9 @@ export function usePointOfSaleCheckout() {
         shippingAddress,
         processedBy: user?.email ?? undefined,
         paymentStatus,
+        note: paymentStatus === 'Credit' && dueDate
+          ? `Credit due ${dueDate} · Balance GHC ${cart.reduce((sum, line) => sum + lineSubtotal(line), 0).toFixed(2)}`
+          : undefined,
         companyName,
         items: cart.map((line) => ({
           sku: line.item.sku,

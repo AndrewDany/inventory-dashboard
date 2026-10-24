@@ -20,19 +20,42 @@ function handleSalesOrderRoutes(PDO $pdo, string $method, array $uriParts): void
         if ($auth['role'] === 'demo') jsonError('Demo account cannot record payments', 403);
         $input = getJsonInput();
         $amount = (float)($input['amount'] ?? 0);
-        if ($amount <= 0) jsonError('Payment amount must be greater than zero', 400);
+        if (round($amount, 2) < 0.01) jsonError('Payment amount must be at least GHC 0.01', 400);
 
-        $soStmt = $pdo->prepare('SELECT id, amount_paid FROM sales_orders WHERE id = ?');
+        $pdo->beginTransaction();
+        $soStmt = $pdo->prepare('SELECT id, amount_paid FROM sales_orders WHERE id = ? FOR UPDATE');
         $soStmt->execute([$id]);
         $so = $soStmt->fetch();
-        if (!$so) jsonError('Sales order not found', 404);
+        if (!$so) {
+            $pdo->rollBack();
+            jsonError('Sales order not found', 404);
+        }
 
-        $upStmt = $pdo->prepare('UPDATE sales_orders SET amount_paid = amount_paid + ? WHERE id = ?');
-        $upStmt->execute([$amount, $id]);
+        $totalStmt = $pdo->prepare('SELECT COALESCE(SUM(quantity_ordered * unit_price), 0) FROM sales_order_items WHERE so_id = ?');
+        $totalStmt->execute([$id]);
+        $total = (float)$totalStmt->fetchColumn();
+        $balance = round($total - (float)$so['amount_paid'], 2);
+        if (round($amount, 2) > $balance) {
+            $pdo->rollBack();
+            jsonError("Payment exceeds the outstanding balance of GHC {$balance}", 400);
+        }
 
-        $newTotalStmt = $pdo->prepare('SELECT amount_paid FROM sales_orders WHERE id = ?');
-        $newTotalStmt->execute([$id]);
-        jsonSuccess(['amount_paid' => $newTotalStmt->fetchColumn()], 200, 'Payment recorded');
+        $paymentMethod = trim((string)($input['payment_method'] ?? 'Cash')) ?: 'Cash';
+        if (!in_array($paymentMethod, ['Cash', 'Mobile Money', 'Bank Transfer'], true)) {
+            $pdo->rollBack();
+            jsonError('Invalid payment method', 400);
+        }
+        try {
+            $upStmt = $pdo->prepare('UPDATE sales_orders SET amount_paid = amount_paid + ? WHERE id = ?');
+            $upStmt->execute([round($amount, 2), $id]);
+            $paymentStmt = $pdo->prepare('INSERT INTO sales_order_payments (id, so_id, amount, payment_method, received_by) VALUES (?, ?, ?, ?, ?)');
+            $paymentStmt->execute([generateUuid(), $id, round($amount, 2), $paymentMethod, $auth['email'] ?? 'system']);
+            $pdo->commit();
+        } catch (Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+        jsonSuccess(['amount_paid' => round((float)$so['amount_paid'] + $amount, 2)], 200, 'Payment recorded');
     }
 
     // Ship / Fulfill Sales Order endpoint: POST /api/sales-orders/{id}/ship
@@ -208,6 +231,10 @@ function handleSalesOrderRoutes(PDO $pdo, string $method, array $uriParts): void
             ');
             $itemQuery->execute([$order['id']]);
             $order['items'] = $itemQuery->fetchAll();
+
+            $paymentQuery = $pdo->prepare('SELECT id, amount, payment_method, received_by, paid_at FROM sales_order_payments WHERE so_id = ? ORDER BY paid_at DESC');
+            $paymentQuery->execute([$order['id']]);
+            $order['payments'] = $paymentQuery->fetchAll();
         }
 
         jsonSuccess($orders);
@@ -292,29 +319,67 @@ function handlePosCheckout(PDO $pdo, string $method): void
     $customerPhone = preg_replace('/\D+/', '', (string)($input['customer_phone'] ?? ''));
     $customerEmail = trim((string)($input['customer_email'] ?? '')) ?: null;
     $shippingAddress = trim((string)($input['shipping_address'] ?? '')) ?: null;
-    $paymentMethod = $input['payment_method'] ?? 'cash';
+    $paymentMethod = trim((string)($input['payment_method'] ?? 'Cash'));
+    $dueDate = trim((string)($input['due_date'] ?? '')) ?: null;
     $notes = $input['notes'] ?? 'POS Sale';
 
     if (count($items) === 0) jsonError('Cart is empty', 400);
+    if (!in_array($paymentMethod, ['Cash', 'Mobile Money', 'Credit'], true)) jsonError('Invalid payment method', 400);
     if ($customerPhone !== '' && !preg_match('/^\d{10}$/', $customerPhone)) jsonError('Phone number must contain exactly 10 digits', 400);
     if ($customerEmail !== null && !filter_var($customerEmail, FILTER_VALIDATE_EMAIL)) jsonError('A valid email address is required', 400);
     if ($customerPhone !== '' && trim($customerName) === '') jsonError('Customer name is required when a phone number is provided', 400);
+    if ($paymentMethod === 'Credit' && ($customerPhone === '' || trim($customerName) === '')) {
+        jsonError('Credit sales require a registered customer with a name and phone number', 400);
+    }
+    $dueDateValue = $dueDate ? DateTime::createFromFormat('!Y-m-d', $dueDate) : false;
+    if ($paymentMethod === 'Credit' && (!$dueDateValue || $dueDateValue->format('Y-m-d') !== $dueDate)) {
+        jsonError('A valid due date is required for credit sales', 400);
+    }
+    if ($paymentMethod === 'Credit' && $dueDateValue < new DateTime('today')) {
+        jsonError('The credit sale due date cannot be in the past', 400);
+    }
 
     $soNumber = 'POS-' . strtoupper(substr(uniqid(), -6));
     $soId = generateUuid();
 
     $totalSale = 0.0;
+    $customerId = null;
+    $customerCreditLimit = 0.0;
+    $existingCustomerBalance = 0.0;
 
     $pdo->beginTransaction();
     try {
         if ($customerPhone !== '') {
             $customerStmt = $pdo->prepare('INSERT INTO customers (id, full_name, phone, email, delivery_address, first_purchase_at, last_purchase_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW()) ON DUPLICATE KEY UPDATE full_name = VALUES(full_name), email = VALUES(email), delivery_address = VALUES(delivery_address), last_purchase_at = NOW()');
             $customerStmt->execute([generateUuid(), $customerName, $customerPhone, $customerEmail, $shippingAddress]);
+            $findCustomer = $pdo->prepare('SELECT id, credit_limit FROM customers WHERE phone = ? FOR UPDATE');
+            $findCustomer->execute([$customerPhone]);
+            $customer = $findCustomer->fetch();
+            $customerId = $customer['id'] ?? null;
+            $customerCreditLimit = (float)($customer['credit_limit'] ?? 0);
+            if ($paymentMethod === 'Credit') {
+                $balanceStmt = $pdo->prepare('
+                    SELECT COALESCE(SUM(GREATEST(order_totals.total_amount - order_totals.amount_paid, 0)), 0)
+                    FROM (
+                        SELECT so.id, so.amount_paid, COALESCE(SUM(soi.quantity_ordered * soi.unit_price), 0) AS total_amount
+                        FROM sales_orders so
+                        LEFT JOIN sales_order_items soi ON soi.so_id = so.id
+                        WHERE so.customer_id = ?
+                        GROUP BY so.id, so.amount_paid
+                    ) order_totals
+                ');
+                $balanceStmt->execute([$customerId]);
+                $existingCustomerBalance = (float)$balanceStmt->fetchColumn();
+            }
+        }
+        if ($paymentMethod === 'Credit' && !$customerId) {
+            throw new Exception('Customer registration is required before making a credit sale');
         }
 
         // 1. Create completed sales order
-        $stmt = $pdo->prepare('INSERT INTO sales_orders (id, so_number, status, notes, customer_name, amount_paid, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)');
-        $stmt->execute([$soId, $soNumber, 'shipped', "POS ($paymentMethod): $notes", $customerName, 0, $auth['email'] ?? 'system']);
+        $initialPaid = 0;
+        $stmt = $pdo->prepare('INSERT INTO sales_orders (id, so_number, status, notes, customer_name, customer_phone, customer_id, due_date, amount_paid, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$soId, $soNumber, 'shipped', "POS ($paymentMethod): $notes", $customerName, $customerPhone ?: null, $customerId, $paymentMethod === 'Credit' ? $dueDate : null, $initialPaid, $auth['email'] ?? 'system']);
 
         foreach ($items as $line) {
             $itemId = $line['id'] ?? null;
@@ -448,8 +513,20 @@ function handlePosCheckout(PDO $pdo, string $method): void
             ]);
         }
 
-        $updateTotal = $pdo->prepare('UPDATE sales_orders SET amount_paid = ? WHERE id = ?');
-        $updateTotal->execute([$totalSale, $soId]);
+        if ($paymentMethod === 'Credit') {
+            if ($customerCreditLimit <= 0) {
+                throw new Exception('Set a positive credit limit for this customer before making a credit sale');
+            }
+            if (round($existingCustomerBalance + $totalSale, 2) > round($customerCreditLimit, 2)) {
+                $available = max(0, round($customerCreditLimit - $existingCustomerBalance, 2));
+                throw new Exception("Credit limit exceeded. Available credit: GHC {$available}");
+            }
+        } else {
+            $updateTotal = $pdo->prepare('UPDATE sales_orders SET amount_paid = ? WHERE id = ?');
+            $updateTotal->execute([$totalSale, $soId]);
+            $paymentStmt = $pdo->prepare('INSERT INTO sales_order_payments (id, so_id, amount, payment_method, received_by) VALUES (?, ?, ?, ?, ?)');
+            $paymentStmt->execute([generateUuid(), $soId, round($totalSale, 2), $paymentMethod, $auth['email'] ?? 'system']);
+        }
         $pdo->commit();
 
         // Notify admins of large sales only after the sale is safely committed

@@ -33,6 +33,13 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
+function dateInputValue(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 export default function PointOfSale() {
   const { t } = useLanguage()
   const { data: items } = useInventory()
@@ -50,6 +57,12 @@ export default function PointOfSale() {
   const [isVerifyingCustomer, setIsVerifyingCustomer] = useState(false)
   const [shippingAddress, setShippingAddress] = useState('')
   const [paymentStatus, setPaymentStatus] = useState('Cash')
+  const [dueDate, setDueDate] = useState(() => {
+    const date = new Date()
+    date.setDate(date.getDate() + 30)
+    return dateInputValue(date)
+  })
+  const [customerCredit, setCustomerCredit] = useState<{ credit_limit: number; outstanding_balance: number } | null>(null)
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null)
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null)
   const [invoiceUrl, setInvoiceUrl] = useState<string | null>(null)
@@ -184,6 +197,25 @@ export default function PointOfSale() {
       return
     }
 
+    if (paymentStatus === 'Credit') {
+      if (!customerVerified || !customerCredit) {
+        toast.error('Verify an existing customer before making a credit sale.')
+        return
+      }
+      if (!dueDate) {
+        toast.error('Choose a due date for this credit sale.')
+        return
+      }
+      if (customerCredit.credit_limit <= 0) {
+        toast.error('This customer has no credit limit. Ask an admin to set one.')
+        return
+      }
+      if (grandTotal + customerCredit.outstanding_balance > customerCredit.credit_limit + 0.001) {
+        toast.error('This sale exceeds the customer’s available credit.')
+        return
+      }
+    }
+
     if (customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
       toast.error('Enter a valid email address.')
       return
@@ -206,6 +238,7 @@ export default function PointOfSale() {
         customerPhone: customerPhone ? `0${customerPhone}` : undefined,
         shippingAddress: shippingAddress || undefined,
         paymentStatus,
+        dueDate: paymentStatus === 'Credit' ? dueDate : undefined,
         companyName: 'samdamventures.com',
       })
       localStorage.setItem('pos_invoice_daily_count', JSON.stringify({
@@ -226,6 +259,7 @@ export default function PointOfSale() {
       setCustomerVerified(false)
       setShippingAddress('')
       setPaymentStatus('Cash')
+      setCustomerCredit(null)
     } catch {
       // Error handled by mutation's onError toast
     }
@@ -244,10 +278,13 @@ export default function PointOfSale() {
         phone: string
         email: string | null
         delivery_address: string | null
+        credit_limit: number
+        outstanding_balance: number
       } | null>(`/customers?phone=0${customerPhone}`)
 
       if (!customer) {
         setCustomerVerified(false)
+        setCustomerCredit(null)
         toast.info('New customer. Enter their name, then complete the purchase to register them.')
         return
       }
@@ -255,6 +292,10 @@ export default function PointOfSale() {
       setCustomerName(customer.full_name)
       setCustomerEmail(customer.email ?? '')
       setShippingAddress(customer.delivery_address ?? '')
+      setCustomerCredit({
+        credit_limit: Number(customer.credit_limit) || 0,
+        outstanding_balance: Number(customer.outstanding_balance) || 0,
+      })
       setCustomerVerified(true)
       toast.success(`Customer verified: ${customer.full_name}`)
     } catch (error) {
@@ -613,6 +654,7 @@ export default function PointOfSale() {
                   onChange={(e) => {
                     setCustomerPhone(e.target.value.replace(/\D/g, '').slice(0, 9))
                     setCustomerVerified(false)
+                    setCustomerCredit(null)
                   }}
                   placeholder="241234567"
                   className="rounded-l-none"
@@ -624,6 +666,12 @@ export default function PointOfSale() {
             </div>
             <p className="mt-1 text-xs text-slate-500">Enter 9 digits after +233, without the leading 0.</p>
             {customerVerified && <p className="mt-1 text-xs font-medium text-emerald-600">Customer details verified.</p>}
+            {customerVerified && customerCredit && (
+              <p className="mt-1 text-xs text-slate-500">
+                Credit available: GHC {Math.max(0, customerCredit.credit_limit - customerCredit.outstanding_balance).toFixed(2)}
+                {' '}(limit GHC {customerCredit.credit_limit.toFixed(2)})
+              </p>
+            )}
           </div>
 
           {/* Delivery Address */}
@@ -666,9 +714,24 @@ export default function PointOfSale() {
               <SelectContent>
                 <SelectItem value="Cash">Cash</SelectItem>
                 <SelectItem value="Mobile Money">Mobile Money</SelectItem>
+                <SelectItem value="Credit">Credit</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {paymentStatus === 'Credit' && (
+            <div>
+              <Label htmlFor="credit-due-date" className="mb-1 block">Payment Due Date</Label>
+              <Input
+                id="credit-due-date"
+                type="date"
+                value={dueDate}
+                min={dateInputValue(new Date())}
+                onChange={(event) => setDueDate(event.target.value)}
+              />
+              <p className="mt-1 text-xs text-slate-500">Credit sales require a verified customer and available credit.</p>
+            </div>
+          )}
 
           <div className="border-t border-gray-100 pt-3 flex justify-between text-sm font-semibold">
             <span>Total</span>

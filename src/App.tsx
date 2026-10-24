@@ -16,6 +16,7 @@ const AdminLocations    = lazy(() => import('./pages/admin/AdminLocations'))
 const AdminUsers        = lazy(() => import('./pages/admin/AdminUsers'))
 const AdminOrders       = lazy(() => import('./pages/admin/AdminOrders'))
 const AdminSalesOrders  = lazy(() => import('./pages/admin/AdminSalesOrders'))
+const AdminCustomers    = lazy(() => import('./pages/admin/AdminCustomers'))
 const AdminPreOrders    = lazy(() => import('./pages/admin/AdminPreOrders'))
 const AdminLowStock     = lazy(() => import('./pages/admin/AdminLowStock'))
 const AdminSuppliers    = lazy(() => import('./pages/admin/AdminSuppliers'))
@@ -69,6 +70,7 @@ function App() {
           <Route path="users" element={<AdminUsers />} />
           <Route path="orders" element={<AdminOrders />} />
           <Route path="sales-orders" element={<AdminSalesOrders />} />
+          <Route path="customers" element={<AdminCustomers />} />
           <Route path="pre-orders" element={<AdminPreOrders />} />
           <Route path="low-stock" element={<AdminLowStock />} />
           <Route path="suppliers" element={<AdminSuppliers />} />
