@@ -32,7 +32,7 @@ function handleCustomerRoutes(PDO $pdo, string $method, array $uriParts): void
             jsonSuccess($stmt->fetchAll());
         }
 
-        $phone = preg_replace('/\D+/', '', (string)($_GET['phone'] ?? ''));
+        $phone = normalizeGhanaPhone($_GET['phone'] ?? '');
         if (!preg_match('/^\d{10}$/', $phone)) jsonError('A valid 10-digit phone number is required', 400);
         $stmt = $pdo->prepare('
             SELECT c.id, c.full_name, c.phone, c.email, c.delivery_address,
@@ -71,7 +71,7 @@ function handleCustomerRoutes(PDO $pdo, string $method, array $uriParts): void
 
     if ($method === 'POST') {
         $input = getJsonInput();
-        $phone = preg_replace('/\D+/', '', (string)($input['phone'] ?? ''));
+        $phone = normalizeGhanaPhone($input['phone'] ?? '');
         $name = trim((string)($input['full_name'] ?? ''));
         $email = trim((string)($input['email'] ?? '')) ?: null;
         $address = trim((string)($input['delivery_address'] ?? '')) ?: null;

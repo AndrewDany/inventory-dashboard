@@ -649,10 +649,14 @@ export default function PointOfSale() {
                   type="tel"
                   inputMode="numeric"
                   pattern="[0-9]{9}"
-                  maxLength={9}
+                  maxLength={14}
                   value={customerPhone}
                   onChange={(e) => {
-                    setCustomerPhone(e.target.value.replace(/\D/g, '').slice(0, 9))
+                    // Accept 241234567, 0241234567 or +233241234567 -> keep 9 digits
+                    let digits = e.target.value.replace(/\D/g, '')
+                    if (digits.startsWith('233') && digits.length > 9) digits = digits.slice(3)
+                    else if (digits.startsWith('0')) digits = digits.slice(1)
+                    setCustomerPhone(digits.slice(0, 9))
                     setCustomerVerified(false)
                     setCustomerCredit(null)
                   }}
@@ -664,7 +668,7 @@ export default function PointOfSale() {
                 {isVerifyingCustomer ? 'Checking...' : 'Verify'}
               </Button>
             </div>
-            <p className="mt-1 text-xs text-slate-500">Enter 9 digits after +233, without the leading 0.</p>
+            <p className="mt-1 text-xs text-slate-500">Enter the number with or without the leading 0.</p>
             {customerVerified && <p className="mt-1 text-xs font-medium text-emerald-600">Customer details verified.</p>}
             {customerVerified && customerCredit && (
               <p className="mt-1 text-xs text-slate-500">

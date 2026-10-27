@@ -89,3 +89,18 @@ function generateUuid(): string
     $data[8] = chr((ord($data[8]) & 0x3f) | 0x80); // variant
     return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
 }
+
+/**
+ * Normalise a Ghana mobile number to the 10-digit local form (0XXXXXXXXX).
+ * Accepts 9 digits (no leading zero), 10 digits, or +233 / 233 prefixed input.
+ * Returns '' for empty input; any other length is returned as digits so the
+ * caller's 10-digit validation rejects it.
+ */
+function normalizeGhanaPhone(mixed $raw): string
+{
+    $digits = preg_replace('/\D+/', '', (string)$raw);
+    if ($digits === '') return '';
+    if (strlen($digits) === 12 && str_starts_with($digits, '233')) $digits = '0' . substr($digits, 3);
+    elseif (strlen($digits) === 9) $digits = '0' . $digits;
+    return $digits;
+}

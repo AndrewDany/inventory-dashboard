@@ -316,7 +316,7 @@ function handlePosCheckout(PDO $pdo, string $method): void
     $input = getJsonInput();
     $items = $input['items'] ?? []; // [{ id, sku, name, quantity, unit_price }]
     $customerName = $input['customer_name'] ?? 'Walk-in Customer';
-    $customerPhone = preg_replace('/\D+/', '', (string)($input['customer_phone'] ?? ''));
+    $customerPhone = normalizeGhanaPhone($input['customer_phone'] ?? '');
     $customerEmail = trim((string)($input['customer_email'] ?? '')) ?: null;
     $shippingAddress = trim((string)($input['shipping_address'] ?? '')) ?: null;
     $paymentMethod = trim((string)($input['payment_method'] ?? 'Cash'));
